@@ -1,0 +1,6 @@
+#!/bin/bash -e
+if [[ -z $1 ]] || [[ ${1:0:1} == '-' ]] ; then
+    exec supercronic -json /email/crontab "$@"
+else
+    exec "$@"
+fi

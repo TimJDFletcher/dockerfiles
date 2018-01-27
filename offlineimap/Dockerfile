@@ -21,3 +21,9 @@ RUN useradd offlineimap
 RUN mkdir /email 
 
 ADD crontab /email/crontab
+
+ADD entrypoint /entrypoint
+
+RUN chmod 755 /entrypoint
+
+ENTRYPOINT ["/entrypoint"]
