@@ -58,7 +58,6 @@ RUN mkdir -p /samba
 RUN git clone https://git.samba.org/samba.git /samba/source
 
 ENV GITTAG samba-4.8.0rc2
-
 RUN cd /samba/source \
         && git checkout tags/$GITTAG \
         && ./configure --prefix=/samba --disable-cups --without-ad-dc \
@@ -66,7 +65,6 @@ RUN cd /samba/source \
         && make install
 
 ADD samba.conf /samba/etc/smb.conf
-
 RUN /samba/bin/testparm -s
 ENV PASS password 
 
@@ -76,7 +74,7 @@ RUN useradd timemachine \
 EXPOSE 445/tcp
 ENV BACKUPDIR /backups
 ENV SMBPATH /samba
+
 ADD entrypoint /entrypoint
 RUN chmod 0755 /entrypoint
-
 ENTRYPOINT ["/entrypoint"]
