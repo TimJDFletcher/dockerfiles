@@ -72,3 +72,7 @@ ENV PASS password
 
 RUN useradd timemachine \
     && printf "$PASS\n$PASS\n" | /samba/bin/smbpasswd -s -a timemachine
+
+EXPOSE 445/tcp
+
+ENTRYPOINT ["/samba/sbin/smbd", "--foreground", "--log-stdout"]
