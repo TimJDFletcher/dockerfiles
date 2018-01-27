@@ -75,3 +75,7 @@ RUN useradd timemachine \
 
 EXPOSE 445/tcp
 
+ADD entrypoint /entrypoint
+RUN chmod 0755 /entrypoint
+
+ENTRYPOINT ["/entrypoint"]
