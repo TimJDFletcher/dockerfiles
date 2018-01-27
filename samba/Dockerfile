@@ -14,7 +14,7 @@ RUN apt-get update && \
         docbook-xsl \
         flex \
         gdb \
-        libjansson-dev \
+        git \
         krb5-user \
         libacl1-dev \
         libaio-dev \
@@ -26,6 +26,7 @@ RUN apt-get update && \
         libcups2-dev \
         libgnutls28-dev \
         libgpgme11-dev \
+        libjansson-dev \
         libjson-perl \
         libldap2-dev \
         libncurses5-dev \
@@ -42,13 +43,17 @@ RUN apt-get update && \
         python-dbg \
         python-dev \
         python-dnspython \
-        python3-dnspython \
         python-gpgme \
-        python3-gpgme \
         python-markdown \
-        python3-markdown \
         python3-dev \
+        python3-dnspython \
+        python3-gpgme \
+        python3-markdown \
         xsltproc \
         zlib1g-dev
 
+
+RUN mkdir -p /samba
+
 ENV GITTAG 4.8.0rc2
+RUN git clone https://git.samba.org/samba.git /samba/source
