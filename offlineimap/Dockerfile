@@ -3,6 +3,7 @@ FROM debian:9
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends --yes install \
     offlineimap \
+    ca-certificates \
     curl
 
 ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.1.5/supercronic-linux-amd64 \
