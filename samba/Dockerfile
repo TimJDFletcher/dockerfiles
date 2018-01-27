@@ -75,4 +75,3 @@ RUN useradd timemachine \
 
 EXPOSE 445/tcp
 
-ENTRYPOINT ["/samba/sbin/smbd", "--foreground", "--log-stdout"]
