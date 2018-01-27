@@ -4,7 +4,7 @@ export USER=${USER:-timemachine}
 
 createUser()
 {
-echo Creating ${USER} with a samba password of ${PASS}
+echo Creating user ${USER} with a samba password of ${PASS}
 useradd ${USER}
 printf "$PASS\n$PASS\n" | /samba/bin/smbpasswd -s -a ${USER}
 }
