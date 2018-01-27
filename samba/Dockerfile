@@ -8,6 +8,7 @@ RUN apt-get update && \
         bind9utils \
         bison \
         build-essential \
+        ca-certificates \
         debhelper \
         dnsutils \
         docbook-xml \
