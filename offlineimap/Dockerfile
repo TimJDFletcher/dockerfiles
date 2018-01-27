@@ -16,11 +16,9 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
  && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
  && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
 
-RUN useradd offlineimap
+RUN useradd --home-dir /email --no-create-home --no-user-group offlineimap 
 
-RUN mkdir /email 
-
-ADD crontab /email/crontab
+ADD crontab /etc/crontab
 
 ADD entrypoint /entrypoint
 
