@@ -1,7 +1,7 @@
 #!/bin/bash -e
 backupConfig()
 {
-if [ -d $BACKUPDIR ] ; then
+if [ ! -d $BACKUPDIR ] ; then
     echo $BACKUPDIR not found did you forget add a volume?
     exit 1
 else
