@@ -1,7 +1,7 @@
 FROM debian:9
 
 RUN apt-get update && \
-    apt-get install \
+    DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends --yes \
         acl \
         attr \
         autoconf \
@@ -51,5 +51,4 @@ RUN apt-get update && \
         xsltproc \
         zlib1g-dev
 
-
-ENV 
+ENV GITTAG 4.8.0rc2
