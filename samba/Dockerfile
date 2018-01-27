@@ -63,4 +63,12 @@ RUN cd /samba/source \
         && git checkout tags/$GITTAG \
         && ./configure --prefix=/samba --disable-cups --without-ad-dc \
         && make -j 2 \
-        && make install 
+        && make install
+
+ADD samba.conf /samba/etc/smb.conf
+
+RUN /samba/bin/testparm -s
+ENV PASS password 
+
+RUN useradd timemachine \
+    && printf "$PASS\n$PASS\n" | /samba/bin/smbpasswd -s -a timemachine
