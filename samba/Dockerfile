@@ -74,7 +74,8 @@ RUN useradd timemachine \
     && printf "$PASS\n$PASS\n" | /samba/bin/smbpasswd -s -a timemachine
 
 EXPOSE 445/tcp
-
+ENV BACKUPDIR /backups
+ENV SMBPATH /samba
 ADD entrypoint /entrypoint
 RUN chmod 0755 /entrypoint
 
