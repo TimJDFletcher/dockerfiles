@@ -16,7 +16,7 @@ RUN curl -fsSLO "$SUPERCRONIC_URL" \
  && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
  && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
 
-RUN useradd --home-dir /email --no-create-home --no-user-group offlineimap 
+RUN useradd --home-dir /email --no-create-home offlineimap 
 
 ADD crontab /etc/crontab
 
