@@ -57,7 +57,7 @@ RUN apt-get update && \
 RUN mkdir -p /samba
 RUN git clone https://git.samba.org/samba.git /samba/source
 
-ENV GITTAG 4.8.0rc2
+ENV GITTAG samba-4.8.0rc2
 
 RUN cd /samba/source \
         && git checkout tags/$GITTAG \
