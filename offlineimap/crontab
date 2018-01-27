@@ -1,0 +1,2 @@
+*/30 * * * *    /usr/bin/offlineimap -q -u quiet -c /data/offlineimaprc
+11 */4 * * *    /usr/bin/offlineimap    -u quiet -c /data/offlineimaprc
