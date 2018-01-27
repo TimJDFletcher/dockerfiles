@@ -77,4 +77,5 @@ ENV SMBPATH /samba
 
 ADD entrypoint /entrypoint
 RUN chmod 0755 /entrypoint
+
 ENTRYPOINT ["/entrypoint"]
