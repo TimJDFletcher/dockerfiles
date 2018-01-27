@@ -61,7 +61,6 @@ ENV GITTAG samba-4.8.0rc2
 
 RUN cd /samba/source \
         && git checkout tags/$GITTAG \
-        && ./configure --disable-cups --without-ad-dc --enable-selftest \
+        && ./configure --disable-cups --without-ad-dc \
         && make \
-        && make test \
         && make install 
