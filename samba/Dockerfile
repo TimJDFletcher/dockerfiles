@@ -51,25 +51,28 @@ RUN apt-get update && \
         python3-gpgme \
         python3-markdown \
         xsltproc \
-        zlib1g-dev
+        zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-
-RUN mkdir -p /samba
-RUN git clone https://git.samba.org/samba.git /samba/source
-
+ENV SMBPATH /samba
 ENV GITTAG samba-4.8.0rc2
-RUN cd /samba/source \
-        && git checkout tags/$GITTAG \
-        && ./configure --prefix=/samba --disable-cups --without-ad-dc \
-        && make -j 2 \
-        && make install
 
-ADD samba.conf /samba/etc/smb.conf
-RUN /samba/bin/testparm -s
+RUN mkdir -p $SMBPATH
+RUN git clone https://git.samba.org/samba.git $SMBPATH/source
+
+RUN cd $SMBPATH/source \
+        && git checkout tags/$GITTAG \
+        && ./configure --prefix=$SMBPATH --disable-cups --without-ad-dc \
+        && make -j 2 \
+        && make -j 2 install
+
+RUN rm -rf $SMBPATH/source
+
+ADD samba.conf $SMBPATH/etc/smb.conf
+RUN $SMBPATH/bin/testparm -s
 
 EXPOSE 445/tcp
 ENV BACKUPDIR /backups
-ENV SMBPATH /samba
 
 ADD entrypoint /entrypoint
 RUN chmod 0755 /entrypoint
