@@ -1,8 +1,17 @@
 #!/bin/bash -e
-chown timemachine:timemachine $BACKUPDIR
+backupConfig()
+{
+if [ -d $BACKUPDIR ] ; then
+    echo $BACKUPDIR not found did you forget add a volume?
+    exit 1
+else
+    chown timemachine:timemachine $BACKUPDIR
+fi
+}
 
 if [[ -z $1 ]] || [[ ${1:0:1} == '-' ]] ; then
-  exec $SMBPATH/sbin/smbd "$@"
+    backupConfig
+    exec $SMBPATH/sbin/smbd "$@"
 else
-  exec "$@"
+    exec "$@"
 fi
