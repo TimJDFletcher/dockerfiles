@@ -24,4 +24,6 @@ ADD entrypoint /entrypoint
 
 RUN chmod 755 /entrypoint
 
+USER offlineimap
+
 ENTRYPOINT ["/entrypoint"]
