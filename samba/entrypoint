@@ -1,17 +1,28 @@
 #!/bin/bash -e
+export PASS=${PASS:-password}
+export USER=${USER:-timemachine}
+
+createUser()
+{
+echo Creating ${USER} with a samba password of ${PASS}
+useradd ${USER}
+printf "$PASS\n$PASS\n" | /samba/bin/smbpasswd -s -a ${USER}
+}
+
 backupConfig()
 {
-if [ ! -d $BACKUPDIR ] ; then
-    echo $BACKUPDIR not found did you forget add a volume?
+if [ ! -d ${BACKUPDIR} ] ; then
+    echo ${BACKUPDIR} not found did you forget to add the volume?
     exit 1
 else
-    chown timemachine:timemachine $BACKUPDIR
+    chown ${USER} ${BACKUPDIR}
 fi
 }
 
 if [[ -z $1 ]] || [[ ${1:0:1} == '-' ]] ; then
+    createUser
     backupConfig
-    exec $SMBPATH/sbin/smbd --no-process-group --log-stdout --foreground "$@"
+    exec ${SMBPATH}/sbin/smbd --no-process-group --log-stdout --foreground "$@"
 else
     exec "$@"
 fi
