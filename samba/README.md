@@ -10,3 +10,5 @@ docker run -d -t -v /backups/timemachine:/backups -p 445:445 --restart unless-st
 ```
 
 There is a single user called `timemachine` with a password of `password` this could be improved.
+
+The container only runs smbd to find it on the network the best way is avahi (mDNS) there is an example service file included. This can be copied to /etc/avahi/services/timemachine.service or run in a container.
