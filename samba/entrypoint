@@ -4,19 +4,22 @@ export USER=${USER:-timemachine}
 
 createUser()
 {
-echo Creating user ${USER} with a samba password of ${PASS}
-useradd ${USER}
-printf "$PASS\n$PASS\n" | /samba/bin/smbpasswd -s -a ${USER}
+    if [ $PATH == RANDOM ] ; then
+        PASS=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
+    fi
+    echo Creating user ${USER} with a samba password of ${PASS}
+    useradd ${USER}
+    printf "$PASS\n$PASS\n" | /samba/bin/smbpasswd -s -a ${USER}
 }
 
 backupConfig()
 {
-if [ ! -d ${BACKUPDIR} ] ; then
-    echo ${BACKUPDIR} not found did you forget to add the volume?
-    exit 1
-else
-    chown ${USER} ${BACKUPDIR}
-fi
+    if [ ! -d ${BACKUPDIR} ] ; then
+        echo ${BACKUPDIR} not found did you forget to add the volume?
+        exit 1
+    else
+        chown ${USER} ${BACKUPDIR}
+    fi
 }
 
 if [[ -z $1 ]] || [[ ${1:0:1} == '-' ]] ; then
