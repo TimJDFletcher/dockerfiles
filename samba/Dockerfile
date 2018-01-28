@@ -58,15 +58,13 @@ ENV SMBPATH /samba
 ENV GITTAG samba-4.8.0rc2
 
 RUN mkdir -p $SMBPATH
-RUN git clone https://git.samba.org/samba.git $SMBPATH/source
-
-RUN cd $SMBPATH/source \
+RUN git clone https://git.samba.org/samba.git $SMBPATH/source \
+        && cd $SMBPATH/source \
         && git checkout tags/$GITTAG \
-        && ./configure --prefix=$SMBPATH --disable-cups --without-ad-dc \
-        && make -j 2 \
-        && make -j 2 install
-
-RUN rm -rf $SMBPATH/source
+    && ./configure --prefix=$SMBPATH --disable-cups --without-ad-dc \
+        && make -j$(nproc) \
+        && make -j$(nproc) install \
+    && rm -rf $SMBPATH/source
 
 ADD samba.conf $SMBPATH/etc/smb.conf
 RUN $SMBPATH/bin/testparm -s
