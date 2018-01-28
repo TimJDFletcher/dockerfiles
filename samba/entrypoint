@@ -4,7 +4,7 @@ export USER=${USER:-timemachine}
 
 createUser()
 {
-    if [ $PATH == RANDOM ] ; then
+    if [ $PASS == RANDOM ] ; then
         PASS=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
     fi
     echo Creating user ${USER} with a samba password of ${PASS}
