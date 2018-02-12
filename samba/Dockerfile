@@ -1,4 +1,4 @@
-FROM debian:9
+FROM debian:stable-20171210
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends --yes install \
