@@ -19,3 +19,5 @@ There is a single user called `timemachine` with a password of `password` by def
 Set the environment variables USER or PASS to override, if PASS is set to `RANDOM` then a random 16 character password will be generated for the user.
 
 The container only runs smbd to find it on the network the best way is avahi (mDNS) there is an example service file included. This can be copied to /etc/avahi/services/timemachine.service or run in a container.
+
+Repo is auto built here: https://hub.docker.com/r/timjdfletcher/samba-timemachine/
