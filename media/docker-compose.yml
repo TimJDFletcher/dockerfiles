@@ -16,36 +16,6 @@ services:
             PGID: 109 
             PUID: 109
             TZ: Europe/Berlin
-    sickrage:
-        depends_on:
-            - transmission
-        image: linuxserver/sickrage:111
-        ports:
-            - 8081:8081
-        volumes:
-            - /media/sickrage/config:/config
-            - /media/transmission/downloads:/downloads
-            - /media/tv:/tv
-        restart: always
-        environment:
-            PGID: 109 
-            PUID: 109
-            TZ: Europe/Berlin
-    couchpotato:
-        depends_on:
-            - transmission
-        image: linuxserver/couchpotato:109
-        ports:
-            - 5050:5050
-        volumes:
-            - /media/couchpotato/config:/config
-            - /media/transmission/downloads:/downloads
-            - /media/movies:/movies
-        restart: always
-        environment:
-            PGID: 109 
-            PUID: 109
-            TZ: Europe/Berlin
     mariadb:
         image: linuxserver/mariadb:106
         ports:
@@ -66,6 +36,37 @@ services:
             - 9777:9777/udp
         volumes:
             - /media/kodi/config:/config/.kodi
+        restart: always
+        environment:
+            PGID: 109 
+            PUID: 109
+            TZ: Europe/Berlin
+    couchpotato:
+        depends_on:
+            - transmission
+        image: linuxserver/couchpotato:109
+        ports:
+            - 5050:5050
+        volumes:
+            - /media/couchpotato/config:/config
+            - /media/transmission/downloads:/downloads
+            - /media/movies:/movies
+        restart: always
+        environment:
+            PGID: 109 
+            PUID: 109
+            TZ: Europe/Berlin
+    sickrage:
+        depends_on:
+            - transmission
+            - kodi-headless
+        image: linuxserver/sickrage:111
+        ports:
+            - 8081:8081
+        volumes:
+            - /media/sickrage/config:/config
+            - /media/transmission/downloads:/downloads
+            - /media/tv:/tv
         restart: always
         environment:
             PGID: 109 
