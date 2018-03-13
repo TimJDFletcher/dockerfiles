@@ -55,7 +55,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 ENV SMBPATH /samba
-ENV GITTAG samba-4.8.0rc4
+ENV GITTAG samba-4.8.0
 
 RUN mkdir -p $SMBPATH
 RUN git clone https://git.samba.org/samba.git $SMBPATH/source \
