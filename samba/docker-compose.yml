@@ -1,0 +1,11 @@
+version: '3.3'
+
+services:
+    samba:
+        image: timjdfletcher/samba-timemachine:latest
+        ports:
+            - 10445:445
+        volumes:
+            - /backups/timemachine:/backups
+        restart: unless-stopped
+        tty: true
