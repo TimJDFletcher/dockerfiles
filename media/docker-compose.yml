@@ -2,7 +2,7 @@ version: '3.3'
 
 services:
     transmission:
-        image: linuxserver/transmission:112
+        image: linuxserver/transmission
         ports:
             - 9091:9091
             - 51413:51413
@@ -17,7 +17,7 @@ services:
             PUID: 109
             TZ: Europe/Berlin
     mariadb:
-        image: linuxserver/mariadb:106
+        image: linuxserver/mariadb
         ports:
             - 3306:3306
         volumes:
@@ -30,7 +30,7 @@ services:
     kodi-headless:
         depends_on:
             - mariadb
-        image: linuxserver/kodi-headless:117
+        image: linuxserver/kodi-headless
         ports:
             - 8080:8080
             - 9777:9777/udp
@@ -44,7 +44,7 @@ services:
     couchpotato:
         depends_on:
             - transmission
-        image: linuxserver/couchpotato:109
+        image: linuxserver/couchpotato
         ports:
             - 5050:5050
         volumes:
@@ -60,7 +60,7 @@ services:
         depends_on:
             - transmission
             - kodi-headless
-        image: linuxserver/sickrage:111
+        image: linuxserver/sickrage
         ports:
             - 8081:8081
         volumes:
