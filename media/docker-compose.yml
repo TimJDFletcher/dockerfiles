@@ -1,5 +1,13 @@
 version: '3.3'
 
+networks:
+    default:
+        driver: bridge
+        ipam:
+            driver: default
+            config:
+            - subnet: 192.168.100.1/24
+
 services:
     transmission:
         image: linuxserver/transmission
@@ -28,8 +36,6 @@ services:
             PUID: 109
             TZ: Europe/Berlin
     kodi-headless:
-        depends_on:
-            - mariadb
         image: linuxserver/kodi-headless
         ports:
             - 8080:8080
@@ -41,6 +47,8 @@ services:
             PGID: 109 
             PUID: 109
             TZ: Europe/Berlin
+        depends_on:
+            - mariadb
     couchpotato:
         depends_on:
             - transmission
