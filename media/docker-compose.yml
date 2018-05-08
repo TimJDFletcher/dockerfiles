@@ -1,20 +1,35 @@
 version: '3.3'
 
 networks:
-    default:
+    external:
         driver: bridge
         ipam:
             driver: default
             config:
             - subnet: 192.168.100.1/24
-
+    internal:
+        driver: bridge
+        driver_opts:
+            com.docker.network.bridge.enable_ip_masquerade: "false"
+        ipam:
+            driver: default
+            config:
+            - subnet: 192.168.101.1/24
 services:
+    tor:
+        image: dperson/torproxy
+        restart: always
+        environment:
+            GROUPID: 109 
+            USERID: 109
+            TZ: Europe/Berlin
+        networks:
+            - internal
+            - external
     transmission:
         image: linuxserver/transmission
         ports:
             - 9091:9091
-            - 51413:51413
-            - 51413:51413/udp
         volumes:
             - /media/transmission/config:/config
             - /media/transmission/torrents:/watch
@@ -24,6 +39,8 @@ services:
             PGID: 109 
             PUID: 109
             TZ: Europe/Berlin
+        networks:
+            - internal
     mariadb:
         image: linuxserver/mariadb
         ports:
@@ -35,11 +52,12 @@ services:
             PGID: 109 
             PUID: 109
             TZ: Europe/Berlin
+        networks:
+            - internal
     kodi-headless:
         image: linuxserver/kodi-headless
         ports:
             - 8080:8080
-            - 9777:9777/udp
         volumes:
             - /media/kodi/config:/config/.kodi
         restart: always
@@ -47,6 +65,8 @@ services:
             PGID: 109 
             PUID: 109
             TZ: Europe/Berlin
+        networks:
+            - internal
         depends_on:
             - mariadb
     couchpotato:
@@ -59,6 +79,8 @@ services:
             - /media/couchpotato/config:/config
             - /media/transmission/downloads:/downloads
             - /media/movies:/movies
+        networks:
+            - internal
         restart: always
         environment:
             PGID: 109 
@@ -75,6 +97,8 @@ services:
             - /media/sickrage/config:/config
             - /media/transmission/downloads:/downloads
             - /media/tv:/tv
+        networks:
+            - internal
         restart: always
         environment:
             PGID: 109 
