@@ -1,4 +1,4 @@
-FROM debian:stable-20180213
+FROM debian:stable-20180625
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends --yes install \
