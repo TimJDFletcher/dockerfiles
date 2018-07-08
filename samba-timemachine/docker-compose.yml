@@ -6,6 +6,6 @@ services:
         ports:
             - 10445:445
         volumes:
-            - /backups/timemachine:/backups
+            - /WDZBA365/backups/timemachine:/backups:rw
         restart: unless-stopped
         tty: true

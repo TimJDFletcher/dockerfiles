@@ -9,7 +9,7 @@ createUser()
     fi
     if useradd ${USER} ; then
         echo Creating user ${USER} with a samba password of ${PASS}
-        printf "$PASS\n$PASS\n" | /samba/bin/smbpasswd -s -a ${USER}
+        printf "$PASS\n$PASS\n" | smbpasswd -s -a ${USER}
     fi
 }
 
@@ -26,7 +26,7 @@ backupConfig()
 if [[ -z $1 ]] || [[ ${1:0:1} == '-' ]] ; then
     createUser
     backupConfig
-    exec ${SMBPATH}/sbin/smbd --no-process-group --log-stdout --foreground "$@"
+    exec /usr/sbin/smbd --no-process-group --log-stdout --foreground "$@"
 else
     exec "$@"
 fi
