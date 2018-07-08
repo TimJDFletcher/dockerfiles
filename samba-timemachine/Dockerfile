@@ -4,7 +4,7 @@ ENV SAMBA_VERSION 4.8.2
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends --yes install \
         samba \
-        samba-libs \
+        samba-vfs-modules \
     && rm -rf /var/lib/apt/lists/*
 
 ADD samba.conf /etc/samba/smb.conf
