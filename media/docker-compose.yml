@@ -10,7 +10,7 @@ networks:
     internal:
         driver: bridge
         driver_opts:
-            com.docker.network.bridge.enable_ip_masquerade: "false"
+            com.docker.network.bridge.enable_ip_masquerade: "true"
         ipam:
             driver: default
             config:
