@@ -1,9 +1,9 @@
 FROM debian:buster-20180625
-ENV SAMBA_VERSION 4.8.4
+ENV SAMBA_VERSION "2:4.8.2+dfsg-2"
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends --yes install \
-        samba \
+        samba="$SAMBA_VERSION" \
         samba-vfs-modules \
     && rm -rf /var/lib/apt/lists/*
 
