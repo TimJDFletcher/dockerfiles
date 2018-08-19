@@ -1,4 +1,4 @@
-FROM debian:stable-20180213
+FROM debian:stable-20180625
 
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends --yes install \
@@ -6,9 +6,11 @@ RUN apt-get update \
     ca-certificates \
     curl
 
-ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.1.5/supercronic-linux-amd64 \
+ENV SUPERCRONIC_VERSION=v0.1.6 \
     SUPERCRONIC=supercronic-linux-amd64 \
-    SUPERCRONIC_SHA1SUM=9aeb41e00cc7b71d30d33c57a2333f2c2581a201
+    SUPERCRONIC_SHA1SUM=c3b78d342e5413ad39092fd3cfc083a85f5e2b75
+
+ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/$SUPERCRONIC_VERSION/$SUPERCRONIC
 
 RUN curl -fsSLO "$SUPERCRONIC_URL" \
  && echo "${SUPERCRONIC_SHA1SUM}  ${SUPERCRONIC}" | sha1sum -c - \
