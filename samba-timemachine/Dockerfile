@@ -1,4 +1,4 @@
-FROM debian:buster-20180625
+FROM debian:buster-20180831
 ENV SAMBA_VERSION "2:4.8.5+dfsg-1"
 
 RUN apt-get update && \
