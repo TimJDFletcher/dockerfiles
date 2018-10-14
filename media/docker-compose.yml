@@ -86,11 +86,11 @@ services:
             PGID: 109 
             PUID: 109
             TZ: Europe/Berlin
-    sickrage:
+    medusa:
         depends_on:
             - transmission
             - kodi-headless
-        image: linuxserver/sickrage
+        image: linuxserver/medusa
         ports:
             - 8081:8081
         volumes:
