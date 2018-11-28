@@ -1,10 +1,8 @@
 FROM debian:stable-20181112
 
 RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends --yes install \
-    offlineimap \
-    ca-certificates \
-    curl
+    && DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends --yes \
+    install offlineimap ca-certificates curl
 
 ENV SUPERCRONIC_VERSION=v0.1.6 \
     SUPERCRONIC=supercronic-linux-amd64 \
