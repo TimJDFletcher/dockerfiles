@@ -20,4 +20,16 @@ Set the environment variables USER or PASS to override, if PASS is set to `RANDO
 
 The container only runs smbd to find it on the network the best way is avahi (mDNS) there is an example service file included. This can be copied to /etc/avahi/services/timemachine.service or run in a container.
 
+# Quotas
+
+To limit the amount of space the TimeMachine will use to backup to, you can create a .plist file in the root of the backup directory. 
+
+```
+/usr/libexec/PlistBuddy -c 'Set :GlobalQuota 500000000000' .com.apple.TimeMachine.quota.plist
+```
+
+Taken from: http://movq.us/2017/04/09/time-machine-quotas/
+
+# Docker image builds
+
 Repo is auto built here: https://hub.docker.com/r/timjdfletcher/samba-timemachine/
