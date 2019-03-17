@@ -1,12 +1,12 @@
-FROM debian:stable-20181112
+FROM debian:stable-20190228
 
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends --yes \
     install offlineimap ca-certificates curl
 
-ENV SUPERCRONIC_VERSION=v0.1.6 \
+ENV SUPERCRONIC_VERSION=v0.1.8 \
     SUPERCRONIC=supercronic-linux-amd64 \
-    SUPERCRONIC_SHA1SUM=c3b78d342e5413ad39092fd3cfc083a85f5e2b75
+    SUPERCRONIC_SHA1SUM=be43e64c45acd6ec4fce5831e03759c89676a0ea
 
 ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/$SUPERCRONIC_VERSION/$SUPERCRONIC
 
