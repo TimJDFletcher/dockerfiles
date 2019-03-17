@@ -1,5 +1,5 @@
-FROM debian:buster-20181112
-ENV SAMBA_VERSION "2:4.9.2+dfsg-1"
+FROM debian:buster-20190228
+ENV SAMBA_VERSION "2:4.9.4+dfsg-4"
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get --no-install-recommends --yes \
