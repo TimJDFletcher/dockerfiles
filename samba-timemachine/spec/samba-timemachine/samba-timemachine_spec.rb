@@ -1,53 +1,67 @@
-require 'spec_helper'
+require 'docker'
+require 'serverspec'
 
-# Helpers for RSpec
-module Helpers
-  def os_version
-    command('cat /etc/os-release').stdout
-  end
+# Define packages
+packages = {
+  'samba' => {
+    version: '2:4.9.5+dfsg-3'
+  },
+  'samba-vfs-modules' => {
+    version: '2:4.9.5+dfsg-3'
+  }
+}
 
-  def compose
-    @compose ||= Docker::Compose.new
-  end
-
-  def ssh_private_key
-    OpenSSL::PKey::RSA.new(2048).to_s
-
-  end
-end
-
-RSpec.configure do |c|
-  c.wait_timeout = 120
-
-  c.include Helpers
-  c.extend Helpers
-end
-
-describe 'samba-timemachine Docker container', :extend_helpers do
+describe 'Samba Timemachine Container' do
   set :os, family: :debian
   set :backend, :docker
-  set :docker_container, 'samba-timemachine'
+  set :docker_image, 'samba-timemachine'
 
-  agent_auto_register_key = 'very_secret_key'
-
-  before(:all) do
-    ENV['AGENT_AUTO_REGISTER_KEY'] = agent_auto_register_key
-    ENV['GOCD_SSH_PRIVATE_KEY'] = ssh_private_key
-    ENV['GOCD_TW_DEV_PASSWORD'] = 'qUqP5cyxm6YcTAhz05Hph5gvu9M=' # test
-
-    compose.up('samba-timemachine', detached: true)
-    puts 'Waiting for samba-timemachine to become available...'
-    wait_for(port(10445)).to be_listening.with('tcp')
-    puts 'samba-timemachine is available'
-    puts
+  describe file('/etc/os-release') do
+    its(:content) { is_expected.to match(/"Debian GNU\/Linux buster\/sid"/) }
   end
-  after(:all) do
-    puts 'Stopping container again'
-    compose.kill
-    compose.rm(force: true)
+
+  packages.each do |name, details|
+    describe package(name) do
+      it { should be_installed.with_version(details[:version]) }
+    end
   end
 
   describe user('timemachine') do
     it { should exist }
+  end
+
+  describe file('/etc/samba/smb.conf') do
+    it { should exist }
+    it { should be_file }
+    it { should be_mode 644 }
+    it { should be_owned_by 'root' }
+  end
+
+  describe command('/usr/bin/testparm') do
+    its(:stderr) { should match(/Loaded services file OK/) }
+    its(:exit_status) { should eq 0 }
+  end
+
+  describe command('smbpasswd -e timemachine') do
+    its(:stdout) { should match(/Enabled user timemachine./) }
+    its(:exit_status) { should eq 0 }
+  end
+
+  describe file('/entrypoint') do
+    it { should exist }
+    it { should be_file }
+    it { should be_mode 755 }
+    it { should be_owned_by 'root' }
+  end
+
+  describe process('smbd') do
+    it { is_expected.to be_running }
+    its(:args) { is_expected.to contain('--no-process-group --log-stdout --foreground') }
+    its(:user) { is_expected.to eq('root') }
+  end
+
+  describe command('ss -tulpn') do
+    its(:stdout) { should match(/^tcp.*0.0.0.0:445.*\"smbd\",pid=1/)}
+    its(:exit_status) { should eq 0 }
   end
 end
