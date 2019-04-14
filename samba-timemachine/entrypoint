@@ -13,21 +13,21 @@ setPassword()
 
 createUser()
 {
-    groupadd --gid $PGID timemachine && \
-    useradd --uid $PUID --gid $PGID --home /backups --shell /bin/nologin --no-create-home timemachine && \
-    echo Setting password of ${USER} to ${PASS}
-    printf "$PASS\n$PASS\n" | smbpasswd -a -s ${USER}
+    groupadd --gid $PGID timemachine 
+    useradd --uid $PUID --gid $PGID --home /backups --shell /bin/nologin --no-create-home timemachine 
     printf "timemachine = $USER" > /etc/samba/users.map
+    echo Setting SAMBA password of ${USER} to ${PASS}
+    printf "$PASS\n$PASS\n" | smbpasswd -a -s timemachine
 }
 
 backupConfig()
 {
-    if [ ! -d ${BACKUPDIR} ] ; then
-        echo ${BACKUPDIR} not found did you forget to add the volume?
-        exit 1
-    else
+    if grep ${BACKUPDIR} /proc/mounts ; then
         chown -R ${PUID}:${PGID} ${BACKUPDIR}
         chmod -R u+rwX,g=,o= ${BACKUPDIR}
+    else
+        echo ${BACKUPDIR} volume not found did you forget to add the volume?
+        exit 1
     fi
 }
 

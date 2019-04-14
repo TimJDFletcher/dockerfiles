@@ -6,6 +6,7 @@ build () {
 }
 
 _test() {
+    build
     bundle install --path vendor/bundle
     bundle exec rspec --format documentation
 }

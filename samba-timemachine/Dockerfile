@@ -14,7 +14,6 @@ ADD samba.conf /etc/samba/smb.conf
 RUN /usr/bin/testparm -s
 
 EXPOSE 445/tcp
-VOLUME /backups
 
 ADD entrypoint /entrypoint
 RUN chmod 0755 /entrypoint

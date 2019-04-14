@@ -1,5 +1,3 @@
-require 'docker'
-require 'serverspec'
 require 'spec_helper'
 
 # Define packages
@@ -12,14 +10,25 @@ packages = {
   }
 }
 
+def compose
+  @compose ||= Docker::Compose.new
+end
+
 describe 'Samba Timemachine Container' do
   before(:all) do
-    image = Docker::Image.build_from_dir('.')
-    set :env, { "PUID" => "1234"}
-    @container = image.run()
-    set :os, family: :debian
     set :backend, :docker
-    set :docker_container, @container.id
+    set :docker_container, 'samba-timemachine'
+    ENV['PUID'] = '1234' 
+    ENV['PGID'] = '1234' 
+    ENV['USER'] = 'testuser' 
+    ENV['PASS'] = 'Password123' 
+    compose.up('samba-timemachine', detached: true)
+  end
+
+  after(:all) do
+    puts 'Stopping container again'
+    compose.kill
+    compose.rm(force: true)
   end
 
   describe file('/etc/os-release') do
@@ -52,18 +61,18 @@ describe 'Samba Timemachine Container' do
     it { should be_mode 644 }
     it { should be_owned_by 'root' }
     it { should be_grouped_into 'root' }
-    its(:content) { is_expected.to match("timemachine = timemachine") }
+    its(:content) { is_expected.to match("timemachine = testuser") }
   end
 
   describe group('timemachine') do
     it { should exist }
-    it { should have_gid '999' }
+    it { should have_gid '1234' }
   end 
 
   describe user('timemachine') do
     it { should exist }
-    it { should have_uid '999' }
-    it { should belong_to_group '999' }
+    it { should have_uid '1234' }
+    it { should belong_to_group '1234' }
   end 
 
   describe file('/backups') do
@@ -93,10 +102,5 @@ describe 'Samba Timemachine Container' do
   describe command('ss -tulpn') do
     its(:stdout) { should match(/^tcp.*0.0.0.0:445.*\"smbd\",pid=1/)}
     its(:exit_status) { should eq 0 }
-  end
-
-  after(:all) do
-     @container.kill
-     @container.delete(:force => true)
   end
 end

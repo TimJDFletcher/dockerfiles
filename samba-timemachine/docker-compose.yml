@@ -2,7 +2,13 @@ version: '3.3'
 
 services:
     samba-timemachine:
-        image: timjdfletcher/samba-timemachine:latest
+        image: samba-timemachine:latest
+        container_name: samba-timemachine
+        environment:
+            PUID: ${PUID}
+            PGID: ${PGID}
+            USER: ${USER}
+            PASS: ${PASS}
         ports:
             - 10445:445
         volumes:
