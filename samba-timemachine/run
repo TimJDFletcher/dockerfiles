@@ -6,8 +6,9 @@ build () {
 }
 
 _test() {
-  bundle install --path vendor/bundle
-  bundle exec rspec
+    build
+    bundle install --path vendor/bundle
+    bundle exec rspec
 }
 
 CMD=${1:-}
