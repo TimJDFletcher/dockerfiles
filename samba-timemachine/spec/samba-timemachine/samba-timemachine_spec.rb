@@ -1,5 +1,6 @@
 require 'docker'
 require 'serverspec'
+require 'spec_helper'
 
 # Define packages
 packages = {
@@ -12,9 +13,14 @@ packages = {
 }
 
 describe 'Samba Timemachine Container' do
-  set :os, family: :debian
-  set :backend, :docker
-  set :docker_image, 'samba-timemachine'
+  before(:all) do
+    image = Docker::Image.build_from_dir('.')
+    set :env, { "PUID" => "1234"}
+    @container = image.run()
+    set :os, family: :debian
+    set :backend, :docker
+    set :docker_container, @container.id
+  end
 
   describe file('/etc/os-release') do
     its(:content) { is_expected.to match(/"Debian GNU\/Linux buster\/sid"/) }
@@ -63,5 +69,10 @@ describe 'Samba Timemachine Container' do
   describe command('ss -tulpn') do
     its(:stdout) { should match(/^tcp.*0.0.0.0:445.*\"smbd\",pid=1/)}
     its(:exit_status) { should eq 0 }
+  end
+
+  after(:all) do
+     @container.kill
+     @container.delete(:force => true)
   end
 end
