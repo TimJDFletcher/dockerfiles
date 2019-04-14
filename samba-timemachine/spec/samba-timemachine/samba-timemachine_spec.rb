@@ -1,46 +1,53 @@
-# spec/baseimage_spec.rb
+require 'spec_helper'
 
-require "serverspec"
-require "docker"
-
-describe "Dockerfile" do
-  before(:all) do
-    image = Docker::Image.build_from_dir('.')
-
-    set :os, family: :debian
-    set :backend, :docker
-    set :docker_image, image.id
-  end
-
-  it "installs the right version of Debain" do
-    expect(os_version).to include("Debian GNU/Linux buster/sid")
-  end
-
-  describe file('/entrypoint') do
-    it { should exist }
-    it { should be_file }
-    it { should be_mode 755 }
-    it { should be_owned_by 'root' }
-  end
-
-  describe package('samba') do
-    it { should be_installed }
-  end
-
-  describe file('/etc/samba/smb.conf') do
-    it { should exist }
-    it { should be_file }
-    it { should be_mode 644 }
-    it { should be_owned_by 'root' }
-  end
-
-  describe command('/usr/bin/testparm') do
-    its(:stderr) { should match(/Loaded services file OK/) }
-    its(:exit_status) { should eq 0 }
-  end
-
+# Helpers for RSpec
+module Helpers
   def os_version
-    command("cat /etc/os-release").stdout
+    command('cat /etc/os-release').stdout
   end
 
+  def compose
+    @compose ||= Docker::Compose.new
+  end
+
+  def ssh_private_key
+    OpenSSL::PKey::RSA.new(2048).to_s
+
+  end
+end
+
+RSpec.configure do |c|
+  c.wait_timeout = 120
+
+  c.include Helpers
+  c.extend Helpers
+end
+
+describe 'samba-timemachine Docker container', :extend_helpers do
+  set :os, family: :debian
+  set :backend, :docker
+  set :docker_container, 'samba-timemachine'
+
+  agent_auto_register_key = 'very_secret_key'
+
+  before(:all) do
+    ENV['AGENT_AUTO_REGISTER_KEY'] = agent_auto_register_key
+    ENV['GOCD_SSH_PRIVATE_KEY'] = ssh_private_key
+    ENV['GOCD_TW_DEV_PASSWORD'] = 'qUqP5cyxm6YcTAhz05Hph5gvu9M=' # test
+
+    compose.up('samba-timemachine', detached: true)
+    puts 'Waiting for samba-timemachine to become available...'
+    wait_for(port(10445)).to be_listening.with('tcp')
+    puts 'samba-timemachine is available'
+    puts
+  end
+  after(:all) do
+    puts 'Stopping container again'
+    compose.kill
+    compose.rm(force: true)
+  end
+
+  describe user('timemachine') do
+    it { should exist }
+  end
 end
