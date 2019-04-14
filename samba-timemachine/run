@@ -1,0 +1,20 @@
+#!/bin/bash
+set -eu -o pipefail
+
+build () {
+    docker build -t samba-timemachine:latest -f Dockerfile .
+}
+
+_test() {
+  bundle install --path vendor/bundle
+  bundle exec rspec
+}
+
+CMD=${1:-}
+
+shift || true
+case ${CMD} in
+    build) build ;;
+    test) _test ;;
+    *) usage ;;
+esac
