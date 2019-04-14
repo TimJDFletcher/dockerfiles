@@ -23,6 +23,7 @@ createUser()
 backupConfig()
 {
     if grep ${BACKUPDIR} /proc/mounts ; then
+        echo Changing ownership of ${BACKUPDIR} to ${PUID}:${PGID}, this may take a few minutes
         chown -R ${PUID}:${PGID} ${BACKUPDIR}
         chmod -R u+rwX,g=,o= ${BACKUPDIR}
     else
