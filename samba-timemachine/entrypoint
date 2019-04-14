@@ -19,9 +19,9 @@ createUser()
     echo "Creating system users"
     groupadd --force --gid $PGID timemachine 
     useradd --uid $PUID --gid $PGID --home /backups --shell /bin/nologin --no-create-home timemachine 
-    printf "timemachine = $USER" > /etc/samba/users.map
     echo "Create SAMBA user ${USER} with a password of ${PASS}"
     printf "$PASS\n$PASS\n" | smbpasswd -a -s timemachine
+    printf "timemachine = $USER" > /etc/samba/users.map
 }
 
 checkBackupDir()
