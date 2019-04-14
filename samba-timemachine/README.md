@@ -1,6 +1,6 @@
 # samba-timemachine-docker
 
-This is a docker container that contains the latest (4.8.0-rc2) version of SAMBA built via git and configured to provide Apple "Time Capsule" like backups.
+This is a docker container that contains the latest (4.9.5+dfsg-3) version of SAMBA from Debian Buster configured to provide Apple "Time Capsule" like backups.
 
 To use the docker container do the following:
 
@@ -14,21 +14,29 @@ docker run -d -t \
 
 Note that due to the use of port 10445 this container can be run along side a normal SAMBA service.
 
-There is a single user called `timemachine` with a password of `password` by default. 
+# Settings
 
-Set the environment variables USER or PASS to override, if PASS is set to `RANDOM` then a random 16 character password will be generated for the user.
+| Variable  | Function                | Default.    |
+| ----------|:-----------------------:|-------------:|
+| USER      | Time Machine User       | timemachine |
+| PASS      | User  Password          | password    |
+| PUID      | UserID                  | 999         |
+| PGID      | GroupID                 | 999         |
+| QUOTA     | Time Machine Size in MB | 512000      |
+
+# Connecting
+
+There is a single user called `timemachine` with a password of `password` by default. 
 
 The container only runs smbd to find it on the network the best way is avahi (mDNS) there is an example service file included. This can be copied to /etc/avahi/services/timemachine.service or run in a container.
 
 # Quotas
 
-To limit the amount of space the TimeMachine will use to backup to, you can create a .plist file in the root of the backup directory. 
+The container supports setting of quota to limit the max size of backups, it defaults to 512GB
 
-```
-/usr/libexec/PlistBuddy -c 'Set :GlobalQuota 500000000000' .com.apple.TimeMachine.quota.plist
-```
+# Testing
 
-Taken from: http://movq.us/2017/04/09/time-machine-quotas/
+Serverspec tests are included, to run them use the run script: `./run test`
 
 # Docker image builds
 
