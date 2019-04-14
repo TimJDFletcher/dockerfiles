@@ -11,6 +11,7 @@ RUN apt-get update && \
     touch /etc/samba/users.map
 
 ADD samba.conf /etc/samba/smb.conf
+ADD TimeMachine.quota.tmpl /etc/TimeMachine.quota.tmpl
 RUN /usr/bin/testparm -s
 
 EXPOSE 445/tcp

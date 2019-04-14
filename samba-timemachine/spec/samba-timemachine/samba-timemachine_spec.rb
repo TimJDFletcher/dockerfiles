@@ -21,7 +21,8 @@ describe 'Samba Timemachine Container' do
     ENV['PUID'] = '1234' 
     ENV['PGID'] = '1234' 
     ENV['USER'] = 'testuser' 
-    ENV['PASS'] = 'Password123' 
+    ENV['PASS'] = 'Password123'
+    ENV['QUOTA'] = '500000' 
     compose.up('samba-timemachine', detached: true)
   end
 
@@ -62,6 +63,15 @@ describe 'Samba Timemachine Container' do
     it { should be_owned_by 'root' }
     it { should be_grouped_into 'root' }
     its(:content) { is_expected.to match("timemachine = testuser") }
+  end
+
+  describe file('/backups/.com.apple.TimeMachine.quota.plist') do
+    it { should exist }
+    it { should be_file }
+    it { should be_mode 600 }
+    it { should be_owned_by 'timemachine' }
+    it { should be_grouped_into 'timemachine' }
+    its(:content) { is_expected.to match("500000000000") }
   end
 
   describe group('timemachine') do

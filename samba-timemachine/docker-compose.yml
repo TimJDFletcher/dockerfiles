@@ -9,6 +9,7 @@ services:
             PGID: ${PGID}
             USER: ${USER}
             PASS: ${PASS}
+            QUOTA: ${QUOTA}
         ports:
             - 10445:445
         volumes:
