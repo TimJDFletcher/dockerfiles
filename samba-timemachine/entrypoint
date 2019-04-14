@@ -20,23 +20,32 @@ createUser()
     printf "$PASS\n$PASS\n" | smbpasswd -a -s timemachine
 }
 
-backupConfig()
+checkBackupDir()
 {
-    if grep ${BACKUPDIR} /proc/mounts ; then
-        echo Changing ownership of ${BACKUPDIR} to ${PUID}:${PGID}, this may take a few minutes
-        chown -R ${PUID}:${PGID} ${BACKUPDIR}
-        chmod -R u+rwX,g=,o= ${BACKUPDIR}
-    else
+    if ! grep ${BACKUPDIR} /proc/mounts ; then 
         echo ${BACKUPDIR} volume not found did you forget to add the volume?
         exit 1
     fi
 }
 
+backupConfig()
+{
+    echo Changing ownership of ${BACKUPDIR} to ${PUID}:${PGID}, this may take a few minutes
+    chown -R ${PUID}:${PGID} ${BACKUPDIR}
+    chmod -R u+rwX,g=,o= ${BACKUPDIR}
+}
+
+startSMB()
+{
+    exec /usr/sbin/smbd --no-process-group --log-stdout --foreground "$@"
+}
+
 if [[ -z $1 ]] || [[ ${1:0:1} == '-' ]] ; then
+    checkBackupDir
     setPassword
     createUser
     backupConfig
-    exec /usr/sbin/smbd --no-process-group --log-stdout --foreground "$@"
+    startSMB
 else
     exec "$@"
 fi
