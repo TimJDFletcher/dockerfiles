@@ -32,8 +32,11 @@ describe 'Samba Timemachine Container' do
     end
   end
 
-  describe user('timemachine') do
+  describe file('/entrypoint') do
     it { should exist }
+    it { should be_file }
+    it { should be_mode 755 }
+    it { should be_owned_by 'root' }
   end
 
   describe file('/etc/samba/smb.conf') do
@@ -43,21 +46,42 @@ describe 'Samba Timemachine Container' do
     it { should be_owned_by 'root' }
   end
 
+  describe file('/etc/samba/users.map') do
+    it { should exist }
+    it { should be_file }
+    it { should be_mode 644 }
+    it { should be_owned_by 'root' }
+    it { should be_grouped_into 'root' }
+    its(:content) { is_expected.to match("timemachine = timemachine") }
+  end
+
+  describe group('timemachine') do
+    it { should exist }
+    it { should have_gid '999' }
+  end 
+
+  describe user('timemachine') do
+    it { should exist }
+    it { should have_uid '999' }
+    it { should belong_to_group '999' }
+  end 
+
+  describe file('/backups') do
+    it { should exist }
+    it { should be_directory }
+    it { should be_mode 700 }
+    it { should be_owned_by 'timemachine' }
+    it { should be_grouped_into 'timemachine' }
+  end
+
   describe command('/usr/bin/testparm') do
     its(:stderr) { should match(/Loaded services file OK/) }
     its(:exit_status) { should eq 0 }
   end
 
-  describe command('smbpasswd -e timemachine') do
+  describe command('/usr/bin/smbpasswd -e timemachine') do
     its(:stdout) { should match(/Enabled user timemachine./) }
     its(:exit_status) { should eq 0 }
-  end
-
-  describe file('/entrypoint') do
-    it { should exist }
-    it { should be_file }
-    it { should be_mode 755 }
-    it { should be_owned_by 'root' }
   end
 
   describe process('smbd') do
