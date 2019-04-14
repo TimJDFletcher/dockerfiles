@@ -1,11 +1,13 @@
 version: '3.3'
 
 services:
-    samba:
+    samba-timemachine:
         image: timjdfletcher/samba-timemachine:latest
         ports:
             - 10445:445
         volumes:
-            - /WDZBA365/backups/timemachine:/backups:rw
+            - backups:/backups:rw
         restart: unless-stopped
         tty: true
+volumes:
+    backups:
