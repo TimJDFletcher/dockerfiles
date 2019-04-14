@@ -16,46 +16,51 @@ setPassword()
 
 createUser()
 {
-    groupadd --gid $PGID timemachine 
+    echo "Creating system users"
+    groupadd --force --gid $PGID timemachine 
     useradd --uid $PUID --gid $PGID --home /backups --shell /bin/nologin --no-create-home timemachine 
     printf "timemachine = $USER" > /etc/samba/users.map
-    echo Setting SAMBA password of ${USER} to ${PASS}
+    echo "Create SAMBA user ${USER} with a password of ${PASS}"
     printf "$PASS\n$PASS\n" | smbpasswd -a -s timemachine
 }
 
 checkBackupDir()
 {
-    if ! grep ${BACKUPDIR} /proc/mounts ; then 
-        echo ${BACKUPDIR} volume not found did you forget to add the volume?
+    printf "Backups will be written to: "
+    if ! grep ${BACKUPDIR} /proc/mounts | awk '{print $1}' ; then 
+        echo "error volume not found did you forget to add the volume?"
         exit 1
     fi
 }
 
 configureQuota()
 {
-    echo Setting quote to ${QUOTA}MB
+    echo "Setting quote to ${QUOTA}MB"
     QUOTA=$(($QUOTA * 1048576))
     sed "s%REPLACE_TM_SIZE%${QUOTA}%" /etc/TimeMachine.quota.tmpl > ${BACKUPDIR}/.com.apple.TimeMachine.quota.plist
 }
 backupConfig()
 {
-    echo Marking ${BACKUPDIR} as supported by timemmachine
+    echo "Marking ${BACKUPDIR} as supported by timemmachine"
     touch ${BACKUPDIR}/.com.apple.TimeMachine.supported
 
-    echo Changing ownership of ${BACKUPDIR} to ${PUID}:${PGID}, this may take a few minutes
+    echo "Changing ownership of ${BACKUPDIR} to ${PUID}:${PGID}, this may take a few minutes"
     chown -R ${PUID}:${PGID} ${BACKUPDIR}
 
-    echo Restricting permssions on ${BACKUPDIR}, this may take a few minutes
+    echo "Restricting permssions on ${BACKUPDIR}, this may take a few minutes"
     chmod -R u+rwX,g=,o= ${BACKUPDIR}
 }
 
 startSMB()
 {
-    echo Starting SAMBA....
+    echo "==================================================================================="
+    echo "=                 Starting SAMBA, logs after this are from SAMBA                  ="
+    echo "==================================================================================="
     exec /usr/sbin/smbd --no-process-group --log-stdout --foreground "$@"
 }
 
 if [[ -z $1 ]] || [[ ${1:0:1} == '-' ]] ; then
+    echo "Configuring container as a timemachine backup target"
     checkBackupDir
     setPassword
     createUser
