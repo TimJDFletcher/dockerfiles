@@ -2,11 +2,11 @@
 set -eu -o pipefail
 
 build () {
-    docker build -t samba-timemachine:latest -f Dockerfile .
+    docker build $@ -t samba-timemachine:latest -f Dockerfile .
 }
 
 _test() {
-    build
+    build --no-cache
     bundle install --path vendor/bundle
     bundle exec rspec --format documentation
 }
