@@ -33,7 +33,7 @@ describe 'Samba Timemachine Container' do
   end
 
   describe file('/etc/os-release') do
-    its(:content) { is_expected.to match(/"Debian GNU\/Linux buster\/sid"/) }
+    its(:content) { is_expected.to match(/"Debian GNU\/Linux 10 \(buster\)"/) }
   end
 
   packages.each do |name, details|
