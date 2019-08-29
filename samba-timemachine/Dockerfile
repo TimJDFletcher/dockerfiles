@@ -1,6 +1,6 @@
 FROM debian:buster-20190812-slim
 
-ENV SAMBA_VERSION "2:4.9.5+dfsg-4"
+ENV SAMBA_VERSION "2:4.9.5+dfsg-5"
 ENV BACKUPDIR /backups
 
 RUN apt-get update && \
