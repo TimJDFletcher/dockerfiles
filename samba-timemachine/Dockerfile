@@ -1,4 +1,4 @@
-FROM debian:buster-20190506
+FROM debian:buster-20190812-slim
 
 ENV SAMBA_VERSION "2:4.9.5+dfsg-4"
 ENV BACKUPDIR /backups
