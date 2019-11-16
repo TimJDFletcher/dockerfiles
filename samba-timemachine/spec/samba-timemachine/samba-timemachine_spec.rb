@@ -18,11 +18,11 @@ describe 'Samba Timemachine Container' do
   before(:all) do
     set :backend, :docker
     set :docker_container, 'samba-timemachine'
-    ENV['PUID'] = '1234' 
-    ENV['PGID'] = '1234' 
-    ENV['USER'] = 'testuser' 
+    ENV['PUID'] = '1234'
+    ENV['PGID'] = '1234'
+    ENV['USER'] = 'testuser'
     ENV['PASS'] = 'Password123'
-    ENV['QUOTA'] = '500000' 
+    ENV['QUOTA'] = '500000'
     compose.up('samba-timemachine', detached: true)
   end
 
@@ -62,7 +62,7 @@ describe 'Samba Timemachine Container' do
     it { should be_mode 644 }
     it { should be_owned_by 'root' }
     it { should be_grouped_into 'root' }
-    its(:content) { is_expected.to match("timemachine = testuser") }
+    its(:content) { is_expected.to match('timemachine = testuser') }
   end
 
   describe file('/backups/.com.apple.TimeMachine.supported') do
@@ -76,19 +76,19 @@ describe 'Samba Timemachine Container' do
     it { should be_mode 600 }
     it { should be_owned_by 'timemachine' }
     it { should be_grouped_into 'timemachine' }
-    its(:content) { is_expected.to match("524288000000") }
+    its(:content) { is_expected.to match('524288000000') }
   end
 
   describe group('timemachine') do
     it { should exist }
     it { should have_gid '1234' }
-  end 
+  end
 
   describe user('timemachine') do
     it { should exist }
     it { should have_uid '1234' }
     it { should belong_to_group '1234' }
-  end 
+  end
 
   describe file('/backups') do
     it { should exist }
