@@ -2,10 +2,10 @@ require 'spec_helper'
 
 # Define packages
 packages = {
-  'samba' => {
+  samba: {
     version: '2:4.9.5+dfsg-5+deb10u1'
   },
-  'samba-vfs-modules' => {
+  'samba-vfs-modules': {
     version: '2:4.9.5+dfsg-5+deb10u1'
   }
 }
@@ -33,7 +33,7 @@ describe 'Samba Timemachine Container' do
   end
 
   describe file('/etc/os-release') do
-    its(:content) { is_expected.to match(/"Debian GNU\/Linux 10 \(buster\)"/) }
+    its(:content) { is_expected.to match(%r{"Debian GNU/Linux 10 \(buster\)"}) }
   end
 
   packages.each do |name, details|
@@ -115,7 +115,7 @@ describe 'Samba Timemachine Container' do
   end
 
   describe command('ss -tulpn') do
-    its(:stdout) { should match(/^tcp.*0.0.0.0:445.*\"smbd\",pid=1/)}
+    its(:stdout) { should match(/^tcp.*0.0.0.0:445.*"smbd",pid=1/)}
     its(:exit_status) { should eq 0 }
   end
 end
