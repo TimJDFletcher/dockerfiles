@@ -1,16 +1,16 @@
 #!/bin/bash
 set -e -o pipefail
 
-export USER=${USER:-timemachine}
-export PASS=${PASS:-password}
-export PUID=${PUID:-999}
-export PGID=${PGID:-999}
+export USER="${USER:-timemachine}"
+export PASS="${PASS:-password}"
+export PUID="${PUID:-999}"
+export PGID="${PGID:-999}"
 export QUOTA="${QUOTA:-512000}"
 
 setPassword()
 {
-    if [ $PASS == RANDOM ] ; then
-        PASS=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
+    if [ "$PASS" == RANDOM ] ; then
+        PASS=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 16 | head -n 1)
     fi
 }
 
@@ -18,18 +18,18 @@ createUser()
 {
     echo "Creating system users"
     id -g timemachine > /dev/null || \
-        addgroup --gid $PGID timemachine 
+        addgroup --gid "$PGID" timemachine
     id -u timemachine > /dev/null || \
-        useradd --uid $PUID --gid $PGID --home /backups --shell /bin/nologin --no-create-home timemachine
+        useradd --uid "$PUID" --gid "$PGID" --home /backups --shell /bin/nologin --no-create-home timemachine
     echo "Create SAMBA user ${USER} with a password of ${PASS}"
-    printf "$PASS\n$PASS\n" | smbpasswd -a -s timemachine
-    printf "timemachine = $USER" > /etc/samba/users.map
+    printf "%s\n%s\n" "${PASS}" "${PASS}" | smbpasswd -a -s timemachine
+    printf "timemachine = %s" "${USER}" > /etc/samba/users.map
 }
 
 checkBackupDir()
 {
     printf "Backups will be written to: "
-    if ! grep ${BACKUPDIR} /proc/mounts | awk '{print $1}' ; then 
+    if ! grep "${BACKUPDIR}" /proc/mounts | awk '{print $1}' ; then
         echo "error volume not found did you forget to add the volume?"
         exit 1
     fi
@@ -38,19 +38,19 @@ checkBackupDir()
 configureQuota()
 {
     echo "Setting quote to ${QUOTA}MB"
-    QUOTA=$(($QUOTA * 1048576))
-    sed "s%REPLACE_TM_SIZE%${QUOTA}%" /etc/TimeMachine.quota.tmpl > ${BACKUPDIR}/.com.apple.TimeMachine.quota.plist
+    QUOTA=$((QUOTA * 1048576))
+    sed "s%REPLACE_TM_SIZE%${QUOTA}%" /etc/TimeMachine.quota.tmpl > "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
 }
 backupConfig()
 {
     echo "Marking ${BACKUPDIR} as supported by timemmachine"
-    touch ${BACKUPDIR}/.com.apple.TimeMachine.supported
+    touch "${BACKUPDIR}"/.com.apple.TimeMachine.supported
 
     echo "Changing ownership of ${BACKUPDIR} to ${PUID}:${PGID}, this may take a few minutes"
-    chown -R ${PUID}:${PGID} ${BACKUPDIR}
+    chown -R "${PUID}":"${PGID}" "${BACKUPDIR}"
 
     echo "Restricting permssions on ${BACKUPDIR}, this may take a few minutes"
-    chmod -R u+rwX,g=,o= ${BACKUPDIR}
+    chmod -R u+rwX,g=,o= "${BACKUPDIR}"
 }
 
 startSMB()
@@ -61,14 +61,14 @@ startSMB()
     exec /usr/sbin/smbd --no-process-group --log-stdout --foreground "$@"
 }
 
-if [[ -z $1 ]] || [[ ${1:0:1} == '-' ]] ; then
+if [[ -z ${1} ]] || [[ ${1:0:1} == '-' ]] ; then
     echo "Configuring container as a timemachine backup target"
     checkBackupDir
     setPassword
     createUser
     configureQuota
     backupConfig
-    startSMB
+    startSMB "$@"
 else
     exec "$@"
 fi
