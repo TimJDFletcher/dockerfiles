@@ -1,4 +1,4 @@
-FROM debian:buster-20190910-slim
+FROM debian:buster-20191014-slim
 
 ENV SAMBA_VERSION "2:4.9.5+dfsg-5+deb10u1"
 ENV BACKUPDIR /backups
@@ -13,7 +13,6 @@ RUN apt-get update && \
 
 ADD samba.conf /etc/samba/smb.conf
 ADD TimeMachine.quota.tmpl /etc/TimeMachine.quota.tmpl
-RUN /usr/bin/testparm -s
 
 EXPOSE 445/tcp
 
