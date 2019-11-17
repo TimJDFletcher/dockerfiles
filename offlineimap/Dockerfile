@@ -1,16 +1,17 @@
-FROM debian:stable-20190326
+FROM debian:buster-20191014-slim
 
-ENV OFFLINEIMAP_VERSION="7.0.12+dfsg1-2"
+ENV OFFLINEIMAP_VERSION="7.2.3+dfsg1-1"
 
-ENV SUPERCRONIC_VERSION=v0.1.8 \
+ENV SUPERCRONIC_VERSION=v0.1.9 \
     SUPERCRONIC=supercronic-linux-amd64 \
-    SUPERCRONIC_SHA1SUM=be43e64c45acd6ec4fce5831e03759c89676a0ea
-
+    SUPERCRONIC_SHA1SUM=5ddf8ea26b56d4a7ff6faecdd8966610d5cb9d85
 ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/$SUPERCRONIC_VERSION/$SUPERCRONIC
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN apt-get update \
  && apt-get --no-install-recommends --yes install \
-    offlineimap="7.0.12+dfsg1-2" ca-certificates curl \
+    offlineimap="${OFFLINEIMAP_VERSION}" ca-certificates curl \
  && useradd --home-dir /email --no-create-home offlineimap \
  && curl -fsSLO "$SUPERCRONIC_URL" \
  && echo "${SUPERCRONIC_SHA1SUM}  ${SUPERCRONIC}" | sha1sum -c - \
@@ -21,11 +22,10 @@ RUN apt-get update \
  && apt-get autoremove --yes \
  && rm -rf /var/cache/apt
 
-ADD crontab /etc/crontab
+COPY crontab /etc/crontab
+COPY entrypoint /entrypoint
 
-ADD entrypoint /entrypoint
-
-RUN chmod 755 /entrypoint
+RUN chmod 0755 /entrypoint
 
 USER offlineimap
 
