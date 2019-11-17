@@ -2,17 +2,25 @@
 set -eu -o pipefail
 
 build () {
-    docker build $@ -t samba-timemachine:latest -f Dockerfile .
+    docker build -t samba-timemachine:tmp -f Dockerfile .
 }
 
 _test() {
-    build --no-cache
+    build
     bundle install --path vendor/bundle
     bundle exec rspec --format documentation
 }
 
 usage() {
-  echo "./run test|build"
+  echo "./run test|build|push"
+}
+
+push() {
+  docker buildx use testbuilder || docker buildx create --name testbuilder
+  docker buildx inspect --bootstrap
+  docker buildx build \
+    --platform linux/amd64,linux/arm64,linux/arm/v7 \
+    -t timjdfletcher/samba-timemachine:latest --push .
 }
 
 CMD=${1:-}
@@ -21,5 +29,6 @@ shift || true
 case ${CMD} in
     build) build ;;
     test) _test ;;
+    push) push ;;
     *) usage ;;
 esac
