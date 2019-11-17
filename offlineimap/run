@@ -1,0 +1,25 @@
+#!/bin/bash
+set -eu -o pipefail
+
+build () {
+    docker build "$@" -t offlineimap:tmp -f Dockerfile .
+}
+
+_test() {
+    build --no-cache
+    bundle install --path vendor/bundle
+    bundle exec rspec --format documentation
+}
+
+usage() {
+  echo "./run test|build"
+}
+
+CMD=${1:-}
+
+shift || true
+case ${CMD} in
+    build) build ;;
+    test) _test ;;
+    *) usage ;;
+esac
