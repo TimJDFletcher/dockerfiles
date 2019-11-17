@@ -1,6 +1,8 @@
 FROM debian:buster-20191014-slim
 
-ENV OFFLINEIMAP_VERSION="7.2.3+dfsg1-1"
+ENV OFFLINEIMAP_VERSION="7.2.3+dfsg1-1" \
+    CURL_VERSION="7.64.0-4" \
+    CA_CERTIFICATES_VERSION="20190110"
 
 ENV SUPERCRONIC_VERSION=v0.1.9 \
     SUPERCRONIC=supercronic-linux-amd64 \
@@ -11,7 +13,9 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN apt-get update \
  && apt-get --no-install-recommends --yes install \
-    offlineimap="${OFFLINEIMAP_VERSION}" ca-certificates curl \
+    offlineimap="${OFFLINEIMAP_VERSION}" \
+    ca-certificates="${CA_CERTIFICATES_VERSION}" \
+    curl="${CURL_VERSION}" \
  && useradd --home-dir /email --no-create-home offlineimap \
  && curl -fsSLO "$SUPERCRONIC_URL" \
  && echo "${SUPERCRONIC_SHA1SUM}  ${SUPERCRONIC}" | sha1sum -c - \
