@@ -16,6 +16,7 @@ usage() {
 }
 
 push() {
+  export DOCKER_CLI_EXPERIMENTAL=enabled
   docker buildx use testbuilder || docker buildx create --name testbuilder
   docker buildx inspect --bootstrap
   docker buildx build \
