@@ -19,18 +19,19 @@ arm64(){
 
 _install()
 {
-  cd /tmp
-  curl -fsSLO https://github.com/aptible/supercronic/releases/download/${VERSION}/${SUPERCRONIC}
+  curl --cacert /etc/ssl/certs/ca-certificates.crt \
+    --fail --silent --show-error --location --output ${SUPERCRONIC} \
+    https://github.com/aptible/supercronic/releases/download/${VERSION}/${SUPERCRONIC}
   echo "${SUPERCRONIC_SHA1SUM}  ${SUPERCRONIC}" | sha1sum -c -
   chmod +x "$SUPERCRONIC"
   mv "$SUPERCRONIC" /usr/local/bin/supercronic
 }
 
-case "${TARGETPLATFORM}" in
+case "${TARGETPLATFORM:-linux/amd64}" in
   linux/arm64|linux/arm/v8)
     arm64
     ;;
-  linux/arm/v7|linux/arm/v7)
+  linux/arm/v6|linux/arm/v7)
     arm
     ;;
   linux/amd64)
