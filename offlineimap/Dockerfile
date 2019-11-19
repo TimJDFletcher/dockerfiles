@@ -15,12 +15,12 @@ RUN apt-get update \
  && apt-get --no-install-recommends --yes install \
     offlineimap="${OFFLINEIMAP_VERSION}" \
     ca-certificates="${CA_CERTIFICATES_VERSION}" \
-    curl="${CURL_VERSION}" procps\
+    curl="${CURL_VERSION}" \
+    procps \
  && useradd --home-dir /email --no-create-home offlineimap \
- && /usr/local/bin/supercronic-install.sh \
- && apt-get purge --yes curl \
- && apt-get autoremove --yes \
  && rm -rf /var/cache/apt
+
+RUN /usr/local/bin/supercronic-install.sh
 
 COPY crontab /etc/crontab
 COPY entrypoint /entrypoint
