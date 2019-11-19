@@ -27,17 +27,17 @@ _install()
 }
 
 case "${TARGETPLATFORM}" in
-  linux/arm64)
+  linux/arm64|linux/arm/v8)
     arm64
     ;;
-  linux/arm/v7|linux/arm/v6)
+  linux/arm/v7|linux/arm/v7)
     arm
     ;;
   linux/amd64)
     amd64
     ;;
   *)
-    echo TARGETPLATFORM not set, bailing log
+    echo "TARGETPLATFORM set to unknown platform ${TARGETPLATFORM}, bailing out"
     exit 1
     ;;
 esac
