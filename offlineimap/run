@@ -1,6 +1,7 @@
 #!/bin/bash
 set -eu -o pipefail
 IMAGE_NAME=offlineimap
+PLATFORMS="linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7"
 
 build () {
     docker build -t "${IMAGE_NAME}":tmp -f Dockerfile .
@@ -16,7 +17,7 @@ buildx() {
   docker buildx use testbuilder || docker buildx create --name testbuilder
   docker buildx inspect --bootstrap
   docker buildx build \
-    --platform linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7 \
+    --platform "${PLATFORMS}" \
     -t timjdfletcher/"${IMAGE_NAME}":latest .
 }
 
@@ -25,7 +26,7 @@ push() {
   docker buildx use testbuilder || docker buildx create --name testbuilder
   docker buildx inspect --bootstrap
   docker buildx build \
-    --platform linux/amd64,linux/arm64,linux/arm/v7 \
+    --platform "${PLATFORMS}" \
     -t timjdfletcher/"${IMAGE_NAME}":latest --push .
 }
 
