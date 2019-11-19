@@ -1,18 +1,27 @@
 #!/bin/bash
 set -eu -o pipefail
+IMAGE_NAME=offlineimap
 
 build () {
-    docker build "$@" -t offlineimap:tmp -f Dockerfile .
+    docker build -t "${IMAGE_NAME}":tmp -f Dockerfile .
 }
 
 _test() {
-    build --no-cache
     bundle install --path vendor/bundle
     bundle exec rspec --format documentation
 }
 
+push() {
+  export DOCKER_CLI_EXPERIMENTAL=enabled
+  docker buildx use testbuilder || docker buildx create --name testbuilder
+  docker buildx inspect --bootstrap
+  docker buildx build \
+    --platform linux/amd64,linux/arm64,linux/arm/v7 \
+    -t timjdfletcher/"${IMAGE_NAME}":latest --push .
+}
+
 usage() {
-  echo "./run test|build"
+  echo "./run test|build|push"
 }
 
 CMD=${1:-}
@@ -20,6 +29,7 @@ CMD=${1:-}
 shift || true
 case ${CMD} in
     build) build ;;
+    push) push ;;
     test) _test ;;
     *) usage ;;
 esac
