@@ -26,14 +26,14 @@ _install()
   mv "$SUPERCRONIC" /usr/local/bin/supercronic
 }
 
-case "${TARGETPLATFORM:-amd64}" in
-  arm64)
+case "$(uname -m)" in
+  aarch64)
     arm64
     ;;
-  *arm$)
+  *arm*)
     arm
     ;;
-  amd64)
+  x86_64)
     amd64
     ;;
   *)
