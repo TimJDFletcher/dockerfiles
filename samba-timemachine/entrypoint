@@ -6,11 +6,12 @@ export PASS="${PASS:-password}"
 export PUID="${PUID:-999}"
 export PGID="${PGID:-999}"
 export QUOTA="${QUOTA:-512000}"
+export RANDOM_PASS=${RANDOM_PASS:-false}
 
 setPassword()
 {
-    if [ "$PASS" == RANDOM ] ; then
-        PASS=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 16 | head -n 1)
+    if [ "$RANDOM_PASS" == true ] ; then
+        export PASS=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 16 | head -n 1)
     fi
 }
 
@@ -21,7 +22,7 @@ createUser()
         addgroup --gid "$PGID" timemachine
     id -u timemachine > /dev/null || \
         useradd --uid "$PUID" --gid "$PGID" --home /backups --shell /bin/nologin --no-create-home timemachine
-    echo "Create SAMBA user ${USER} with a password of ${PASS}"
+    echo "Creating SAMBA user ${USER} with a password of ${PASS}"
     printf "%s\n%s\n" "${PASS}" "${PASS}" | smbpasswd -a -s timemachine
     printf "timemachine = %s" "${USER}" > /etc/samba/users.map
 }
