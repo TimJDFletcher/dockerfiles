@@ -2,6 +2,8 @@
 
 This is a docker container that contains the latest (4.9.5+dfsg-3) version of SAMBA from Debian Buster configured to provide Apple "Time Capsule" like backups.
 
+The Docker Hub images support x86_64, Raspberry Pi 2/3/4 and other ARM based systems.
+
 To use the docker container do the following:
 
 ```
