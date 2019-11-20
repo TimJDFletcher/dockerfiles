@@ -1,8 +1,10 @@
 #!/bin/bash
 set -eu -o pipefail
+IMAGE_NAME=samba-timemachine
+PLATFORMS="linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7"
 
 build () {
-    docker build -t samba-timemachine:tmp -f Dockerfile .
+    docker build -t "${IMAGE_NAME}:tmp" -f Dockerfile .
 }
 
 _test() {
@@ -20,8 +22,8 @@ push() {
   docker buildx use testbuilder || docker buildx create --name testbuilder
   docker buildx inspect --bootstrap
   docker buildx build \
-    --platform linux/amd64,linux/arm64,linux/arm/v7 \
-    -t timjdfletcher/samba-timemachine:latest --push .
+    --platform "${PLATFORMS}" \
+    -t "timjdfletcher/${IMAGE_NAME}:latest" --push .
 }
 
 CMD=${1:-}
