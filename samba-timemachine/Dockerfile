@@ -1,6 +1,6 @@
-FROM debian:buster-20191118-slim
+FROM debian:bullseye-20191118-slim
 
-ENV SAMBA_VERSION "2:4.9.5+dfsg-5+deb10u1"
+ENV SAMBA_VERSION "2:4.11.1+dfsg-3"
 ENV BACKUPDIR /backups
 VOLUME /backups
 
