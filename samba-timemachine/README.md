@@ -39,6 +39,10 @@ This can be copied to /etc/avahi/services/timemachine.service or run in a [conta
 The container creates a user timemachine on startup, with by default a password of password. 
 A password can be passed in as an environment variable `PASS`, or set the environment variable `RANDOM_PASS` to true to generate a random password on startup
 
+# Storage
+
+I have had some problems using ZFS as a backing store for the container in Catalina, I'm not sure if the issue is related to the slow SMR drive I was using or ZFS. I have changed the backend storage to ext4 and it has been working well.
+
 # Quotas
 
 The container supports setting of quota to limit the max size of backups, it defaults to 512GB
