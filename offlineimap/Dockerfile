@@ -1,10 +1,11 @@
-FROM debian:buster-20191014-slim
+FROM debian:buster-20200224-slim
 
 ARG TARGETPLATFORM
 
 ENV OFFLINEIMAP_VERSION="7.2.3+dfsg1-1" \
-    CURL_VERSION="7.64.0-4" \
-    CA_CERTIFICATES_VERSION="20190110"
+    CURL_VERSION="7.64.0-4+deb10u1" \
+    CA_CERTIFICATES_VERSION="20190110" \
+    PROCPS_VERSION="2:3.3.15-2 "
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -16,7 +17,7 @@ RUN apt-get update \
     offlineimap="${OFFLINEIMAP_VERSION}" \
     ca-certificates="${CA_CERTIFICATES_VERSION}" \
     curl="${CURL_VERSION}" \
-    procps \
+    procps=${PROCPS_VERSION} \
  && useradd --home-dir /email --no-create-home offlineimap \
  && rm -rf /var/cache/apt
 
