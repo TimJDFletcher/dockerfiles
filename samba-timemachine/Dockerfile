@@ -1,14 +1,16 @@
-FROM debian:bullseye-20191118-slim
+FROM debian:bullseye-20200224-slim
 
-ENV SAMBA_VERSION "2:4.11.1+dfsg-3"
-ENV BACKUPDIR /backups
+ENV SAMBA_VERSION="2:4.11.5+dfsg-1" \
+    IPROUTE2_VERSION="5.5.0-1"
+
+ENV BACKUPDIR=/backups
 VOLUME /backups
 
 RUN apt-get update && \
     apt-get --no-install-recommends --yes install \
         samba="$SAMBA_VERSION" \
         samba-vfs-modules="$SAMBA_VERSION" \
-        iproute2 && \ 
+        iproute2=${IPROUTE2_VERSION} && \
     rm -rf /var/lib/apt/lists/*
 
 ADD samba.conf /etc/samba/smb.conf
