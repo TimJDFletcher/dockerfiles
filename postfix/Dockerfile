@@ -1,4 +1,4 @@
-FROM FROM debian:buster-20200224-slim
+FROM debian:buster-20200224-slim
 
 ENV POSTFIX_VERSION="3.4.8-0+10debu1"
 
@@ -9,3 +9,7 @@ RUN apt-get update && \
 
 EXPOSE 25/tcp
 
+ADD entrypoint /entrypoint
+RUN chmod 0755 /entrypoint
+
+ENTRYPOINT ["/entrypoint"]
