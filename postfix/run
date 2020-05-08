@@ -9,8 +9,13 @@ build () {
 
 _test() {
     build
+    _down
     bundle install --path vendor/bundle
     bundle exec rspec --format documentation
+}
+
+_down () {
+    docker-compose down --remove-orphans
 }
 
 usage() {

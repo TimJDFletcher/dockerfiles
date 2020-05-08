@@ -1,12 +1,12 @@
 #!/bin/bash
-set -e -o pipefail
+set -x -e -o pipefail
 
 startPostfix()
 {
     echo "======================================================================================="
     echo "=                 Starting Postfix, logs after this are from Postfix                  ="
     echo "======================================================================================="
-    exec /usr/sbin/postfix start-fg "$@"
+    exec /usr/lib/postfix/sbin/master -i "$@"
 }
 
 if [[ -z ${1} ]] || [[ ${1:0:1} == '-' ]] ; then

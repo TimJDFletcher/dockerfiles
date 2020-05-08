@@ -1,0 +1,8 @@
+version: '3.6'
+
+services:
+    postfix:
+        image: postfix:tmp
+        container_name: postfix
+        ports:
+            - 25:25

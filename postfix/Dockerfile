@@ -1,10 +1,11 @@
-FROM debian:buster-20200224-slim
+FROM debian:bullseye-20200224-slim
 
-ENV POSTFIX_VERSION="3.4.8-0+10debu1"
+ENV POSTFIX_VERSION="3.5.0-1"
 
 RUN apt-get update && \
     apt-get --no-install-recommends --yes install \
-        postfix="${POSTFIX_VERSION}" && \
+        postfix="${POSTFIX_VERSION}" \
+        iproute2 && \
     rm -rf /var/lib/apt/lists/*
 
 EXPOSE 25/tcp

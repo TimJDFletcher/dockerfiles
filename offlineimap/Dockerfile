@@ -1,4 +1,4 @@
-FROM debian:buster-20200224-slim
+FROM debian:buster-20200422-slim
 
 ARG TARGETPLATFORM
 
