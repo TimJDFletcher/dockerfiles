@@ -14,7 +14,7 @@ _test() {
 }
 
 usage() {
-  echo "./run test|build|push"
+  echo "./run test|build|push|release"
 }
 
 find_release(){
