@@ -1,58 +1,68 @@
 # samba-timemachine-docker
 
-This is a docker container that contains the latest (4.9.5+dfsg-3) version of SAMBA from Debian Buster configured to provide Apple "Time Capsule" like backups.
+This is a docker container based on Debian Buster running SAMBA and configured to provide Apple "Time Capsule" like backups.
 
 The Docker Hub images support x86_64, Raspberry Pi 2/3/4 and other ARM based systems.
 
-To use the docker container do the following:
+An example of how to use the container
 
-```
-docker pull timjdfletcher/samba-timemachine
+```bash
 docker run -d -t \
     -v /backups/timemachine:/backups \
     -p 10445:445 \
-    --restart unless-stopped timjdfletcher/samba-timemachine
+    --restart unless-stopped timjdfletcher/samba-timemachine:timemachine-v2.3
 ```
 
-Note that due to the use of port 10445 this container can be run along side a normal SAMBA service.
+This example maps the docker host port 10445 to the container port 445, so the container can be run alongside a normal SAMBA service.
+
+# Discovery
+
+The container only runs smbd, to enable discovery on your local network use avahi-daemon (mDNS). 
+
+I do this by running avahi-daemon on the docker host system. For debian install the package avahi-daemon. 
+
+```bash
+apt install avahi-daemon
+```
+
+Copy the (service file)[timemachine.service] to `/etc/avahi/services/timemachine.service`
+
+There is also a docker [container](https://hub.docker.com/r/solidnerd/avahi) that can be used instead of using avahi-daemon on the host. 
+I have not tested this recently. 
 
 # Settings
 
-| Variable    | Function                  | Default.    |
-| ------------|:-------------------------:|------------:|
-| USER        | Time Machine User         | timemachine |
-| PASS        | User Password             | password    |
-| PUID        | UserID                    | 999         |
-| PGID        | GroupID                   | 999         |
-| QUOTA       | Time Machine Size in MB   | 512000      |
-| RANDOM_PASS | Generate a random password| false       |
-
-# Connecting
-
-There is a single user called `timemachine` with a password of `password` by default. 
-
-The container only runs smbd to find it on the network the best way is avahi (mDNS) there is an example service file included. 
-This can be copied to /etc/avahi/services/timemachine.service or run in a [container](https://hub.docker.com/r/solidnerd/avahi).
+| Variable    | Function                                        | Default.    |
+| ------------|:-----------------------------------------------:|------------:|
+| USER        | Time Machine User                               | timemachine |
+| PASS        | User Password                                   | password    |
+| PUID        | UserID                                          | 999         |
+| PGID        | GroupID                                         | 999         |
+| QUOTA       | Time Machine Size in MB                         | 512000      |
+| RANDOM_PASS | Generate a random password, printed in the logs | false       |
 
 # Security
 
-The container creates a user timemachine on startup, with by default a password of password. 
-A password can be passed in as an environment variable `PASS`, or set the environment variable `RANDOM_PASS` to true to generate a random password on startup
+The container creates a user timemachine on startup, with by default a password of `password`. 
+
+A password can be passed in by the environment variable `PASS`, or by setting the environment variable `RANDOM_PASS` to true to generate a random password on startup
 
 # Storage
 
-I have had some problems using ZFS as a backing store for the container in Catalina, I'm not sure if the issue is related to the slow SMR drive I was using or ZFS. I have changed the backend storage to ext4 and it has been working well.
+I have had some problems using ZFS as a backing store for the container in Catalina, I'm not sure if this because of the slow SMR drive I was using or ZFS.
+I have changed the backend storage to ext4 which has been working well.
 
 # Quotas
 
-The container supports setting of quota to limit the max size of backups, it defaults to 512GB
+The container supports setting of quota to limit the max size of backups, it defaults to 512GB.
+I'm unclear if this works correctly in macOS.
 
 # Testing
 
-Serverspec tests are included, to run them use the run script: `./run test`
+Serverspec tests are included, to exacute the tests use the run script: `./run test`
 
 # Docker image builds
 
-Auto builds are disabled currently to allow for multiarch local builds.
+Auto builds are disabled to allow for multiarch local builds.
 
 ~~Repo is auto built here: https://hub.docker.com/r/timjdfletcher/samba-timemachine/~~
