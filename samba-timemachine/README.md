@@ -19,15 +19,15 @@ This example maps the docker host port 10445 to the container port 445, so the c
 
 The container only runs smbd, to enable discovery on your local network use avahi-daemon (mDNS). 
 
-I do this by running avahi-daemon on the docker host system. For debian install the package avahi-daemon. 
+I do this by running avahi-daemon on the docker host system, for debian systems install the package avahi-daemon: 
 
 ```bash
 apt install avahi-daemon
 ```
 
-Copy the (service file)[timemachine.service] to `/etc/avahi/services/timemachine.service`
+To enable discovery copy the [service file](timemachine.service) to `/etc/avahi/services/`
 
-There is also a docker [container](https://hub.docker.com/r/solidnerd/avahi) that can be used instead of using avahi-daemon on the host. 
+There is also a docker [container](https://hub.docker.com/r/solidnerd/avahi) that can be used instead of installing avahi-daemon on the host. 
 I have not tested this recently. 
 
 # Settings
@@ -43,9 +43,9 @@ I have not tested this recently.
 
 # Security
 
-The container creates a user timemachine on startup, with by default a password of `password`. 
+The container creates a user timemachine on startup, with by default a password of `password`, and then drops root.
 
-A password can be passed in by the environment variable `PASS`, or by setting the environment variable `RANDOM_PASS` to true to generate a random password on startup
+A password can be passed in with the environment variable `PASS`, or by setting the environment variable `RANDOM_PASS` to true the container generates a random password on startup.
 
 # Storage
 
