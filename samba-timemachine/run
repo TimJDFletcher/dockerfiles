@@ -46,7 +46,7 @@ CMD=${1:-}
 
 shift || true
 case ${CMD} in
-    build) build ;;
+    build) build --quiet ;;
     test) _test ;;
     push) push ;;
     release) release ;;

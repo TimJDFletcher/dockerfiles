@@ -61,6 +61,14 @@ I'm unclear if this works correctly in macOS.
 
 Serverspec tests are included, to exacute the tests use the run script: `./run test`
 
+# Package Versions
+
+To find the latest versions of Samba and ip route2 use:
+
+```bash
+docker run debian:bullseye-slim /bin/bash -c "apt update && apt show samba iproute2"
+```
+
 # Docker image builds
 
 Auto builds are disabled to allow for multiarch local builds.
