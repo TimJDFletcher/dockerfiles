@@ -3,10 +3,10 @@ require 'spec_helper'
 # Define packages
 packages = {
   samba: {
-    version: '2:4.13.4+dfsg-1'
+    version: '2:4.13.5+dfsg-2'
   },
   'samba-vfs-modules': {
-    version: '2:4.13.4+dfsg-1'
+    version: '2:4.13.5+dfsg-2'
   }
 }
 
