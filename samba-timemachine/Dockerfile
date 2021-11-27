@@ -1,6 +1,6 @@
-FROM debian:bullseye-20210721-slim
+FROM debian:bullseye-20201117-slim
 
-ENV SAMBA_VERSION="2:4.13.5+dfsg-2" \
+ENV SAMBA_VERSION="2:4.13.13+dfsg-1~deb11u2" \
     IPROUTE2_VERSION="5.10.0-4"
 
 ENV BACKUPDIR=/backups
