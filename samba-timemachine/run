@@ -31,6 +31,9 @@ release() {
   docker buildx build \
     --platform "${PLATFORMS}" \
     -t "timjdfletcher/${IMAGE_NAME}:${TAG}" --push .
+  docker buildx build \
+    --platform "${PLATFORMS}" \
+    -t "timjdfletcher/${IMAGE_NAME}:latest" --push .
 }
 
 push() {

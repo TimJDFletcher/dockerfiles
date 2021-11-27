@@ -10,7 +10,7 @@ An example of how to use the container
 docker run -d -t \
     -v /backups/timemachine:/backups \
     -p 10445:445 \
-    --restart unless-stopped timjdfletcher/samba-timemachine:timemachine-v2.3
+    --restart unless-stopped timjdfletcher/samba-timemachine:timemachine-v2.3.2
 ```
 
 This example maps the docker host port 10445 to the container port 445, so the container can be run alongside a normal SAMBA service.
@@ -59,7 +59,7 @@ I'm unclear if this works correctly in macOS.
 
 # Testing
 
-Serverspec tests are included, to exacute the tests use the run script: `./run test`
+Serverspec tests are included, to execute the tests use the run script: `./run test`
 
 # Package Versions
 
