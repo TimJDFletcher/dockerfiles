@@ -4,7 +4,7 @@ require 'docker'
 # Define packages
 packages = {
   offlineimap: {
-    version: '7.2.3+dfsg1-1'
+    version: '7.3.3+dfsg1-1+0.0~git20210225.1e7ef9e+dfsg-4'
   }
 }
 
@@ -16,7 +16,7 @@ describe 'OfflineIMAP Container' do
   end
 
   describe file('/etc/os-release') do
-    its(:content) { is_expected.to match(%r{"Debian GNU/Linux 10 \(buster\)"}) }
+    its(:content) { is_expected.to match(%r{bullseye}) }
   end
 
   packages.each do |name, details|

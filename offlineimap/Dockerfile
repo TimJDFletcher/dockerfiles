@@ -1,11 +1,11 @@
-FROM debian:buster-20200422-slim
+FROM debian:bullseye-20201117-slim
 
 ARG TARGETPLATFORM
 
-ENV OFFLINEIMAP_VERSION="7.2.3+dfsg1-1" \
-    CURL_VERSION="7.64.0-4+deb10u1" \
-    CA_CERTIFICATES_VERSION="20190110" \
-    PROCPS_VERSION="2:3.3.15-2"
+ENV OFFLINEIMAP_VERSION="7.3.3+dfsg1-1+0.0~git20210225.1e7ef9e+dfsg-4" \
+    CURL_VERSION="7.74.0-1.3+b1" \
+    CA_CERTIFICATES_VERSION="20210119" \
+    PROCPS_VERSION="2:3.3.17-5"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
