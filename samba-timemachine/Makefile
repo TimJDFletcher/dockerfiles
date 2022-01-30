@@ -1,8 +1,8 @@
 all: status
-update: update
+update: update_docker
 
 DC := /usr/bin/docker-compose
-update:
+update_docker:
 	${DC} pull
 	${DC} up -d
 status:
