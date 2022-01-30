@@ -41,6 +41,6 @@ case ${CMD} in
     build) build ;;
     buildx) buildx ;;
     push) push ;;
-    test) _test ;;
+    test) build _test ;;
     *) usage ;;
 esac

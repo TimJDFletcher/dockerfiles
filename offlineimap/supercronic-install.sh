@@ -1,20 +1,20 @@
 #!/bin/bash
 set -eu -o pipefail
 
-VERSION=v0.1.9
+VERSION=v0.1.12
 
 amd64(){
   export SUPERCRONIC=supercronic-linux-amd64
-  export SUPERCRONIC_SHA1SUM=5ddf8ea26b56d4a7ff6faecdd8966610d5cb9d85
+  export SUPERCRONIC_SHA1SUM=048b95b48b708983effb2e5c935a1ef8483d9e3e
 }
 
 arm(){
   export SUPERCRONIC=supercronic-linux-arm
-  export SUPERCRONIC_SHA1SUM=47481c3341bc3a1ae91a728e0cc63c8e6d3791ad
+  export SUPERCRONIC_SHA1SUM=d72d3d40065c0188b3f1a0e38fe6fecaa098aad5
 }
 arm64(){
   export SUPERCRONIC=supercronic-linux-arm64
-  export SUPERCRONIC_SHA1SUM=e2714c43e7781bf1579c85aa61259245f56dbba1
+  export SUPERCRONIC_SHA1SUM=8baba3dd0b0b13552aca179f6ef10d55e5dee28b
 }
 
 _install()
