@@ -1,8 +1,8 @@
 # samba-timemachine-docker
 
-This is a docker container based on Debian Buster running SAMBA and configured to provide Apple "Time Capsule" like backups.
+This is a docker container based on Ubuntu Focal running SAMBA and configured to provide Apple "Time Capsule" like backups.
 
-The Docker Hub images support x86_64, Raspberry Pi 2/3/4 and other ARM based systems.
+The Docker Hub images support x86_64, Raspberry Pi 2/3/4 and other modern ARM based systems.
 
 An example of how to use the container
 
@@ -10,14 +10,14 @@ An example of how to use the container
 docker run -d -t \
     -v /backups/timemachine:/backups \
     -p 10445:445 \
-    --restart unless-stopped timjdfletcher/samba-timemachine:timemachine-v2.3.2
+    --restart unless-stopped timjdfletcher/samba-timemachine:timemachine-v2.4
 ```
 
 This example maps the docker host port 10445 to the container port 445, so the container can be run alongside a normal SAMBA service.
 
 # Discovery
 
-The container only runs smbd, to enable discovery on your local network use avahi-daemon (mDNS). 
+The container only runs smbd, to enable discovery on your local network use multicast DNS such as avahi.  
 
 I do this by running avahi-daemon on the docker host system, for debian systems install the package avahi-daemon: 
 
@@ -61,13 +61,11 @@ I'm unclear if this works correctly in macOS.
 
 Serverspec tests are included, to execute the tests use the run script: `./run test`
 
-# Package Versions
+# Versions
 
-To find the latest versions of Samba and ip route2 use:
-
-```bash
-docker run debian:bullseye-slim /bin/bash -c "apt update && apt show samba iproute2"
-```
+Base image: [Ubuntu Focal](https://hub.docker.com/_/ubuntu?tab=tags&page=1&name=focal)
+[SAMBA](https://packages.ubuntu.com/focal/samba)
+[iproute2](https://packages.ubuntu.com/focal/iproute2)
 
 # Docker image builds
 
