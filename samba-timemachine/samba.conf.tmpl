@@ -40,14 +40,16 @@ idmap config * : backend = tdb
 idmap config * : range = 300000-400000
 
 [Data]
-browseable              = Yes
-comment                 = Apple TimeMachine Backup Target
-fruit:time machine      = yes
-inherit acls            = Yes
-path                    = /backups
-read only               = No
-valid users             = timemachine
-vfs objects             = catia fruit streams_xattr
-writable                = yes
+browseable                  = Yes
+comment                     = Apple TimeMachine Backup Target
+vfs objects                 = catia fruit streams_xattr
+fruit:aapl                  = yes
+fruit:time machine          = yes
+fruit:time machine max size = REPLACE_TM_SIZEB
+inherit acls                = Yes
+path                        = /backups
+read only                   = No
+valid users                 = timemachine
+writable                    = yes
 
 # vi:syntax=samba

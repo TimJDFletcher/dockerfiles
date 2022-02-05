@@ -39,8 +39,12 @@ checkBackupDir()
 configureQuota()
 {
     echo "Setting quote to ${QUOTA}MB"
-    QUOTA=$((QUOTA * 1048576))
-    sed "s%REPLACE_TM_SIZE%${QUOTA}%" /etc/TimeMachine.quota.tmpl > "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
+    QUOTA_IN_BYTES=$((QUOTA * 1048576))
+    sed "s%REPLACE_TM_SIZE%${QUOTA_IN_BYTES}%" /etc/samba/smb.conf.tmpl \
+      > /etc/samba/smb.conf
+    sed "s%REPLACE_TM_SIZE%${QUOTA_IN_BYTES}%" /etc/TimeMachine.quota.tmpl \
+      > "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
+
     chown root:root "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
     chmod 444 "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
 }

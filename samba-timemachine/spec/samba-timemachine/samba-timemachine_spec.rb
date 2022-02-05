@@ -80,6 +80,8 @@ describe 'Samba Timemachine Container' do
 
   describe command('/usr/bin/testparm') do
     its(:stderr) { should match(/Loaded services file OK/) }
+    its(:stdout) { should match(/comment = Apple TimeMachine Backup Target/) }
+    its(:stdout) { should match(/fruit:time machine max size = 524288000000B/) }
     its(:exit_status) { should eq 0 }
   end
 

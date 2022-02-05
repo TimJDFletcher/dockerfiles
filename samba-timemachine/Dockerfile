@@ -13,7 +13,7 @@ RUN apt-get update && \
         iproute2=${IPROUTE2_VERSION} && \
     rm -rf /var/lib/apt/lists/*
 
-ADD samba.conf /etc/samba/smb.conf
+ADD samba.conf.tmpl /etc/samba/smb.conf.tmpl
 ADD TimeMachine.quota.tmpl /etc/TimeMachine.quota.tmpl
 
 EXPOSE 445/tcp
