@@ -1,15 +1,5 @@
 require 'spec_helper'
 
-# Define packages
-packages = {
-  samba: {
-    version: '2:4.13.13+dfsg-1~deb11u2'
-  },
-  'samba-vfs-modules': {
-    version: '2:4.13.13+dfsg-1~deb11u2'
-  }
-}
-
 def compose
   @compose ||= Docker::Compose.new
 end
@@ -30,16 +20,6 @@ describe 'Samba Timemachine Container' do
     puts 'Stopping container again'
     compose.kill
     compose.rm(force: true)
-  end
-
-  describe file('/etc/os-release') do
-    its(:content) { is_expected.to match(%r{bullseye}) }
-  end
-
-  packages.each do |name, details|
-    describe package(name) do
-      it { should be_installed.with_version(details[:version]) }
-    end
   end
 
   describe file('/entrypoint') do

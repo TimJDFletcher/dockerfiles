@@ -1,7 +1,7 @@
-FROM debian:bullseye-20220125-slim
+FROM ubuntu:focal-20220113
 
-ENV SAMBA_VERSION="2:4.13.13+dfsg-1~deb11u2" \
-    IPROUTE2_VERSION="5.10.0-4"
+ENV SAMBA_VERSION="2:4.13.17~dfsg-0ubuntu0.21.04.1" \
+    IPROUTE2_VERSION="5.5.0-1ubuntu1"
 
 ENV BACKUPDIR=/backups
 VOLUME /backups
