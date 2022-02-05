@@ -53,9 +53,9 @@ describe 'Samba Timemachine Container' do
   describe file('/backups/.com.apple.TimeMachine.quota.plist') do
     it { should exist }
     it { should be_file }
-    it { should be_mode 600 }
-    it { should be_owned_by 'timemachine' }
-    it { should be_grouped_into 'timemachine' }
+    it { should be_mode 444 }
+    it { should be_owned_by 'root' }
+    it { should be_grouped_into 'root' }
     its(:content) { is_expected.to match('524288000000') }
   end
 

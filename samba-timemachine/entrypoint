@@ -41,7 +41,10 @@ configureQuota()
     echo "Setting quote to ${QUOTA}MB"
     QUOTA=$((QUOTA * 1048576))
     sed "s%REPLACE_TM_SIZE%${QUOTA}%" /etc/TimeMachine.quota.tmpl > "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
+    chown root:root "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
+    chmod 444 "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
 }
+
 backupConfig()
 {
     echo "Marking ${BACKUPDIR} as supported by timemmachine"
@@ -50,7 +53,7 @@ backupConfig()
     echo "Changing ownership of ${BACKUPDIR} to ${PUID}:${PGID}, this may take a few minutes"
     chown -R "${PUID}":"${PGID}" "${BACKUPDIR}"
 
-    echo "Restricting permssions on ${BACKUPDIR}, this may take a few minutes"
+    echo "Restricting permissions on ${BACKUPDIR}, this may take a few minutes"
     chmod -R u+rwX,g=,o= "${BACKUPDIR}"
 }
 
@@ -67,8 +70,8 @@ if [[ -z ${1} ]] || [[ ${1:0:1} == '-' ]] ; then
     checkBackupDir
     setPassword
     createUser
-    configureQuota
     backupConfig
+    configureQuota
     startSMB "$@"
 else
     exec "$@"
