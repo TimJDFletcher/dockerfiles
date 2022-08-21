@@ -80,14 +80,18 @@ describe 'Samba Timemachine Container' do
 
   describe command('/usr/bin/testparm') do
     its(:stderr) { should match(/Loaded services file OK/) }
-    its(:stdout) { should match(/comment = Apple TimeMachine Backup Target/) }
-    its(:stdout) { should match(/fruit:time machine max size = 524288000000B/) }
     its(:exit_status) { should eq 0 }
   end
 
   describe command('/usr/bin/smbpasswd -e timemachine') do
     its(:stdout) { should match(/Enabled user timemachine./) }
     its(:exit_status) { should eq 0 }
+  end
+
+  describe process('smbd') do
+    it { is_expected.to be_running }
+    its(:args) { is_expected.to contain('--no-process-group --foreground') }
+    its(:user) { is_expected.to eq('root') }
   end
 
   describe command('ss -tulpn') do
