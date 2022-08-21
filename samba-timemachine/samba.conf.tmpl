@@ -15,36 +15,29 @@ printcap name           = /dev/null
 disable spoolss         = yes
 disable netbios         = yes
 
-# Time Machine
-durable handles             = yes
-ea support                  = yes
-fruit:aapl                  = yes
-fruit:advertise_fullsync    = true
-fruit:model                 = TimeCapsule6
-kernel oplocks              = no
-kernel share modes          = no
-map acl inherit             = yes
-posix locking               = no
-smb2 leases                 = yes
-vfs objects                 = catia fruit streams_xattr
+# Apple configuration
+# Taken from: https://wiki.samba.org/index.php/Configure_Samba_to_Work_Better_with_Mac_OS_X
+vfs objects                                 = fruit streams_xattr
+fruit:metadata                              = stream
+fruit:model                                 = TimeCapsule6
+fruit:posix_rename                          = yes
+fruit:veto_appledouble                      = no
+fruit:nfs_aces                              = no
+fruit:wipe_intentionally_left_blank_rfork   = yes
+fruit:delete_empty_adfiles                  = yes
 
 # Security
-username map            = /etc/samba/users.map
-server max protocol     = SMB3
-server min protocol     = SMB2
-client min protocol     = SMB2
-client max protocol     = SMB3
-idmap config * : backend = tdb
-idmap config * : range = 300000-400000
+username map                = /etc/samba/users.map
+client min protocol         = SMB2
+server min protocol         = SMB2
+idmap config * : backend    = tdb
+idmap config * : range      = 300000-400000
 
 [Data]
-browseable                  = Yes
-comment                     = Apple TimeMachine Backup Target
-vfs objects                 = catia fruit streams_xattr
-fruit:aapl                  = yes
 fruit:time machine          = yes
 fruit:time machine max size = REPLACE_TM_SIZEB
-inherit acls                = Yes
+browseable                  = Yes
+comment                     = Apple TimeMachine Backup Target
 path                        = /backups
 read only                   = No
 valid users                 = timemachine
