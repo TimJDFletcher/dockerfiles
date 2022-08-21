@@ -30,12 +30,10 @@ vfs objects                 = catia fruit streams_xattr
 
 # Security
 username map            = /etc/samba/users.map
-client ipc max protocol = default
-client max protocol     = default
 server max protocol     = SMB3
-client ipc min protocol = default
-client min protocol     = CORE
 server min protocol     = SMB2
+client min protocol     = SMB2
+client max protocol     = SMB3
 idmap config * : backend = tdb
 idmap config * : range = 300000-400000
 
