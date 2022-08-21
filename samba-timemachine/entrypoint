@@ -3,8 +3,8 @@ set -e -o pipefail
 
 export USER="${USER:-timemachine}"
 export PASS="${PASS:-password}"
-export PUID="${PUID:-999}"
-export PGID="${PGID:-999}"
+export PUID="${PUID:-1000}"
+export PGID="${PGID:-1000}"
 export QUOTA="${QUOTA:-512000}"
 export RANDOM_PASS=${RANDOM_PASS:-false}
 
@@ -18,10 +18,10 @@ setPassword()
 createUser()
 {
     echo "Creating system users"
-    id -g timemachine > /dev/null || \
-        addgroup --gid "$PGID" timemachine
+    getent group timemachine> /dev/null || \
+        addgroup -g "$PGID" timemachine
     id -u timemachine > /dev/null || \
-        useradd --uid "$PUID" --gid "$PGID" --home /backups --shell /bin/nologin --no-create-home timemachine
+        adduser -u "$PUID" -G timemachine -D -h /backups -s /bin/nologin --no-create-home timemachine
     echo "Creating SAMBA user ${USER} with a password of ${PASS}"
     printf "%s\n%s\n" "${PASS}" "${PASS}" | smbpasswd -a -s timemachine
     printf "timemachine = %s" "${USER}" > /etc/samba/users.map
@@ -66,7 +66,7 @@ startSMB()
     echo "==================================================================================="
     echo "=                 Starting SAMBA, logs after this are from SAMBA                  ="
     echo "==================================================================================="
-    exec /usr/sbin/smbd --no-process-group --log-stdout --foreground "$@"
+    exec /usr/sbin/smbd --no-process-group --interactive "$@"
 }
 
 if [[ -z ${1} ]] || [[ ${1:0:1} == '-' ]] ; then

@@ -1,17 +1,9 @@
-FROM ubuntu:focal-20220113
-
-ENV SAMBA_VERSION="2:4.13.17~dfsg-0ubuntu0.21.04.1" \
-    IPROUTE2_VERSION="5.5.0-1ubuntu1"
+FROM alpine:3.16.2
 
 ENV BACKUPDIR=/backups
 VOLUME /backups
 
-RUN apt-get update && \
-    apt-get --no-install-recommends --yes install \
-        samba="$SAMBA_VERSION" \
-        samba-vfs-modules="$SAMBA_VERSION" \
-        iproute2=${IPROUTE2_VERSION} && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache samba-common-tools samba-server bash procps iproute2
 
 ADD samba.conf.tmpl /etc/samba/smb.conf.tmpl
 ADD TimeMachine.quota.tmpl /etc/TimeMachine.quota.tmpl

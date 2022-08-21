@@ -90,12 +90,6 @@ describe 'Samba Timemachine Container' do
     its(:exit_status) { should eq 0 }
   end
 
-  describe process('smbd') do
-    it { is_expected.to be_running }
-    its(:args) { is_expected.to contain('--no-process-group --log-stdout --foreground') }
-    its(:user) { is_expected.to eq('root') }
-  end
-
   describe command('ss -tulpn') do
     its(:stdout) { should match(/^tcp.*0.0.0.0:445.*"smbd",pid=1/)}
     its(:exit_status) { should eq 0 }
