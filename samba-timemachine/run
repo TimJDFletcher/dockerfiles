@@ -7,10 +7,16 @@ build () {
     docker build "${@}" -t "${IMAGE_NAME}:tmp" -f Dockerfile .
 }
 
+clean () {
+  docker image rm "${IMAGE_NAME}:tmp"
+}
+
 _test() {
-    build --no-cache
-    bundle install --path vendor/bundle
+    build --quiet
+    bundle config set --local path vendor/bundle
+    bundle install
     bundle exec rspec --format documentation
+    trivy image "${IMAGE_NAME}:tmp"
 }
 
 usage() {
@@ -23,6 +29,7 @@ find_release(){
 }
 
 release() {
+  clean
   export DOCKER_CLI_EXPERIMENTAL=enabled
   find_release
   git checkout "${TAG}"
@@ -30,10 +37,10 @@ release() {
   docker buildx inspect --bootstrap
   docker buildx build \
     --platform "${PLATFORMS}" \
-    -t "timjdfletcher/${IMAGE_NAME}:${TAG}" --push .
+    -t "timjdfletcher/${IMAGE_NAME}:${TAG}" --load .
   docker buildx build \
     --platform "${PLATFORMS}" \
-    -t "timjdfletcher/${IMAGE_NAME}:latest" --push .
+    -t "timjdfletcher/${IMAGE_NAME}:latest" --load .
 }
 
 push() {
@@ -50,6 +57,7 @@ CMD=${1:-}
 shift || true
 case ${CMD} in
     build) build --quiet ;;
+    clean) clean ;;
     test) _test ;;
     push) push ;;
     release) release ;;
