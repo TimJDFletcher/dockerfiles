@@ -12,7 +12,7 @@ describe 'Samba Timemachine Container' do
     ENV['PGID'] = '1234'
     ENV['USER'] = 'testuser'
     ENV['PASS'] = 'Password123'
-    ENV['QUOTA'] = '500000'
+    ENV['QUOTA'] = '123456'
     compose.up('samba-timemachine', detached: true)
   end
 
@@ -34,6 +34,7 @@ describe 'Samba Timemachine Container' do
     it { should be_file }
     it { should be_mode 644 }
     it { should be_owned_by 'root' }
+    its(:content) { is_expected.to match('123456') }
   end
 
   describe file('/etc/samba/users.map') do
@@ -56,7 +57,7 @@ describe 'Samba Timemachine Container' do
     it { should be_mode 444 }
     it { should be_owned_by 'root' }
     it { should be_grouped_into 'root' }
-    its(:content) { is_expected.to match('524288000000') }
+    its(:content) { is_expected.to match('129452998656') }
   end
 
   describe group('timemachine') do

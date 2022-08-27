@@ -18,7 +18,6 @@ disable netbios         = yes
 # Apple configuration taken from:
 # https://wiki.samba.org/index.php/Configure_Samba_to_Work_Better_with_Mac_OS_X and
 # https://jansblog.org/2021/05/16/samba-based-timemachine-with-big-sur/
-
 vfs objects                                 = acl_xattr catia fruit streams_xattr
 fruit:metadata                              = stream
 fruit:model                                 = TimeCapsule6
@@ -34,9 +33,12 @@ client min protocol         = SMB2
 idmap config * : backend    = tdb
 idmap config * : range      = 300000-400000
 
+# Quota setting
+max disk size               = QUOTA_IN_MEGABYTES
+
 [Data]
 fruit:time machine          = yes
-fruit:time machine max size = REPLACE_TM_SIZE B
+fruit:time machine max size = QUOTA_IN_MEGABYTES MB
 browseable                  = Yes
 comment                     = Apple TimeMachine Backup Target
 inherit acls                = yes
