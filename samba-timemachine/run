@@ -2,13 +2,14 @@
 set -eu -o pipefail
 IMAGE_NAME=samba-timemachine
 PLATFORMS="linux/amd64,linux/arm64,linux/arm/v7"
+TESTHOST=carbon
 
 build () {
     docker build "${@}" -t "${IMAGE_NAME}:tmp" -f Dockerfile .
 }
 
 clean () {
-  docker image rm "${IMAGE_NAME}:tmp"
+    docker image rm "${IMAGE_NAME}:tmp" || true
 }
 
 _test() {
@@ -37,10 +38,10 @@ release() {
   docker buildx inspect --bootstrap
   docker buildx build \
     --platform "${PLATFORMS}" \
-    -t "timjdfletcher/${IMAGE_NAME}:${TAG}" --load .
+    -t "timjdfletcher/${IMAGE_NAME}:${TAG}" --push .
   docker buildx build \
     --platform "${PLATFORMS}" \
-    -t "timjdfletcher/${IMAGE_NAME}:latest" --load .
+    -t "timjdfletcher/${IMAGE_NAME}:latest" --push .
 }
 
 push() {
@@ -52,6 +53,15 @@ push() {
   docker push "timjdfletcher/${IMAGE_NAME}:latest"
 }
 
+copyToTestHost () {
+    build --quiet
+    size=$(docker image inspect samba-timemachine:tmp | jq -r '.[0].Size')
+    docker save  "${IMAGE_NAME}:tmp" |\
+    pigz -c |\
+    pv -s "${size}" |\
+    ssh -C "${TESTHOST}" "pigz -d | docker load"
+}
+
 CMD=${1:-}
 
 shift || true
@@ -60,6 +70,7 @@ case ${CMD} in
     clean) clean ;;
     test) _test ;;
     push) push ;;
+    copyToTestHost) copyToTestHost ;;
     release) release ;;
     *) usage ;;
 esac
