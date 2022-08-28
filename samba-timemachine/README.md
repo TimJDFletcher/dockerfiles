@@ -81,3 +81,9 @@ There is a utility function in the run script that will print out macOS timemach
 
 * [Debian Bookworm Slim](https://hub.docker.com/_/debian?tab=tags&page=1&name=bookworm-slim)
 * [SAMBA](https://packages.debian.org/bookworm/samba) [4.16.4](https://www.samba.org/samba/history/samba-4.16.4.html)
+
+# Areas for improvement
+
+* Figure out how to run rootless
+  * Backup directory ownership config
+  * User configuration, maybe bake the user into the container but how to support UID/GID mapping?
