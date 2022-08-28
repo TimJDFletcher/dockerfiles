@@ -10,7 +10,7 @@ export QUOTA="${QUOTA:-512000}"
 
 calculateQuota()
 {
-    echo "Quote is ${QUOTA}MB"
+    echo "Quota is ${QUOTA}MB"
     export QUOTA_IN_MEGABYTES="${QUOTA}"
     export QUOTA_IN_BYTES=$((QUOTA_IN_MEGABYTES * 1024 * 1024))
 }
