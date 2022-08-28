@@ -5,23 +5,23 @@ PLATFORMS="linux/amd64,linux/arm64,linux/arm/v7"
 TESTHOST=carbon
 
 build () {
-    docker build "${@}" -t "${IMAGE_NAME}:tmp" -f Dockerfile .
+  docker build "${@}" -t "${IMAGE_NAME}:tmp" -f Dockerfile .
 }
 
 clean () {
-    docker image rm "${IMAGE_NAME}:tmp" || true
+  docker image rm "${IMAGE_NAME}:tmp" || true
 }
 
 _test() {
-    build --quiet
-    bundle config set --local path vendor/bundle
-    bundle install
-    bundle exec rspec --format documentation
+  build --quiet
+  bundle config set --local path vendor/bundle
+  bundle install
+  bundle exec rspec --format documentation
 }
 
 _trivy() {
-    build --quiet
-    trivy image "${IMAGE_NAME}:tmp"
+  build --quiet
+  trivy image "${IMAGE_NAME}:tmp"
 }
 
 usage() {
@@ -31,12 +31,12 @@ usage() {
 }
 
 find_release(){
-    TAG="$(git tag | sort -n | tail -n 1)"
-    export TAG
+  TAG="$(git tag | sort -n | tail -n 1)"
+  export TAG
+  git checkout "${TAG}"
 }
 
 release() {
-  git checkout "${TAG}"
   export DOCKER_CLI_EXPERIMENTAL=enabled
   docker buildx use builder || docker buildx create --name builder
   docker buildx inspect --bootstrap
@@ -56,7 +56,6 @@ push() {
   docker push "timjdfletcher/${IMAGE_NAME}:${TAG}"
   docker push "timjdfletcher/${IMAGE_NAME}:latest"
 }
-
 
 timemachineLogs () {
   filter='processImagePath contains "backupd" and subsystem beginswith "com.apple.TimeMachine"'

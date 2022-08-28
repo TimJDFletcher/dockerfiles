@@ -37,7 +37,7 @@ To enable discovery copy the [service file](timemachine.service) to `/etc/avahi/
 | `PUID`      | Unix User ID for Time Machine user  |         `999` |
 | `PGID`      | Unix Group ID for Time Machine user |         `999` |
 | `LOG_LEVEL` |         SAMBA logging level         |           `2` |
-| `QUOTA`     |      Time Machine Quota in MB       |      `512000` |
+| `QUOTA`     |      Time Machine Quota in GB       |        `1024` |
 
 # Security
 
