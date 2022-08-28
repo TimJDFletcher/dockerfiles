@@ -5,7 +5,7 @@ PLATFORMS="linux/amd64,linux/arm64,linux/arm/v7"
 TESTHOST=carbon
 
 build () {
-  docker build "${@}" -t "${IMAGE_NAME}:tmp" -f Dockerfile .
+  docker build -t "${IMAGE_NAME}:tmp" -f Dockerfile .
 }
 
 clean () {
@@ -13,21 +13,24 @@ clean () {
 }
 
 _test() {
-  build --quiet
+  build
   bundle config set --local path vendor/bundle
   bundle install
   bundle exec rspec --format documentation
 }
 
 _trivy() {
-  build --quiet
+  build
   trivy image "${IMAGE_NAME}:tmp"
 }
 
 usage() {
-  echo "./run test|build|push|release"
-  echo "./run copyToTestHost"
-  echo "./run timemachineLogs"
+  echo "./run build - Build a local image called ${IMAGE_NAME}:tmp"
+  echo "./run test - Builds a local image and runs serverspec tests against it"
+  echo "./run trivy - Builds a local image and runs the trivy scanner against it"
+  echo "./run release - Tests and then releases to dockerhub a multiarch version of the latest tag"
+  echo "./run copyToTestHost - Copies ${IMAGE_NAME}:tmp to ${TESTHOST}"
+  echo "./run timemachineLogs - Gathers timemachine logs from macOS"
 }
 
 find_release(){
@@ -68,7 +71,7 @@ timemachineLogs () {
 }
 
 copyToTestHost () {
-    build --quiet
+    build
     size=$(docker image inspect samba-timemachine:tmp | jq -r '.[0].Size')
     docker save  "${IMAGE_NAME}:tmp" |\
     pigz -c |\
@@ -80,11 +83,10 @@ CMD=${1:-}
 
 shift || true
 case ${CMD} in
-    build) build --quiet ;;
+    build) build ;;
     clean) clean ;;
     test) _test ;;
     trivy) _trivy ;;
-    push) push ;;
     copyToTestHost) copyToTestHost ;;
     timemachineLogs) timemachineLogs ;;
     release) find_release && clean && _test && _trivy && release ;;

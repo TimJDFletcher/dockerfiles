@@ -94,7 +94,7 @@ describe 'Samba Timemachine Container' do
 
   describe process('smbd') do
     it { is_expected.to be_running }
-    its(:args) { is_expected.to contain('--no-process-group --foreground') }
+    its(:args) { is_expected.to contain('--no-process-group --foreground --debug-stdout') }
     its(:user) { is_expected.to eq('root') }
   end
 
