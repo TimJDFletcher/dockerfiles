@@ -30,27 +30,25 @@ To enable discovery copy the [service file](timemachine.service) to `/etc/avahi/
 
 # Settings
 
-| Variable    |               Function               | Default.    |
-|-------------|:------------------------------------:|------------:|
-| `USER`      |        Time Machine Username         | `timemachine` |
-| `PASS`      |        Time Machine Password         | `password`    |
-| `PUID`      |  Unix User ID for Time Machine user  | `999`         |
-| `PGID`      | Unix Group ID fror Time Machine user | `999`         |
-| `LOG_LEVEL` |         SAMBA logging level          | `999`         |
-| `QUOTA`     |       Time Machine Quota in MB       | `512000`      |
+| Variable    |              Function               |      Default. |
+|-------------|:-----------------------------------:|--------------:|
+| `USER`      |        Time Machine Username        | `timemachine` |
+| `PASS`      |        Time Machine Password        |    `password` |
+| `PUID`      | Unix User ID for Time Machine user  |         `999` |
+| `PGID`      | Unix Group ID for Time Machine user |         `999` |
+| `LOG_LEVEL` |         SAMBA logging level         |           `2` |
+| `QUOTA`     |      Time Machine Quota in MB       |      `512000` |
 
 # Security
 
-The security design is basic, I assume that timemachine backups are encrypted from the source macOS device. 
-The container creates a user timemachine on startup, with by default a password of `password`
+The security design is simple and assumes that timemachine backups are encrypted from the source macOS device. 
+
+The default configuration of the container creates a unix user called `timemachine` with uid and gid 999, and 
+a matching SAMBA user called `timemachine` with a password of `password`.
+
+A custom username can be passed to the container with the environment variable `USER`.
 
 A custom password can be passed to the container with the environment variable `PASS`.
-
-# Storage
-
-I have had some performance problems using ZFS as a backing store for the container in Catalina. 
-I'm not sure if this because of the slow SMR drive I was using or by ZFS's copy on write design interacting badly with APFS.
-I have changed the backend storage that I use to ext4 which has been working well.
 
 # Quotas
 
@@ -78,9 +76,16 @@ The container can be started with SAMBA debugging flags for example: `--debuglev
 There is a utility function in the run script that will print out macOS timemachine logs and then follow them to use it call:
 `./run timemachineLogs`
 
-# Versions
+# Storage notes
 
-* [Debian Bookworm Slim](https://hub.docker.com/_/debian?tab=tags&page=1&name=bookworm-slim)
+Generally speaking timemachine backups are heavy metadata workloads.
+I have had some performance problems using ZFS as a backing store for the container in Catalina.
+I'm not sure if this because of the slow SMR drive I was using or by ZFS's copy on write design interacting badly with APFS.
+I have changed the backend storage that I use to ext4 which has been working well.
+
+# Software Versions
+
+* [Debian Bookworm](https://hub.docker.com/_/debian?tab=tags&page=1&name=bookworm-slim)
 * [SAMBA](https://packages.debian.org/bookworm/samba) [4.16.4](https://www.samba.org/samba/history/samba-4.16.4.html)
 
 # Areas for improvement
