@@ -48,15 +48,6 @@ release() {
     -t "timjdfletcher/${IMAGE_NAME}:latest" --push .
 }
 
-push() {
-  _test
-  TAG=$(git rev-parse --short HEAD)
-  docker tag "${IMAGE_NAME}:tmp" "timjdfletcher/${IMAGE_NAME}:${TAG}"
-  docker tag "${IMAGE_NAME}:tmp" "timjdfletcher/${IMAGE_NAME}:latest"
-  docker push "timjdfletcher/${IMAGE_NAME}:${TAG}"
-  docker push "timjdfletcher/${IMAGE_NAME}:latest"
-}
-
 timemachineLogs () {
   filter='processImagePath contains "backupd" and subsystem beginswith "com.apple.TimeMachine"'
 
@@ -96,6 +87,6 @@ case ${CMD} in
     push) push ;;
     copyToTestHost) copyToTestHost ;;
     timemachineLogs) timemachineLogs ;;
-    release) _trivy && clean && find_release && release ;;
+    release) find_release && _trivy && release ;;
     *) usage ;;
 esac
