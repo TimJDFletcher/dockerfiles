@@ -8,6 +8,13 @@ export PGID="${PGID:-999}"
 export LOG_LEVEL="${LOG_LEVEL:-2}"
 export QUOTA="${QUOTA:-512000}"
 
+calculateQuota()
+{
+    echo "Quote is ${QUOTA}MB"
+    export QUOTA_IN_MEGABYTES="${QUOTA}"
+    export QUOTA_IN_BYTES=$((QUOTA_IN_MEGABYTES * 1024 * 1024))
+}
+
 checkBackupDir()
 {
     printf "Backups will be written to: "
@@ -27,23 +34,24 @@ configureBackupDir()
 
     echo "Restricting permissions on ${BACKUPDIR}, this may take a few minutes"
     chmod -R u+rwX,g=,o= "${BACKUPDIR}"
-}
 
-configureQuota()
-{
-    echo "Setting quote to ${QUOTA}MB"
-    QUOTA_IN_MEGABYTES="${QUOTA}"
-    QUOTA_IN_BYTES=$((QUOTA_IN_MEGABYTES * 1024 * 1024))
-    sed -e "s/QUOTA_IN_MEGABYTES/${QUOTA_IN_MEGABYTES}/g" \
-        -e "s/LOG_LEVEL/${LOG_LEVEL}/g" \
-      /etc/samba/smb.conf.tmpl \
-      > /etc/samba/smb.conf
+    echo "Writing out TimeMachine quota configuration"
     sed -e "s/QUOTA_IN_BYTES/${QUOTA_IN_BYTES}/g" \
       /etc/TimeMachine.quota.tmpl \
       > "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
 
     chown root:root "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
     chmod 444 "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
+}
+
+
+configureSAMBA()
+{
+    echo "Creating /etc/samba/smb.conf"
+    sed -e "s/QUOTA_IN_MEGABYTES/${QUOTA_IN_MEGABYTES}/g" \
+        -e "s/LOG_LEVEL/${LOG_LEVEL}/g" \
+      /etc/samba/smb.conf.tmpl \
+      > /etc/samba/smb.conf
 }
 
 createUser()
@@ -68,10 +76,11 @@ startSMB()
 
 if [[ -z ${1} ]] || [[ ${1:0:1} == '-' ]] ; then
     echo "Configuring container as a timemachine backup target"
+    calculateQuota
     checkBackupDir
-    configureBackupDir
-    configureQuota
     createUser
+    configureBackupDir
+    configureSAMBA
     startSMB "$@"
 else
     exec "$@"
