@@ -5,11 +5,10 @@ ENV SAMBA_VERSION="2:4.16.4+dfsg-2"
 ENV BACKUPDIR=/backups
 VOLUME /backups
 
-RUN apt-get update && \
-    apt-get --no-install-recommends --yes install \
+RUN apt update && \
+    apt --no-install-recommends --yes install \
         samba="$SAMBA_VERSION" \
-        samba-vfs-modules="$SAMBA_VERSION" \
-        iproute2 && \
+        samba-vfs-modules="$SAMBA_VERSION"  && \
     rm -rf /var/lib/apt/lists/*
 
 ADD samba.conf.tmpl /etc/samba/smb.conf.tmpl

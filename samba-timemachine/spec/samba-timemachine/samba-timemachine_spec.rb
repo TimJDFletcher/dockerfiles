@@ -95,8 +95,8 @@ describe 'Samba Timemachine Container' do
     its(:user) { is_expected.to eq('root') }
   end
 
-  describe command('ss -tulpn') do
-    its(:stdout) { should match(/^tcp.*0.0.0.0:445.*"smbd",pid=1/)}
-    its(:exit_status) { should eq 0 }
+  describe file('/proc/1/net/tcp') do
+    it { should exist }
+    its(:content) { is_expected.to match('00000000:01BD') }
   end
 end

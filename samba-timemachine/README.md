@@ -1,6 +1,6 @@
 # samba-timemachine-docker
 
-This is a docker container based on Ubuntu Focal running SAMBA and configured to provide Apple "Time Capsule" like backups.
+This is a docker container based on Debian bookworm with SAMBA configured to provide Apple "Time Capsule" like backups.
 
 The Docker Hub images support x86_64, Raspberry Pi 2/3/4 and other modern ARM based systems.
 
@@ -10,7 +10,7 @@ An example of how to use the container
 docker run -d -t \
     -v /backups/timemachine:/backups \
     -p 10445:445 \
-    --restart unless-stopped timjdfletcher/samba-timemachine:timemachine-v2.4
+    --restart unless-stopped timjdfletcher/samba-timemachine:latest
 ```
 
 This example maps the docker host port 10445 to the container port 445, so the container can be run alongside a normal SAMBA service.
@@ -19,7 +19,7 @@ This example maps the docker host port 10445 to the container port 445, so the c
 
 The container only runs smbd, to enable discovery on your local network use multicast DNS such as avahi.  
 
-I do this by running avahi-daemon on the docker host system, for debian systems install the package avahi-daemon: 
+I do this by running avahi-daemon on the docker host system, for debian type systems install the package avahi-daemon: 
 
 ```bash
 apt install avahi-daemon
@@ -27,48 +27,57 @@ apt install avahi-daemon
 
 To enable discovery copy the [service file](timemachine.service) to `/etc/avahi/services/`
 
-There is also a docker [container](https://hub.docker.com/r/solidnerd/avahi) that can be used instead of installing avahi-daemon on the host. 
-I have not tested this recently. 
-
 # Settings
 
-| Variable    | Function                                        | Default.    |
-| ------------|:-----------------------------------------------:|------------:|
-| USER        | Time Machine User                               | timemachine |
-| PASS        | User Password                                   | password    |
-| PUID        | UserID                                          | 999         |
-| PGID        | GroupID                                         | 999         |
-| QUOTA       | Time Machine Size in MB                         | 512000      |
-| RANDOM_PASS | Generate a random password, printed in the logs | false       |
+| Variable    |                   Function                    | Default.    |
+| ------------|:---------------------------------------------:|------------:|
+| `USER`        |               Time Machine User               | `timemachine` |
+| `PASS`        |                 User Password                 | `password`    |
+| `PUID`        |                    UserID                     | `999`         |
+| `PGID`        |                    GroupID                    | `999`         |
+| `QUOTA`       |           Time Machine Quota in MB            | `512000`      |
+| `RANDOM_PASS` | Generate a random password, printed in stdout | `false`       |
 
 # Security
 
+The security design is basic, I assume that Timemachine backups are encrypted from the source macOS device. 
 The container creates a user timemachine on startup, with by default a password of `password`, and then drops root.
 
-A password can be passed in with the environment variable `PASS`, or by setting the environment variable `RANDOM_PASS` to true the container generates a random password on startup.
+A custom password can be passed to the container with the environment variable `PASS`, this password is printed on stdout of the container.
+
+Setting the environment variable `RANDOM_PASS` to `true` causes the entrypoint script to generate a random password on 
+startup, this password is printed on stdout of the container.
 
 # Storage
 
-I have had some problems using ZFS as a backing store for the container in Catalina, I'm not sure if this because of the slow SMR drive I was using or ZFS.
-I have changed the backend storage to ext4 which has been working well.
+I have had some performance problems using ZFS as a backing store for the container in Catalina. 
+I'm not sure if this because of the slow SMR drive I was using or by ZFS's copy on write design interacting badly with APFS.
+I have changed the backend storage that I use to ext4 which has been working well.
 
 # Quotas
 
 The container supports setting of quota to limit the max size of backups, it defaults to 512GB.
-I'm unclear if this works correctly in macOS.
+I'm unclear if this works correctly in modern versions of macOS.
+
+The SAMBA setting of `disk max size` is also configured to limit the reported size of the disk to the same as the configured quota. 
+This is a soft limit not a hard limit.
+
+# Building the Docker image
+
+To build the image you need to have docker and docker buildx available, this is included by default in docker desktop 
+but for colime buildx needs to be [installed](https://github.com/abiosoft/colima/issues/44).
 
 # Testing
 
 Serverspec tests are included, to execute the tests use the run script: `./run test`
 
+Trivy is configured as well to test the container for known vulnerabilities.
+
+# Debugging
+
+The container can be started with SAMBA debugging flags for example: `--debuglevel=8 --debug-stdout`
+
 # Versions
 
-Base image: [Ubuntu Focal](https://hub.docker.com/_/ubuntu?tab=tags&page=1&name=focal)
-[SAMBA](https://packages.ubuntu.com/focal/samba)
-[iproute2](https://packages.ubuntu.com/focal/iproute2)
-
-# Docker image builds
-
-Auto builds are disabled to allow for multiarch local builds.
-
-~~Repo is auto built here: https://hub.docker.com/r/timjdfletcher/samba-timemachine/~~
+* [Debian Bookworm Slim](https://hub.docker.com/_/debian?tab=tags&page=1&name=bookworm-slim)
+* [SAMBA](https://packages.debian.org/bookworm/samba) [4.16.4](https://www.samba.org/samba/history/samba-4.16.4.html)
