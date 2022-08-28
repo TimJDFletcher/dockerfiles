@@ -17,6 +17,10 @@ _test() {
     bundle config set --local path vendor/bundle
     bundle install
     bundle exec rspec --format documentation
+}
+
+_trivy() {
+    build --quiet
     trivy image "${IMAGE_NAME}:tmp"
 }
 
@@ -32,11 +36,9 @@ find_release(){
 }
 
 release() {
-  clean
-  export DOCKER_CLI_EXPERIMENTAL=enabled
-  find_release
   git checkout "${TAG}"
-  docker buildx use testbuilder || docker buildx create --name testbuilder
+  export DOCKER_CLI_EXPERIMENTAL=enabled
+  docker buildx use builder || docker buildx create --name builder
   docker buildx inspect --bootstrap
   docker buildx build \
     --platform "${PLATFORMS}" \
@@ -91,9 +93,10 @@ case ${CMD} in
     build) build --quiet ;;
     clean) clean ;;
     test) _test ;;
+    trivy) _trivy ;;
     push) push ;;
     copyToTestHost) copyToTestHost ;;
     timemachineLogs) timemachineLogs ;;
-    release) release ;;
+    release) _trivy && clean && find_release && release ;;
     *) usage ;;
 esac
