@@ -74,6 +74,9 @@ Trivy is configured as well to test the container for known vulnerabilities.
 
 The container can be started with SAMBA debugging flags for example: `--debuglevel=8 --debug-stdout`
 
+There is a utility function in the run script that will print out macOS timemachine logs and then follow them to use it call:
+`./run timemachineLogs`
+
 # Versions
 
 * [Debian Bookworm Slim](https://hub.docker.com/_/debian?tab=tags&page=1&name=bookworm-slim)

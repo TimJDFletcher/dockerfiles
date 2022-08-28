@@ -22,6 +22,8 @@ _test() {
 
 usage() {
   echo "./run test|build|push|release"
+  echo "./run copyToTestHost"
+  echo "./run timemachineLogs"
 }
 
 find_release(){
