@@ -1,4 +1,4 @@
-FROM debian:bookworm-20220801-slim
+FROM debian:bookworm-20220822-slim
 
 ENV SAMBA_VERSION="2:4.16.4+dfsg-2"
 
