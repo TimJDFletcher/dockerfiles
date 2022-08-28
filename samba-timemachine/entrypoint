@@ -5,7 +5,7 @@ export USER="${USER:-timemachine}"
 export PASS="${PASS:-password}"
 export PUID="${PUID:-999}"
 export PGID="${PGID:-999}"
-export LOG_LEVEL="${LOG_LEVEL:-2}"
+export LOG_LEVEL="${LOG_LEVEL:-1}"
 export QUOTA="${QUOTA:-1024}"
 
 calculateQuota()
@@ -73,7 +73,7 @@ startSMB()
     echo "==================================================================================="
     echo "=                 Starting SAMBA, logs after this are from SAMBA                  ="
     echo "==================================================================================="
-    exec /usr/sbin/smbd --no-process-group --foreground "$@"
+    exec /usr/sbin/smbd --no-process-group --foreground --debug-stdout "$@"
 }
 
 if [[ -z ${1} ]] || [[ ${1:0:1} == '-' ]] ; then

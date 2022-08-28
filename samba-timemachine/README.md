@@ -36,7 +36,7 @@ To enable discovery copy the [service file](timemachine.service) to `/etc/avahi/
 | `PASS`      |        Time Machine Password        |    `password` |
 | `PUID`      | Unix User ID for Time Machine user  |         `999` |
 | `PGID`      | Unix Group ID for Time Machine user |         `999` |
-| `LOG_LEVEL` |         SAMBA logging level         |           `2` |
+| `LOG_LEVEL` |         SAMBA logging level         |           `1` |
 | `QUOTA`     |      Time Machine Quota in GB       |        `1024` |
 
 # Security
@@ -74,7 +74,7 @@ Trivy is configured as well to test the container for known vulnerabilities.
 
 # Debugging
 
-The container can be started with SAMBA debugging flags for example: `--debuglevel=8 --debug-stdout`
+The container can be started with SAMBA debugging flags for example: `--debuglevel=4`
 
 There is a utility function in the run script that will print out macOS timemachine logs and then follow them to use it call:
 `./run timemachineLogs`
