@@ -12,7 +12,7 @@ describe 'Samba Timemachine Container' do
     ENV['PGID'] = '1234'
     ENV['USER'] = 'testuser'
     ENV['PASS'] = 'Password123'
-    ENV['QUOTA'] = '123456'
+    ENV['QUOTA'] = '1234'
     ENV['LOG_LEVEL'] = '4'
     compose.up('samba-timemachine', detached: true)
   end
@@ -35,8 +35,8 @@ describe 'Samba Timemachine Container' do
     it { should be_file }
     it { should be_mode 644 }
     it { should be_owned_by 'root' }
-    its(:content) { is_expected.to match('max disk size               = 123456') }
-    its(:content) { is_expected.to match('fruit:time machine max size = 123456 MB') }
+    its(:content) { is_expected.to match('max disk size               = 1263616') }
+    its(:content) { is_expected.to match('fruit:time machine max size = 1263616 MB') }
     its(:content) { is_expected.to match('log level               = 4') }
   end
 
@@ -60,7 +60,7 @@ describe 'Samba Timemachine Container' do
     it { should be_mode 444 }
     it { should be_owned_by 'root' }
     it { should be_grouped_into 'root' }
-    its(:content) { is_expected.to match('129452998656') }
+    its(:content) { is_expected.to match('1324997410816') }
   end
 
   describe group('timemachine') do

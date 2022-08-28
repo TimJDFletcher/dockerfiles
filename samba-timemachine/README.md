@@ -50,13 +50,16 @@ A custom username can be passed to the container with the environment variable `
 
 A custom password can be passed to the container with the environment variable `PASS`.
 
-# Quotas
+# Quota
 
-The container supports setting of quota to limit the max size of backups, it defaults to 512GB.
+*BREAKING CHANGE in v2.7* Changing quota to be configured in Gigabytes
+
+The container supports setting of quota to limit the max size of backups, it defaults to 1024GB (1TB).
 I'm unclear if this works correctly in modern versions of macOS.
 
 The SAMBA setting of `disk max size` is also configured to limit the reported size of the disk to the same as the configured quota. 
 This is a soft limit not a hard limit.
+
 
 # Building the Docker image
 
