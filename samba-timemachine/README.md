@@ -30,18 +30,19 @@ To enable discovery copy the [service file](timemachine.service) to `/etc/avahi/
 
 # Settings
 
-| Variable    |                   Function                    | Default.    |
-| ------------|:---------------------------------------------:|------------:|
-| `USER`        |               Time Machine User               | `timemachine` |
-| `PASS`        |                 User Password                 | `password`    |
-| `PUID`        |                    UserID                     | `999`         |
-| `PGID`        |                    GroupID                    | `999`         |
-| `QUOTA`       |           Time Machine Quota in MB            | `512000`      |
+| Variable    |               Function               | Default.    |
+|-------------|:------------------------------------:|------------:|
+| `USER`      |        Time Machine Username         | `timemachine` |
+| `PASS`      |        Time Machine Password         | `password`    |
+| `PUID`      |  Unix User ID for Time Machine user  | `999`         |
+| `PGID`      | Unix Group ID fror Time Machine user | `999`         |
+| `LOG_LEVEL` |         SAMBA logging level          | `999`         |
+| `QUOTA`     |       Time Machine Quota in MB       | `512000`      |
 
 # Security
 
-The security design is basic, I assume that Timemachine backups are encrypted from the source macOS device. 
-The container creates a user timemachine on startup, with by default a password of `password`, and then drops root.
+The security design is basic, I assume that timemachine backups are encrypted from the source macOS device. 
+The container creates a user timemachine on startup, with by default a password of `password`
 
 A custom password can be passed to the container with the environment variable `PASS`.
 
@@ -66,7 +67,7 @@ but for colime buildx needs to be [installed](https://github.com/abiosoft/colima
 
 # Testing
 
-Serverspec tests are included, to execute the tests use the run script: `./run test`
+Serverspec tests are included, to execute the tests use the run script: `./run test` currently depends on ruby 2.6
 
 Trivy is configured as well to test the container for known vulnerabilities.
 
@@ -87,3 +88,4 @@ There is a utility function in the run script that will print out macOS timemach
 * Figure out how to run rootless
   * Backup directory ownership config
   * User configuration, maybe bake the user into the container but how to support UID/GID mapping?
+* Move away from serverspec tests or figure out how to update things as the testing tools are brittle

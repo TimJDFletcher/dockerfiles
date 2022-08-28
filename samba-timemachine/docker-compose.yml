@@ -9,9 +9,10 @@ services:
             PGID: ${PGID}
             USER: ${USER}
             PASS: ${PASS}
+            LOG_LEVEL: ${LOG_LEVEL}
             QUOTA: ${QUOTA}
         ports:
-            - 10445:445
+            - "10445:445"
         volumes:
             - backups:/backups:rw
         restart: unless-stopped
