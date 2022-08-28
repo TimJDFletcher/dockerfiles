@@ -87,6 +87,6 @@ case ${CMD} in
     push) push ;;
     copyToTestHost) copyToTestHost ;;
     timemachineLogs) timemachineLogs ;;
-    release) find_release && _test && _trivy && release ;;
+    release) find_release && clean && _test && _trivy && release ;;
     *) usage ;;
 esac
