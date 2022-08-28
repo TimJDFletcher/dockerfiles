@@ -37,17 +37,13 @@ To enable discovery copy the [service file](timemachine.service) to `/etc/avahi/
 | `PUID`        |                    UserID                     | `999`         |
 | `PGID`        |                    GroupID                    | `999`         |
 | `QUOTA`       |           Time Machine Quota in MB            | `512000`      |
-| `RANDOM_PASS` | Generate a random password, printed in stdout | `false`       |
 
 # Security
 
 The security design is basic, I assume that Timemachine backups are encrypted from the source macOS device. 
 The container creates a user timemachine on startup, with by default a password of `password`, and then drops root.
 
-A custom password can be passed to the container with the environment variable `PASS`, this password is printed on stdout of the container.
-
-Setting the environment variable `RANDOM_PASS` to `true` causes the entrypoint script to generate a random password on 
-startup, this password is printed on stdout of the container.
+A custom password can be passed to the container with the environment variable `PASS`.
 
 # Storage
 

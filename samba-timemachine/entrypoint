@@ -6,27 +6,6 @@ export PASS="${PASS:-password}"
 export PUID="${PUID:-999}"
 export PGID="${PGID:-999}"
 export QUOTA="${QUOTA:-512000}"
-export RANDOM_PASS=${RANDOM_PASS:-false}
-
-setPassword()
-{
-    if [ "$RANDOM_PASS" == true ] ; then
-        PASS=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 16 | head -n 1)
-        export PASS
-    fi
-}
-
-createUser()
-{
-    echo "Creating system users"
-    id -g timemachine > /dev/null || \
-        addgroup --gid "$PGID" timemachine
-    id -u timemachine > /dev/null || \
-        useradd --uid "$PUID" --gid "$PGID" --home /backups --shell /bin/nologin --no-create-home timemachine
-    echo "Creating SAMBA user ${USER} with a password of ${PASS}"
-    printf "%s\n%s\n" "${PASS}" "${PASS}" | smbpasswd -a -s timemachine
-    printf "timemachine = %s" "${USER}" > /etc/samba/users.map
-}
 
 checkBackupDir()
 {
@@ -35,6 +14,18 @@ checkBackupDir()
         echo "error volume not found did you forget to add the volume?"
         exit 1
     fi
+}
+
+configureBackupDir()
+{
+    echo "Marking ${BACKUPDIR} as supported by timemmachine"
+    touch "${BACKUPDIR}"/.com.apple.TimeMachine.supported
+
+    echo "Changing ownership of ${BACKUPDIR} to ${PUID}:${PGID}, this may take a few minutes"
+    chown -R "${PUID}":"${PGID}" "${BACKUPDIR}"
+
+    echo "Restricting permissions on ${BACKUPDIR}, this may take a few minutes"
+    chmod -R u+rwX,g=,o= "${BACKUPDIR}"
 }
 
 configureQuota()
@@ -51,16 +42,16 @@ configureQuota()
     chmod 444 "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
 }
 
-backupConfig()
+createUser()
 {
-    echo "Marking ${BACKUPDIR} as supported by timemmachine"
-    touch "${BACKUPDIR}"/.com.apple.TimeMachine.supported
-
-    echo "Changing ownership of ${BACKUPDIR} to ${PUID}:${PGID}, this may take a few minutes"
-    chown -R "${PUID}":"${PGID}" "${BACKUPDIR}"
-
-    echo "Restricting permissions on ${BACKUPDIR}, this may take a few minutes"
-    chmod -R u+rwX,g=,o= "${BACKUPDIR}"
+    echo "Creating system users"
+    id -g timemachine > /dev/null || \
+        addgroup --gid "$PGID" timemachine
+    id -u timemachine > /dev/null || \
+        useradd --uid "$PUID" --gid "$PGID" --home /backups --shell /bin/nologin --no-create-home timemachine
+    echo "Creating SAMBA user ${USER}"
+    printf "%s\n%s\n" "${PASS}" "${PASS}" | smbpasswd -a -s timemachine
+    printf "timemachine = %s" "${USER}" > /etc/samba/users.map
 }
 
 startSMB()
@@ -74,9 +65,8 @@ startSMB()
 if [[ -z ${1} ]] || [[ ${1:0:1} == '-' ]] ; then
     echo "Configuring container as a timemachine backup target"
     checkBackupDir
-    backupConfig
+    configureBackupDir
     configureQuota
-    setPassword
     createUser
     startSMB "$@"
 else
