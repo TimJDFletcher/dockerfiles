@@ -96,4 +96,5 @@ I have changed the backend storage that I use to ext4 which has been working wel
 * Figure out how to run rootless
   * Backup directory ownership config
   * User configuration, maybe bake the user into the container but how to support UID/GID mapping?
+  * Maybe just a hard set UID/GID ?
 * Move away from serverspec tests or figure out how to update things as the testing tools are brittle
