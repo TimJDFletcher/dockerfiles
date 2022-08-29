@@ -58,14 +58,14 @@ configureSAMBA()
 
 createUser()
 {
-    echo "Creating system users"
-    id -g timemachine > /dev/null 2>&1 || \
-        addgroup --gid "$PGID" timemachine
-    id -u timemachine > /dev/null 2>&1 || \
-        useradd --uid "$PUID" --gid "$PGID" --home /backups --shell /usr/sbin/nologin --no-create-home timemachine
+    echo "Creating system user"
+    id -g "${USER}" > /dev/null 2>&1 || \
+        addgroup --gid "$PGID" "${USER}"
+    id -u "${USER}" > /dev/null 2>&1 || \
+        useradd --uid "$PUID" --gid "$PGID" --home /backups --shell /usr/sbin/nologin --no-create-home "${USER}"
     echo "Creating SAMBA user ${USER}"
-    printf "%s\n%s\n" "${PASS}" "${PASS}" | smbpasswd -a -s timemachine
-    printf "timemachine = %s" "${USER}" > /etc/samba/users.map
+    printf "%s\n%s\n" "${PASS}" "${PASS}" | smbpasswd -a -s "${USER}"
+    echo "${USER} = ${USER}" > /etc/samba/users.map
 }
 
 startSMB()

@@ -46,7 +46,7 @@ describe 'Samba Timemachine Container' do
     it { should be_mode 644 }
     it { should be_owned_by 'root' }
     it { should be_grouped_into 'root' }
-    its(:content) { is_expected.to match('timemachine = testuser') }
+    its(:content) { is_expected.to match('testuser = testuser') }
   end
 
   describe file('/backups/.com.apple.TimeMachine.supported') do
@@ -63,12 +63,12 @@ describe 'Samba Timemachine Container' do
     its(:content) { is_expected.to match('1324997410816') }
   end
 
-  describe group('timemachine') do
+  describe group('testuser') do
     it { should exist }
     it { should have_gid '1234' }
   end
 
-  describe user('timemachine') do
+  describe user('testuser') do
     it { should exist }
     it { should have_uid '1234' }
     it { should belong_to_group '1234' }
@@ -78,8 +78,8 @@ describe 'Samba Timemachine Container' do
     it { should exist }
     it { should be_directory }
     it { should be_mode 700 }
-    it { should be_owned_by 'timemachine' }
-    it { should be_grouped_into 'timemachine' }
+    it { should be_owned_by 'testuser' }
+    it { should be_grouped_into 'testuser' }
   end
 
   describe command('/usr/bin/testparm') do
@@ -87,8 +87,8 @@ describe 'Samba Timemachine Container' do
     its(:exit_status) { should eq 0 }
   end
 
-  describe command('/usr/bin/smbpasswd -e timemachine') do
-    its(:stdout) { should match(/Enabled user timemachine./) }
+  describe command('/usr/bin/smbpasswd -e testuser') do
+    its(:stdout) { should match(/Enabled user testuser./) }
     its(:exit_status) { should eq 0 }
   end
 
