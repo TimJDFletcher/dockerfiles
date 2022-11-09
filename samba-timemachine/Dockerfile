@@ -1,6 +1,6 @@
-FROM debian:bookworm-20220822-slim
+FROM debian:bookworm-20221024-slim
 
-ENV SAMBA_VERSION="2:4.16.4+dfsg-2"
+ENV SAMBA_VERSION="2:4.17.2+dfsg-8"
 
 ENV BACKUPDIR=/backups
 VOLUME /backups
