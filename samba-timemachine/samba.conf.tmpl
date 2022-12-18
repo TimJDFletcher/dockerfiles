@@ -18,7 +18,7 @@ disable netbios         = yes
 # Apple configuration taken from:
 # https://wiki.samba.org/index.php/Configure_Samba_to_Work_Better_with_Mac_OS_X and
 # https://jansblog.org/2021/05/16/samba-based-timemachine-with-big-sur/
-vfs objects                                 = acl_xattr catia fruit streams_xattr
+vfs objects                                 = fruit catia acl_xattr streams_xattr
 fruit:metadata                              = stream
 fruit:model                                 = TimeCapsule6
 fruit:posix_rename                          = yes
