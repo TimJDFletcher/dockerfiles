@@ -60,7 +60,7 @@ createUser()
 {
     echo "Creating system user"
     id -g "${USER}" > /dev/null 2>&1 || \
-        addgroup --gid "$PGID" "${USER}"
+        groupadd --gid "$PGID" "${USER}"
     id -u "${USER}" > /dev/null 2>&1 || \
         useradd --uid "$PUID" --gid "$PGID" --home /backups --shell /usr/sbin/nologin --no-create-home "${USER}"
     echo "Creating SAMBA user ${USER}"
