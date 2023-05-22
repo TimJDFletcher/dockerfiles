@@ -1,4 +1,7 @@
-require 'spec_helper'
+require 'dockerspec'
+require 'dockerspec/serverspec'
+require 'docker'
+require 'docker/compose'
 
 def compose
   @compose ||= Docker::Compose.new
@@ -9,7 +12,7 @@ describe 'Samba Timemachine Container' do
     set :backend, :docker
     set :docker_container, 'samba-timemachine'
     ENV['PUID'] = '1234'
-    ENV['PGID'] = '1234'
+    ENV['PGID'] = '4321'
     ENV['USER'] = 'testuser'
     ENV['PASS'] = 'Password123'
     ENV['QUOTA'] = '1234'
@@ -36,9 +39,8 @@ describe 'Samba Timemachine Container' do
       it { should be_file }
       it { should be_mode 644 }
       it { should be_owned_by 'root' }
-      its(:content) { should contain('max disk size               = 1263616') }
-      its(:content) { should contain('fruit:time machine max size = 1263616 MB') }
-      its(:content) { should contain('log level               = 4') }
+      # test the config file directly due to this: https://lists.samba.org/archive/samba-technical/2017-August/122522.html
+      its(:content) { should contain('log level               = 4') } 
     end
 
     describe file('/etc/samba/users.map') do
@@ -76,24 +78,26 @@ describe 'Samba Timemachine Container' do
   context 'User and group tests' do
     describe group('testuser') do
       it { should exist }
-      it { should have_gid '1234' }
+      it { should have_gid '4321' }
     end
 
     describe user('testuser') do
       it { should exist }
       it { should have_uid '1234' }
-      it { should belong_to_group '1234' }
+      it { should belong_to_group '4321' }
     end
   end
 
   context 'Process-related tests' do
-    describe command('/usr/bin/testparm') do
-      its(:stderr) { should match(/Loaded services file OK/) }
+    describe command('/usr/bin/testparm --verbose') do
+      its(:stderr) { should contain('Loaded services file OK') }
+      its(:stdout) { should contain('max disk size = 1263616') }
+      its(:stdout) { should contain('fruit:time machine max size = 1263616 MB') }
       its(:exit_status) { should eq 0 }
     end
 
     describe command('/usr/bin/smbpasswd -e testuser') do
-      its(:stdout) { should match(/Enabled user testuser./) }
+      its(:stdout) { should contain('Enabled user testuser.') }
       its(:exit_status) { should eq 0 }
     end
 
@@ -103,9 +107,10 @@ describe 'Samba Timemachine Container' do
       its(:user) { should eq('root') }
     end
   end
-
-  describe file('/proc/1/net/tcp') do
-    it { should exist }
-    its(:content) { should match('00000000:01BD') }
+  context 'Network tests' do
+    describe file('/proc/1/net/tcp') do
+      it { should exist }
+      its(:content) { should contain('00000000:01BD') }
+    end
   end
 end
