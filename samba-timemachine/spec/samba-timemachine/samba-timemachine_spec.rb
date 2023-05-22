@@ -23,83 +23,89 @@ describe 'Samba Timemachine Container' do
     compose.rm(force: true)
   end
 
-  describe file('/entrypoint') do
-    it { should exist }
-    it { should be_file }
-    it { should be_mode 755 }
-    it { should be_owned_by 'root' }
+  context 'File-related tests' do
+    describe file('/entrypoint') do
+      it { should exist }
+      it { should be_file }
+      it { should be_mode 755 }
+      it { should be_owned_by 'root' }
+    end
+
+    describe file('/etc/samba/smb.conf') do
+      it { should exist }
+      it { should be_file }
+      it { should be_mode 644 }
+      it { should be_owned_by 'root' }
+      its(:content) { should contain('max disk size               = 1263616') }
+      its(:content) { should contain('fruit:time machine max size = 1263616 MB') }
+      its(:content) { should contain('log level               = 4') }
+    end
+
+    describe file('/etc/samba/users.map') do
+      it { should exist }
+      it { should be_file }
+      it { should be_mode 644 }
+      it { should be_owned_by 'root' }
+      it { should be_grouped_into 'root' }
+      its(:content) { should contain('testuser = testuser') }
+    end
+
+    describe file('/backups/.com.apple.TimeMachine.supported') do
+      it { should exist }
+      it { should be_file }
+    end
+
+    describe file('/backups/.com.apple.TimeMachine.quota.plist') do
+      it { should exist }
+      it { should be_file }
+      it { should be_mode 444 }
+      it { should be_owned_by 'root' }
+      it { should be_grouped_into 'root' }
+      its(:content) { should contain('1324997410816') }
+    end
+
+    describe file('/backups') do
+      it { should exist }
+      it { should be_directory }
+      it { should be_mode 700 }
+      it { should be_owned_by 'testuser' }
+      it { should be_grouped_into 'testuser' }
+    end
   end
 
-  describe file('/etc/samba/smb.conf') do
-    it { should exist }
-    it { should be_file }
-    it { should be_mode 644 }
-    it { should be_owned_by 'root' }
-    its(:content) { is_expected.to match('max disk size               = 1263616') }
-    its(:content) { is_expected.to match('fruit:time machine max size = 1263616 MB') }
-    its(:content) { is_expected.to match('log level               = 4') }
+  context 'User and group tests' do
+    describe group('testuser') do
+      it { should exist }
+      it { should have_gid '1234' }
+    end
+
+    describe user('testuser') do
+      it { should exist }
+      it { should have_uid '1234' }
+      it { should belong_to_group '1234' }
+    end
   end
 
-  describe file('/etc/samba/users.map') do
-    it { should exist }
-    it { should be_file }
-    it { should be_mode 644 }
-    it { should be_owned_by 'root' }
-    it { should be_grouped_into 'root' }
-    its(:content) { is_expected.to match('testuser = testuser') }
-  end
+  context 'Process-related tests' do
+    describe command('/usr/bin/testparm') do
+      its(:stderr) { should match(/Loaded services file OK/) }
+      its(:exit_status) { should eq 0 }
+    end
 
-  describe file('/backups/.com.apple.TimeMachine.supported') do
-    it { should exist }
-    it { should be_file }
-  end
+    describe command('/usr/bin/smbpasswd -e testuser') do
+      its(:stdout) { should match(/Enabled user testuser./) }
+      its(:exit_status) { should eq 0 }
+    end
 
-  describe file('/backups/.com.apple.TimeMachine.quota.plist') do
-    it { should exist }
-    it { should be_file }
-    it { should be_mode 444 }
-    it { should be_owned_by 'root' }
-    it { should be_grouped_into 'root' }
-    its(:content) { is_expected.to match('1324997410816') }
-  end
-
-  describe group('testuser') do
-    it { should exist }
-    it { should have_gid '1234' }
-  end
-
-  describe user('testuser') do
-    it { should exist }
-    it { should have_uid '1234' }
-    it { should belong_to_group '1234' }
-  end
-
-  describe file('/backups') do
-    it { should exist }
-    it { should be_directory }
-    it { should be_mode 700 }
-    it { should be_owned_by 'testuser' }
-    it { should be_grouped_into 'testuser' }
-  end
-
-  describe command('/usr/bin/testparm') do
-    its(:stderr) { should match(/Loaded services file OK/) }
-    its(:exit_status) { should eq 0 }
-  end
-
-  describe command('/usr/bin/smbpasswd -e testuser') do
-    its(:stdout) { should match(/Enabled user testuser./) }
-    its(:exit_status) { should eq 0 }
-  end
-
-  describe process('smbd') do
-    it { is_expected.to be_running }
-    its(:args) { is_expected.to contain('--no-process-group --foreground --debug-stdout') }
-    its(:user) { is_expected.to eq('root') }
+    describe process('smbd') do
+      it { should be_running }
+      its(:args) { should contain('--no-process-group --foreground --debug-stdout') }
+      its(:user) { should eq('root') }
+    end
   end
 
   describe file('/proc/1/net/tcp') do
     it { should exist }
-    its(:content) { is_expected.to match('00000000:01BD') }
+    its(:content) { should match('00000000:01BD') }
   end
 end
