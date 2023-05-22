@@ -1,6 +1,5 @@
 source 'https://rubygems.org'
 
-gem 'docker-api'
 gem 'docker-compose'
 gem 'rubocop'
 gem 'serverspec'
