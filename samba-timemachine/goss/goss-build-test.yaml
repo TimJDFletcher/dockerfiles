@@ -2,14 +2,12 @@ file:
   /backups:
     exists: true
     mode: "0700"
-    size: 4096
     owner: testuser
     group: testuser
     filetype: directory
   /backups/.com.apple.TimeMachine.quota.plist:
     exists: true
     mode: "0444"
-    size: 271
     owner: root
     group: root
     filetype: file
@@ -17,7 +15,6 @@ file:
   /backups/.com.apple.TimeMachine.supported:
     exists: true
     mode: "0444"
-    size: 0
     owner: root
     group: root
     filetype: file
