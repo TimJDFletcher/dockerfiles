@@ -5,12 +5,12 @@ services:
         image: samba-timemachine:tmp
         container_name: samba-timemachine
         environment:
-            PUID: ${PUID}
-            PGID: ${PGID}
-            USER: ${USER}
-            PASS: ${PASS}
-            LOG_LEVEL: ${LOG_LEVEL}
-            QUOTA: ${QUOTA}
+            PUID: "${PUID:-999}"
+            PGID: "${PGID:-999}"
+            USER: "${USER:-timemachine}"
+            PASS: "${PASS:-password}"
+            LOG_LEVEL: "${LOG_LEVEL:-1}"
+            QUOTA: "${QUOTA:-1024}"
         ports:
             - "10445:445"
         volumes:

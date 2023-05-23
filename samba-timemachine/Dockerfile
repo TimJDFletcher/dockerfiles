@@ -1,10 +1,10 @@
 FROM debian:bookworm-20230502-slim
 
 ENV SAMBA_VERSION="2:4.17.8+dfsg-1"
-ENV GOSS_VERSION="v0.3.22"
-ENV GOSS_DST="/goss"
+ENV GOSS_VERSION="v0.3.22" GOSS_DST="/goss"
 
-ENV BACKUPDIR=/backups
+ENV USER="timemachine" PASS="password" PUID="999" GID="999" LOG_LEVEL="1" QUOTA="1024"
+ENV BACKUPDIR="/backups"
 VOLUME /backups
 
 RUN apt update && \
@@ -26,7 +26,7 @@ ADD goss/ /goss/
 RUN apt update && \
     apt --no-install-recommends --yes install curl ca-certificates && \
     sh /goss/goss-installer && \
-    /goss/goss --gossfile /goss/tests/goss-build-test.yaml validate && \
+    /${GOSS_DST}/goss --gossfile /${GOSS_DST}/tests/goss-dockerfile-tests.yaml validate && \
     apt purge --yes curl ca-certificates && \
     apt autoremove --yes && \
     rm -rf /var/lib/apt/lists/*

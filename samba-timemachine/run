@@ -10,15 +10,25 @@ build () {
 
 clean () {
   docker image rm "${IMAGE_NAME}:tmp" || true
+  docker-compose down --remove-orphans
+}
+
+_up () {
+  build
+  docker-compose up --remove-orphans --detach
+}
+
+_down () {
+  docker-compose down --remove-orphans
 }
 
 _goss_test() {
-  build
   export PUID=1234 PGID=4321 USER=testuser PASS=Password123 QUOTA=1234 LOG_LEVEL=4 
-  docker-compose up --remove-orphans --detach
+  _up
   sleep 5
-  docker-compose exec samba-timemachine /goss/goss --gossfile /goss/tests/goss-live-test.yaml validate  
-  docker-compose down --remove-orphans
+  docker-compose exec samba-timemachine bash -c '/${GOSS_DST}/goss --gossfile /${GOSS_DST}/tests/goss-live-tests.yaml validate'
+  docker-compose exec samba-timemachine bash -c '/${GOSS_DST}/goss --gossfile /${GOSS_DST}/tests/goss-healthcheck-tests.yaml validate'
+  _down
 }
 
 _trivy() {
@@ -85,6 +95,8 @@ CMD=${1:-}
 
 shift || true
 case ${CMD} in
+    up) _up ;;
+    down) _down ;;
     build) build ;;
     clean) clean ;;
     test) _goss_test ;;
