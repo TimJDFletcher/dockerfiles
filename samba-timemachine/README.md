@@ -3,7 +3,7 @@
 This is a docker container based on Debian bookworm with SAMBA configured to provide Apple "Time Capsule" like backups.
 
 The Docker Hub [images](https://hub.docker.com/repository/docker/timjdfletcher/samba-timemachine/tags?page=1&ordering=last_updated)
-support x86_64, Raspberry Pi 2/3/4 and other modern ARM based systems.
+support x86_64, Raspberry Pi 2/3/4 and other modern ARM / ARM64 based systems.
 
 An example of how to use the container
 
@@ -60,7 +60,6 @@ I'm unclear if this works correctly in modern versions of macOS.
 The SAMBA setting of `disk max size` is also configured to limit the reported size of the disk to the same as the configured quota. 
 This is a soft limit not a hard limit.
 
-
 # Building the Docker image
 
 To build the image you need to have docker and docker buildx available, this is included by default in docker desktop 
@@ -68,7 +67,7 @@ but for colime buildx needs to be [installed](https://github.com/abiosoft/colima
 
 # Testing
 
-Serverspec tests are included, to execute the tests use the run script: `./run test` currently depends on ruby 2.6
+[Goss](https://github.com/goss-org/goss) tests are [included](goss/tests/), to execute the tests use the run script: `./run test`
 
 Trivy is configured as well to test the container for known vulnerabilities.
 
@@ -97,4 +96,3 @@ I have changed the backend storage that I use to ext4 which has been working wel
   * Backup directory ownership config
   * User configuration, maybe bake the user into the container but how to support UID/GID mapping?
   * Maybe just a hard set UID/GID ?
-* Move away from serverspec tests or figure out how to update things as the testing tools are brittle

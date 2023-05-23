@@ -12,13 +12,6 @@ clean () {
   docker image rm "${IMAGE_NAME}:tmp" || true
 }
 
-_test() {
-  build
-  bundle config set --local path vendor/bundle
-  bundle install
-  bundle exec rspec --format documentation
-}
-
 _goss_test() {
   build
   export PUID=1234 PGID=4321 USER=testuser PASS=Password123 QUOTA=1234 LOG_LEVEL=4 
@@ -35,7 +28,7 @@ _trivy() {
 
 usage() {
   echo "./run build - Build a local image called ${IMAGE_NAME}:tmp"
-  echo "./run test - Builds a local image and runs serverspec tests against it"
+  echo "./run test - Builds a local image and runs goss tests against it"
   echo "./run trivy - Builds a local image and runs the trivy scanner against it"
   echo "./run release - Tests and then releases to dockerhub a multiarch version of the latest tag"
   echo "./run copyToTestHost - Copies ${IMAGE_NAME}:tmp to ${TESTHOST}"
