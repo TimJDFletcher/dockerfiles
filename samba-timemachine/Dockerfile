@@ -1,4 +1,4 @@
-FROM debian:bookworm-20230502-slim
+FROM debian:bookworm-20230522-slim
 
 ENV SAMBA_VERSION="2:4.17.8+dfsg-1"
 ENV GOSS_VERSION="v0.3.22" GOSS_DST="/goss"
