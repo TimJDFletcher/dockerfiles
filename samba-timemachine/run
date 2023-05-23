@@ -19,6 +19,15 @@ _test() {
   bundle exec rspec --format documentation
 }
 
+_goss_test() {
+  build
+  export PUID=1234 PGID=4321 USER=testuser PASS=Password123 QUOTA=1234 LOG_LEVEL=4 
+  docker-compose up -d
+  sleep 5
+  docker-compose exec samba-timemachine /goss/goss --gossfile /goss/tests/goss-live-test.yaml validate  
+  docker-compose down
+}
+
 _trivy() {
   build
   trivy image "${IMAGE_NAME}:tmp"
@@ -85,7 +94,7 @@ shift || true
 case ${CMD} in
     build) build ;;
     clean) clean ;;
-    test) _test ;;
+    test) _goss_test ;;
     trivy) _trivy ;;
     copyToTestHost) copyToTestHost ;;
     timemachineLogs) timemachineLogs ;;
