@@ -1,0 +1,21 @@
+file:
+  /entrypoint:
+    exists: true
+    mode: "0755"
+    owner: root
+    group: root
+    filetype: file
+  /etc/samba/smb.conf:
+    exists: false
+  /etc/samba/users.map:
+    exists: false
+package:
+  samba:
+    installed: true
+  samba-vfs-modules:
+    installed: true
+command:
+  /goss/goss --version:
+    exit-status: 0
+    stdout: []
+    timeout: 10000
