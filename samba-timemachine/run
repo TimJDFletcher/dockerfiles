@@ -15,10 +15,10 @@ clean () {
 _goss_test() {
   build
   export PUID=1234 PGID=4321 USER=testuser PASS=Password123 QUOTA=1234 LOG_LEVEL=4 
-  docker-compose up -d
+  docker-compose up --remove-orphans --detach
   sleep 5
   docker-compose exec samba-timemachine /goss/goss --gossfile /goss/tests/goss-live-test.yaml validate  
-  docker-compose down
+  docker-compose down --remove-orphans
 }
 
 _trivy() {
