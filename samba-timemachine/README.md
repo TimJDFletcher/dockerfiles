@@ -85,10 +85,11 @@ I have had some performance problems using ZFS as a backing store for the contai
 I'm not sure if this because of the slow SMR drive I was using or by ZFS's copy on write design interacting badly with APFS.
 I have changed the backend storage that I use to ext4 which has been working well.
 
-# Software Versions
+# Software Used
 
 * [Debian Bookworm](https://hub.docker.com/_/debian?tab=tags&page=1&name=bookworm-slim)
-* [SAMBA](https://packages.debian.org/bookworm/samba) [4.16.4](https://www.samba.org/samba/history/samba-4.16.4.html)
+* [SAMBA](https://packages.debian.org/bookworm/samba)
+* [GOSS](https://github.com/goss-org/goss)
 
 # Areas for improvement
 

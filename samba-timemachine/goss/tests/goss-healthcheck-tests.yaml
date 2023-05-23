@@ -47,6 +47,7 @@ port:
     listening: true
     ip:
     - '::'
+command:
   /usr/bin/testparm --verbose:
     exit-status: 0
     stderr:
