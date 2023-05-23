@@ -1,0 +1,69 @@
+file:
+  /backups:
+    exists: true
+    mode: "0700"
+    size: 4096
+    owner: testuser
+    group: testuser
+    filetype: directory
+  /backups/.com.apple.TimeMachine.quota.plist:
+    exists: true
+    mode: "0444"
+    size: 271
+    owner: root
+    group: root
+    filetype: file
+    contains: ["1324997410816"]
+  /backups/.com.apple.TimeMachine.supported:
+    exists: true
+    mode: "0444"
+    size: 0
+    owner: root
+    group: root
+    filetype: file
+  /entrypoint:
+    exists: true
+    mode: "0755"
+    owner: root
+    group: root
+    filetype: file
+  /etc/samba/smb.conf:
+    exists: true
+    mode: "0644"
+    owner: root
+    group: root
+    filetype: file
+    contains: ["log level               = 4"]
+  /etc/samba/users.map:
+    exists: true
+    mode: "0644"
+    owner: root
+    group: root
+    filetype: file
+    contains: ["testuser = testuser"]
+port:
+  tcp:445:
+    listening: true
+    ip:
+    - 0.0.0.0
+  tcp6:445:
+    listening: true
+    ip:
+    - '::'
+command:
+  /usr/bin/smbpasswd -e testuser:
+    exit-status: 0
+    stdout:
+    - Enabled user testuser.
+    timeout: 10000
+  /usr/bin/testparm --verbose:
+    exit-status: 0
+    stdout:
+    - fruit:time machine max size = 1263616 MB
+    - fruit:time machine = yes
+    stderr:
+    - Loaded services file OK.
+    timeout: 10000
+process:
+  smbd:
+    running: true
