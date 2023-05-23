@@ -41,6 +41,13 @@ file:
     group: root
     filetype: file
     contains: ["testuser = testuser"]
+  /proc/1/cmdline:
+    exists: true
+    contains:
+    - /usr/sbin/smbd
+    - --no-process-group
+    - --foreground
+    - --debug-stdout
 port:
   tcp:445:
     listening: true
@@ -67,3 +74,8 @@ command:
 process:
   smbd:
     running: true
+mount:
+  /backups:
+    exists: true
+    usage: 
+      lt: 90
