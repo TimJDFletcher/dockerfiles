@@ -5,23 +5,28 @@ This is a docker container based on Debian bookworm with SAMBA configured to pro
 The Docker Hub [images](https://hub.docker.com/repository/docker/timjdfletcher/samba-timemachine/tags?page=1&ordering=last_updated)
 support x86_64, Raspberry Pi 3/4 and other modern ARM64 based systems.
 
+# Networking
+
+*BREAKING CHANGE in v2.9+* Changed default container listen port to 10445
+
+The container by default listens on port 10445 to allow this container to run alongside an existing SAMBA server and to remove 
+the need for root access in the container
+
 An example of how to use the container with raw docker
 
 ```bash
 docker run -d -t \
     -v /backups/timemachine:/backups \
-    -p 10445:445 \
+    -p 10445:10445 \
     --restart unless-stopped timjdfletcher/samba-timemachine:latest
 ```
 
-This example maps the docker host port 10445 to the container port 445, so the container can be run alongside a normal SAMBA service.
-
 The repo includes an example [docker compose](https://docs.docker.com/compose/) [file](./docker-compose.yml) that starts the container 
-on port 10445, with a local volume and healthchecks enabled.
+with a local volume and healthchecks enabled.
 
 # Discovery
 
-The container only runs smbd, to enable discovery on your local network use multicast DNS such as avahi.  
+The container only runs smbd on a nonstandard port, to enable discovery on your local network a tool such as avahi to announce the server over mDNS.  
 
 I do this by running avahi-daemon on the docker host system, for debian type systems install the package avahi-daemon: 
 
@@ -29,7 +34,7 @@ I do this by running avahi-daemon on the docker host system, for debian type sys
 apt install avahi-daemon
 ```
 
-To enable discovery copy the example [service file](timemachine.service) to `/etc/avahi/services/`
+And copy the example [service file](timemachine.service) to `/etc/avahi/services/`
 
 # Settings
 
@@ -56,7 +61,7 @@ A custom password can be passed to the container with the environment variable `
 
 # Quota
 
-*BREAKING CHANGE in v2.7* Changing quota to be configured in Gigabytes
+*BREAKING CHANGE in v2.7+* Quota is now configured in Gigabytes
 
 The container supports setting of quota to limit the max size of backups, it defaults to 1024GB (1TB).
 I'm unclear if this works correctly in modern versions of macOS.
@@ -96,7 +101,7 @@ I have changed the backend storage that I use to ext4 which has been working wel
 
 # Areas for improvement
 
-* Figure out how to run rootless
+* Figure out how to run rootless (WIP)
   * Backup directory ownership config
   * User configuration, maybe bake the user into the container but how to support UID/GID mapping?
   * Maybe just a hard set UID/GID ?
