@@ -53,6 +53,9 @@ command:
     stderr:
     - Loaded services file OK.
     timeout: 10000
+  /usr/bin/touch {{.Env.BACKUPDIR}}/.writetest:
+    exit-status: 0
+    timeout: 10000
 process:
   smbd:
     running: true
