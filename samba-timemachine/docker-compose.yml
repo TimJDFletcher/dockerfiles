@@ -12,7 +12,7 @@ services:
     healthcheck:
       test:
       - CMD-SHELL
-      - /goss/goss --gossfile /goss/tests/goss-live-tests.yaml validate
+      - /goss/goss --gossfile /goss/tests/goss-healthcheck-tests.yaml validate
       timeout: 10s
       interval: 1m0s
       retries: 2
