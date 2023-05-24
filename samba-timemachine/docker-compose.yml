@@ -1,21 +1,40 @@
-version: '3.3'
-
+name: samba-timemachine
 services:
-    samba-timemachine:
-        image: samba-timemachine:tmp
-        container_name: samba-timemachine
-        environment:
-            PUID: "${PUID:-999}"
-            PGID: "${PGID:-999}"
-            USER: "${USER:-timemachine}"
-            PASS: "${PASS:-password}"
-            LOG_LEVEL: "${LOG_LEVEL:-1}"
-            QUOTA: "${QUOTA:-1024}"
-        ports:
-            - "10445:445"
-        volumes:
-            - backups:/backups:rw
-        restart: unless-stopped
-        tty: true
+  samba-timemachine:
+    container_name: samba-timemachine
+    environment:
+      LOG_LEVEL: "1"
+      PASS: password
+      PGID: "999"
+      PUID: "999"
+      QUOTA: "1024"
+      USER: tim
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - /goss/goss --gossfile /goss/tests/goss-live-tests.yaml validate'
+      timeout: 10s
+      interval: 1m0s
+      retries: 2
+      start_period: 20s
+    image: samba-timemachine:tmp
+    networks:
+      default: null
+    ports:
+    - mode: ingress
+      target: 445
+      published: "10445"
+      protocol: tcp
+    restart: unless-stopped
+    tty: true
+    volumes:
+    - type: volume
+      source: backups
+      target: /backups
+      volume: {}
+networks:
+  default:
+    name: samba-timemachine_default
 volumes:
-    backups:
+  backups:
+    name: samba-timemachine_backups
