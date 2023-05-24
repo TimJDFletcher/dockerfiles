@@ -105,3 +105,4 @@ I have changed the backend storage that I use to ext4 which has been working wel
   * Backup directory ownership config
   * User configuration, maybe bake the user into the container but how to support UID/GID mapping?
   * Maybe just a hard set UID/GID ?
+* Experiment with https://github.com/GoogleContainerTools/container-structure-test
