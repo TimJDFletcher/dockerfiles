@@ -15,7 +15,6 @@ ADD TimeMachine.quota.tmpl /etc/TimeMachine.quota.tmpl
 
 ENV GOSS_VER="v0.3.22" GOSS_DST="/goss"
 ADD goss/ /goss/
-
 RUN apt update && \
     apt --no-install-recommends --yes install curl ca-certificates && \
     sh /goss/goss-installer && \
@@ -23,7 +22,7 @@ RUN apt update && \
     apt autoremove --yes && \
     rm -rf /var/lib/apt/lists/*
 
-EXPOSE 445/tcp
+EXPOSE 10445/tcp
 
 ADD entrypoint /entrypoint
 RUN chmod 0755 /entrypoint
