@@ -1,15 +1,17 @@
 #!/bin/bash
 set -eu -o pipefail
-IMAGE_NAME=samba-timemachine
+IMAGE_NAME=timjdfletcher/samba-timemachine
+IMAGE_TAG=tmp
 PLATFORMS="linux/amd64,linux/arm64"
 TESTHOST=carbon
 
 build () {
-  docker build -t "${IMAGE_NAME}:tmp" -f Dockerfile .
+  docker build -t "${IMAGE_NAME}:${IMAGE_TAG}" -f Dockerfile .
+  docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
 }
 
 clean () {
-  docker image rm "${IMAGE_NAME}:tmp" || true
+  docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" || true
   docker-compose down --remove-orphans
 }
 
@@ -23,26 +25,26 @@ _down () {
 }
 
 _goss_test() {
-  export PUID=1234 PGID=4321 USER=testuser PASS=Password123 QUOTA=1234 LOG_LEVEL=4 
+  export PUID=1234 PGID=4321 USER=testuser PASS=Password123 QUOTA=1234 LOG_LEVEL=4 IMAGE_VERSION=tmp
   _up
   sleep 5
   docker-compose exec samba-timemachine bash -c '/${GOSS_DST}/goss --gossfile /${GOSS_DST}/tests/goss-live-tests.yaml validate'
   docker-compose exec samba-timemachine bash -c '/${GOSS_DST}/goss --gossfile /${GOSS_DST}/tests/goss-healthcheck-tests.yaml validate'
   _down
-  unset PUID PGID USER PASS QUOTA LOG_LEVEL 
+  unset PUID PGID USER PASS QUOTA LOG_LEVEL IMAGE_VERSION
 }
 
 _trivy() {
   build
-  trivy image "${IMAGE_NAME}:tmp"
+  trivy image "${IMAGE_NAME}:${IMAGE_TAG}"
 }
 
 usage() {
-  echo "./run build - Build a local image called ${IMAGE_NAME}:tmp"
+  echo "./run build - Build a local image called ${IMAGE_NAME}:${IMAGE_TAG}"
   echo "./run test - Builds a local image and runs goss tests against it"
   echo "./run trivy - Builds a local image and runs the trivy scanner against it"
   echo "./run release - Tests and then releases to dockerhub a multiarch version of the latest tag"
-  echo "./run copyToTestHost - Copies ${IMAGE_NAME}:tmp to ${TESTHOST}"
+  echo "./run copyToTestHost - Copies ${IMAGE_NAME}:${IMAGE_TAG} to ${TESTHOST}"
   echo "./run timemachineLogs - Gathers timemachine logs from macOS"
 }
 
@@ -85,8 +87,8 @@ timemachineLogs () {
 
 copyToTestHost () {
     build
-    size=$(docker image inspect samba-timemachine:tmp | jq -r '.[0].Size')
-    docker save  "${IMAGE_NAME}:tmp" |\
+    size=$(docker image inspect samba-timemachine:${IMAGE_TAG} | jq -r '.[0].Size')
+    docker save  "${IMAGE_NAME}:${IMAGE_TAG}" |\
     pigz -c |\
     pv -s "${size}" |\
     ssh -C "${TESTHOST}" "pigz -d | docker load"

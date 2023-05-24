@@ -3,12 +3,12 @@ services:
   samba-timemachine:
     container_name: samba-timemachine
     environment:
-      LOG_LEVEL: "1"
-      PASS: password
-      PGID: "999"
-      PUID: "999"
-      QUOTA: "1024"
-      USER: tim
+      PUID: "${PUID:-999}"
+      PGID: "${PGID:-999}"
+      USER: "${USER:-timemachine}"
+      PASS: "${PASS:-password}"
+      LOG_LEVEL: "${LOG_LEVEL:-1}"
+      QUOTA: "${QUOTA:-1024}"
     healthcheck:
       test:
       - CMD-SHELL
@@ -17,7 +17,7 @@ services:
       interval: 1m0s
       retries: 2
       start_period: 20s
-    image: samba-timemachine:tmp
+    image: timjdfletcher/samba-timemachine:${IMAGE_VERSION:-latest}
     networks:
       default: null
     ports:
