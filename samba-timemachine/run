@@ -6,14 +6,14 @@ PLATFORMS="linux/amd64,linux/arm64"
 TESTHOST=carbon
 
 build () {
-  docker build -t "${IMAGE_NAME}:${IMAGE_TAG}" -f Dockerfile .
+  docker buildx -t "${IMAGE_NAME}:${IMAGE_TAG}" -f Dockerfile .
   docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
 }
 
 clean () {
+  docker compose down --remove-orphans
   docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" || true
   docker image rm "${IMAGE_NAME}:latest" || true
-  docker compose down --remove-orphans
 }
 
 _up () {
@@ -42,7 +42,10 @@ _goss_test() {
 
 _trivy() {
   build
-  trivy image "${IMAGE_NAME}:${IMAGE_TAG}"
+  trivy image \
+      --ignore-unfixed  \
+      --exit-code 1 \
+      "${IMAGE_NAME}:${IMAGE_TAG}"
 }
 
 usage() {
@@ -64,7 +67,6 @@ find_release(){
 }
 
 release() {
-  local DOCKER_CLI_EXPERIMENTAL=enabled
   docker buildx use builder || docker buildx create --name builder
   docker buildx inspect --bootstrap
   docker buildx build --platform "${PLATFORMS}" -t "${IMAGE_NAME}:${TAG}" --push .
