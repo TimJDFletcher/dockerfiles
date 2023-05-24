@@ -1,34 +1,33 @@
 FROM debian:bookworm-20230522-slim
 
-ENV SAMBA_VERSION="2:4.17.8+dfsg-1"
-ENV GOSS_VERSION="v0.3.22" GOSS_DST="/goss"
-
 ENV USER="timemachine" PASS="password" PUID="999" GID="999" LOG_LEVEL="1" QUOTA="1024"
 ENV BACKUPDIR="/backups"
 VOLUME /backups
 
+ENV SAMBA_VERSION="2:4.17.8+dfsg-1"
 RUN apt update && \
     apt --no-install-recommends --yes install \
         samba="$SAMBA_VERSION" \
         samba-vfs-modules="$SAMBA_VERSION"  && \
     rm -rf /var/lib/apt/lists/* /etc/samba/smb.conf
-
 ADD samba.conf.tmpl /etc/samba/smb.conf.tmpl
 ADD TimeMachine.quota.tmpl /etc/TimeMachine.quota.tmpl
+
+ENV GOSS_VER="v0.3.22" GOSS_DST="/goss"
+ADD goss/ /goss/
+
+RUN apt update && \
+    apt --no-install-recommends --yes install curl ca-certificates && \
+    sh /goss/goss-installer && \
+    apt purge --yes curl ca-certificates && \
+    apt autoremove --yes && \
+    rm -rf /var/lib/apt/lists/*
 
 EXPOSE 445/tcp
 
 ADD entrypoint /entrypoint
 RUN chmod 0755 /entrypoint
 
-ADD goss/ /goss/
-
-RUN apt update && \
-    apt --no-install-recommends --yes install curl ca-certificates && \
-    sh /goss/goss-installer && \
-    /${GOSS_DST}/goss --gossfile /${GOSS_DST}/tests/goss-dockerfile-tests.yaml validate && \
-    apt purge --yes curl ca-certificates && \
-    apt autoremove --yes && \
-    rm -rf /var/lib/apt/lists/*
+RUN /${GOSS_DST}/goss --gossfile /${GOSS_DST}/tests/goss-dockerfile-tests.yaml validate 
 
 ENTRYPOINT ["/entrypoint"]
