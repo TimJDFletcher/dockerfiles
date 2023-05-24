@@ -29,6 +29,7 @@ _goss_test() {
   docker-compose exec samba-timemachine bash -c '/${GOSS_DST}/goss --gossfile /${GOSS_DST}/tests/goss-live-tests.yaml validate'
   docker-compose exec samba-timemachine bash -c '/${GOSS_DST}/goss --gossfile /${GOSS_DST}/tests/goss-healthcheck-tests.yaml validate'
   _down
+  unset PUID PGID USER PASS QUOTA LOG_LEVEL 
 }
 
 _trivy() {
