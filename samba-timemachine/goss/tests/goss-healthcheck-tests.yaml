@@ -60,8 +60,13 @@ command:
   /usr/bin/touch {{.Env.BACKUPDIR}}/.writetest:
     exit-status: 0
     timeout: 10000
-  /usr/bin/smbclient --ip-address=127.0.0.1 --port 10445 --user={{.Env.USER}}%{{.Env.PASS}} \\\\TIMECAPSULE\\Data:
+  /usr/bin/smbclient --ip-address=127.0.0.1 --port 10445 --user={{.Env.USER}}%{{.Env.PASS}} \\\\TIMECAPSULE\\Data -c ls:
     exit-status: 0
+    stdout:
+    - .com.apple.TimeMachine.quota.plist
+    - .com.apple.TimeMachine.supported
+    - .writetest
+    timeout: 10000
 process:
   smbd:
     running: true

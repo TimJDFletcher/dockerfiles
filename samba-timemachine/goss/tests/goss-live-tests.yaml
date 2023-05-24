@@ -76,8 +76,15 @@ command:
     stderr:
     - Loaded services file OK.
     timeout: 10000
-  /usr/bin/smbclient --ip-address=127.0.0.1 --port 10445 --user=testuser%Password123 \\\\TIMECAPSULE\\Data:
+  /usr/bin/touch /backups/.writetest:
     exit-status: 0
+    timeout: 10000
+  /usr/bin/smbclient --ip-address=127.0.0.1 --port 10445 --user=testuser%Password123 \\\\TIMECAPSULE\\Data -c ls:
+    exit-status: 0
+    stdout:
+    - .com.apple.TimeMachine.quota.plist
+    - .com.apple.TimeMachine.supported
+    - .writetest
 process:
   smbd:
     running: true

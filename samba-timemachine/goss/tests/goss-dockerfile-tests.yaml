@@ -19,5 +19,6 @@ package:
 command:
   /goss/goss --version:
     exit-status: 0
-    stdout: []
+    stdout: 
+    - v0.3.22
     timeout: 10000
