@@ -46,11 +46,11 @@ file:
     - --foreground
     - --debug-stdout
 port:
-  tcp:445:
+  tcp:10445:
     listening: true
     ip:
     - 0.0.0.0
-  tcp6:445:
+  tcp6:10445:
     listening: true
     ip:
     - '::'
