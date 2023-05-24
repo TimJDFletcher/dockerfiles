@@ -65,6 +65,10 @@ command:
     stdout:
     - fruit:time machine max size = 1263616 MB
     - fruit:time machine = yes
+    - valid users = testuser
+    - path = /backups
+    - restrict anonymous = 2
+    - client min protocol = SMB3
     stderr:
     - Loaded services file OK.
     timeout: 10000
