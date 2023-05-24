@@ -12,12 +12,18 @@ build () {
 
 clean () {
   docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" || true
+  docker image rm "${IMAGE_NAME}:latest" || true
   docker-compose down --remove-orphans
 }
 
 _up () {
   build
   docker-compose up --remove-orphans --detach
+}
+
+_exec () {
+  _up
+  docker-compose exec samba-timemachine /bin/bash -
 }
 
 _down () {
@@ -41,11 +47,14 @@ _trivy() {
 
 usage() {
   echo "./run build - Build a local image called ${IMAGE_NAME}:${IMAGE_TAG}"
+  echo "./run up - Build and start the container locally using docker-compose"
+  echo "./run down - Shutdown local container and clean up with docker-compose"
+  echo "./run exec - Build and start the container locally, and drop you into a shell inside the container"
   echo "./run test - Builds a local image and runs goss tests against it"
   echo "./run trivy - Builds a local image and runs the trivy scanner against it"
   echo "./run release - Tests and then releases to dockerhub a multiarch version of the latest tag"
   echo "./run copyToTestHost - Copies ${IMAGE_NAME}:${IMAGE_TAG} to ${TESTHOST}"
-  echo "./run timemachineLogs - Gathers timemachine logs from macOS"
+  echo "./run timemachineLogs - Gathers timemachine logs from local macOS"
 }
 
 find_release(){
@@ -100,6 +109,7 @@ shift || true
 case ${CMD} in
     up) _up ;;
     down) _down ;;
+    exec) _exec ;;
     build) build ;;
     clean) clean ;;
     test) _goss_test ;;
