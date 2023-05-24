@@ -85,6 +85,7 @@ command:
     - .com.apple.TimeMachine.quota.plist
     - .com.apple.TimeMachine.supported
     - .writetest
+    timeout: 10000
 process:
   smbd:
     running: true

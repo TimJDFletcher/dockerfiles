@@ -22,7 +22,7 @@ _up () {
 }
 
 _exec () {
-  docker compose exec samba-timemachine /bin/bash -
+  docker compose exec samba-timemachine /bin/bash - || echo "You need to ./run up first"
 }
 
 _down () {
