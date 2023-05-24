@@ -68,6 +68,8 @@ command:
     stderr:
     - Loaded services file OK.
     timeout: 10000
+  /usr/bin/smbclient --port 10445 --user=testuser%Password123 \\\\localhost\\Data:
+    exit-status: 0
 process:
   smbd:
     running: true
