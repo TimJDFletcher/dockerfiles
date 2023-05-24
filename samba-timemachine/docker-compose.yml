@@ -23,7 +23,7 @@ services:
     ports:
     - mode: ingress
       target: 445
-      published: "10445"
+      published: 10445
       protocol: tcp
     restart: unless-stopped
     tty: true

@@ -13,29 +13,29 @@ build () {
 clean () {
   docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" || true
   docker image rm "${IMAGE_NAME}:latest" || true
-  docker-compose down --remove-orphans
+  docker compose down --remove-orphans
 }
 
 _up () {
   build
-  docker-compose up --remove-orphans --detach
+  docker compose up --remove-orphans --detach
 }
 
 _exec () {
   _up
-  docker-compose exec samba-timemachine /bin/bash -
+  docker compose exec samba-timemachine /bin/bash -
 }
 
 _down () {
-  docker-compose down --remove-orphans
+  docker compose down --remove-orphans
 }
 
 _goss_test() {
   export PUID=1234 PGID=4321 USER=testuser PASS=Password123 QUOTA=1234 LOG_LEVEL=4 IMAGE_VERSION=tmp
   _up
   sleep 5
-  docker-compose exec samba-timemachine bash -c "/goss/goss --gossfile /goss/tests/goss-live-tests.yaml validate"
-  docker-compose exec samba-timemachine bash -c "/goss/goss --gossfile /goss/tests/goss-healthcheck-tests.yaml validate"
+  docker compose exec samba-timemachine bash -c "/goss/goss --gossfile /goss/tests/goss-live-tests.yaml validate"
+  docker compose exec samba-timemachine bash -c "/goss/goss --gossfile /goss/tests/goss-healthcheck-tests.yaml validate"
   _down
   unset PUID PGID USER PASS QUOTA LOG_LEVEL IMAGE_VERSION
 }
@@ -47,8 +47,8 @@ _trivy() {
 
 usage() {
   echo "./run build - Build a local image called ${IMAGE_NAME}:${IMAGE_TAG}"
-  echo "./run up - Build and start the container locally using docker-compose"
-  echo "./run down - Shutdown local container and clean up with docker-compose"
+  echo "./run up - Build and start the container locally using docker compose"
+  echo "./run down - Shutdown local container and clean up with docker compose"
   echo "./run exec - Build and start the container locally, and drop you into a shell inside the container"
   echo "./run test - Builds a local image and runs goss tests against it"
   echo "./run trivy - Builds a local image and runs the trivy scanner against it"
