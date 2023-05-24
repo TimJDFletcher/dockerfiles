@@ -7,8 +7,9 @@ VOLUME /backups
 ENV SAMBA_VERSION="2:4.17.8+dfsg-1"
 RUN apt update && \
     apt --no-install-recommends --yes install \
-        samba="$SAMBA_VERSION" \
-        samba-vfs-modules="$SAMBA_VERSION"  && \
+        samba="${SAMBA_VERSION}" \
+        samba-vfs-modules="${SAMBA_VERSION}" \
+        smbclient=${SAMBA_VERSION} && \
     rm -rf /var/lib/apt/lists/* /etc/samba/smb.conf
 ADD samba.conf.tmpl /etc/samba/smb.conf.tmpl
 ADD TimeMachine.quota.tmpl /etc/TimeMachine.quota.tmpl
