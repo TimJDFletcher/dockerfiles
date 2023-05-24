@@ -5,7 +5,7 @@ This is a docker container based on Debian bookworm with SAMBA configured to pro
 The Docker Hub [images](https://hub.docker.com/repository/docker/timjdfletcher/samba-timemachine/tags?page=1&ordering=last_updated)
 support x86_64, Raspberry Pi 3/4 and other modern ARM64 based systems.
 
-An example of how to use the container
+An example of how to use the container with raw docker
 
 ```bash
 docker run -d -t \
@@ -15,6 +15,9 @@ docker run -d -t \
 ```
 
 This example maps the docker host port 10445 to the container port 445, so the container can be run alongside a normal SAMBA service.
+
+The repo includes an example [docker compose](https://docs.docker.com/compose/) [file](./docker-compose.yml) that starts the container 
+on port 10445, with a local volume and healthchecks enabled.
 
 # Discovery
 
@@ -26,11 +29,11 @@ I do this by running avahi-daemon on the docker host system, for debian type sys
 apt install avahi-daemon
 ```
 
-To enable discovery copy the [service file](timemachine.service) to `/etc/avahi/services/`
+To enable discovery copy the example [service file](timemachine.service) to `/etc/avahi/services/`
 
 # Settings
 
-| Variable    |              Function               |      Default. |
+| Variable    |              Function               |      Default  |
 |-------------|:-----------------------------------:|--------------:|
 | `USER`      |        Time Machine Username        | `timemachine` |
 | `PASS`      |        Time Machine Password        |    `password` |
@@ -39,12 +42,13 @@ To enable discovery copy the [service file](timemachine.service) to `/etc/avahi/
 | `LOG_LEVEL` |         SAMBA logging level         |           `1` |
 | `QUOTA`     |      Time Machine Quota in GB       |        `1024` |
 
+The defaults are embedded in the Dockerfile
+
 # Security
 
-The security design is simple and assumes that timemachine backups are encrypted from the source macOS device. 
+The security design is simple and assumes that timemachine backups are encrypted before leaving the source macOS system. 
 
-The default configuration of the container creates a unix user called `timemachine` with uid and gid 999, and 
-a matching SAMBA user called `timemachine` with a password of `password`.
+The default configuration of the container creates a unix user called `timemachine` with uid and gid 999, and a matching SAMBA user called `timemachine` with a password of `password`.
 
 A custom username can be passed to the container with the environment variable `USER`.
 
@@ -62,8 +66,7 @@ This is a soft limit not a hard limit.
 
 # Building the Docker image
 
-To build the image you need to have docker and docker buildx available, this is included by default in docker desktop 
-but for colime buildx needs to be [installed](https://github.com/abiosoft/colima/issues/44).
+To build the image you need to have docker and docker buildx available, this is included by default in docker desktop but for colime buildx needs to be [installed](https://github.com/abiosoft/colima/issues/44).
 
 # Testing
 
