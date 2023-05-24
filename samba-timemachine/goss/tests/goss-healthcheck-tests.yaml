@@ -38,6 +38,10 @@ file:
     - --no-process-group
     - --foreground
     - --debug-stdout
+  /proc/1/exe:
+    exists: true
+    filetype: symlink 
+    linked-to: /usr/sbin/smbd
 port:
   tcp:10445:
     listening: true
@@ -56,7 +60,7 @@ command:
   /usr/bin/touch {{.Env.BACKUPDIR}}/.writetest:
     exit-status: 0
     timeout: 10000
-  /usr/bin/smbclient --port 10445 --user={{.Env.USER}}%{{.Env.PASS}} \\\\localhost\\Data:
+  /usr/bin/smbclient --ip-address=127.0.0.1 --port 10445 --user={{.Env.USER}}%{{.Env.PASS}} \\\\TIMECAPSULE\\Data:
     exit-status: 0
 process:
   smbd:

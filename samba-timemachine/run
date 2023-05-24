@@ -6,7 +6,7 @@ PLATFORMS="linux/amd64,linux/arm64"
 TESTHOST=carbon
 
 build () {
-  docker buildx -t "${IMAGE_NAME}:${IMAGE_TAG}" -f Dockerfile .
+  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --file Dockerfile .
   docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
 }
 
@@ -22,7 +22,6 @@ _up () {
 }
 
 _exec () {
-  _up
   docker compose exec samba-timemachine /bin/bash -
 }
 

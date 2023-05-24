@@ -29,7 +29,7 @@ fruit:delete_empty_adfiles                  = yes
 
 # Security
 username map                = /etc/samba/users.map
-client min protocol         = SMB3
+server min protocol         = SMB3
 idmap config * : backend    = tdb
 idmap config * : range      = 300000-400000
 restrict anonymous          = 2
