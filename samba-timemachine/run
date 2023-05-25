@@ -2,7 +2,7 @@
 set -eu -o pipefail
 IMAGE_NAME=timjdfletcher/samba-timemachine
 IMAGE_TAG=tmp
-PLATFORMS="linux/amd64,linux/arm64"
+PLATFORMS="linux/amd64,linux/arm64,linux/arm/v7"
 TESTHOST=carbon
 
 build () {
@@ -65,11 +65,16 @@ find_release(){
   git checkout "${TAG}"
 }
 
-release() {
+_buildx () {
   docker buildx use builder || docker buildx create --name builder
   docker buildx inspect --bootstrap
-  docker buildx build --platform "${PLATFORMS}" -t "${IMAGE_NAME}:${TAG}" --push .
-  docker buildx build --platform "${PLATFORMS}" -t "${IMAGE_NAME}:latest" --push .
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --file Dockerfile .
+}
+
+release() {
+  _buildx
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --push --file Dockerfile .
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:latest"       --push --file Dockerfile .
 }
 
 timemachineLogs () {
@@ -108,6 +113,7 @@ case ${CMD} in
     down) _down ;;
     exec) _exec ;;
     build) build ;;
+    buildx) _buildx ;; 
     clean) clean ;;
     test) _goss_test ;;
     trivy) _trivy ;;
