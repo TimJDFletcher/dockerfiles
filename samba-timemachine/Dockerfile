@@ -1,4 +1,4 @@
-FROM debian:bookworm-20230522-slim
+FROM debian:bookworm-20230612-slim
 
 ENV USER="timemachine" PASS="password" PUID="999" GID="999" LOG_LEVEL="1" QUOTA="1024"
 ENV BACKUPDIR="/backups"
