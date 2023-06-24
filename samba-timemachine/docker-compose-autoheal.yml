@@ -1,0 +1,54 @@
+name: samba-timemachine
+services:
+  autoheal:
+    container_name: autoheal
+    environment:
+      AUTOHEAL_INTERVAL: "10"
+      CURL_TIMEOUT: "30"
+    image: willfarrell/autoheal
+    network_mode: none
+    volumes:
+    - type: bind
+      source: /var/run/docker.sock
+      target: /var/run/docker.sock
+      bind: {}
+  samba-timemachine:
+    container_name: samba-timemachine
+    environment:
+      LOG_LEVEL: "1"
+      PASS: password
+      PGID: "999"
+      PUID: "999"
+      QUOTA: "1024"
+      USER: tim
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - /goss/goss --gossfile /goss/tests/goss-healthcheck-tests.yaml validate
+      timeout: 10s
+      interval: 1m0s
+      retries: 2
+      start_period: 20s
+    image: timjdfletcher/samba-timemachine:latest
+    labels:
+      autoheal: "true"
+    networks:
+      default: null
+    ports:
+    - mode: ingress
+      target: 445
+      published: "10445"
+      protocol: tcp
+    restart: unless-stopped
+    tty: true
+    volumes:
+    - type: volume
+      source: backups
+      target: /backups
+      volume: {}
+networks:
+  default:
+    name: samba-timemachine
+volumes:
+  backups:
+    name: samba-timemachine_backups
