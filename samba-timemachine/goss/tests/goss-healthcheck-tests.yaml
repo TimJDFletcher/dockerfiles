@@ -23,17 +23,17 @@ file:
     owner: root
     group: root
     filetype: file
-    contains: ["log level               = {{.Env.LOG_LEVEL}}"]
+    contents: ["log level               = {{.Env.LOG_LEVEL}}"]
   /etc/samba/users.map:
     exists: true
     mode: "0644"
     owner: root
     group: root
     filetype: file
-    contains: ["{{.Env.USER}} = {{.Env.USER}}"]
+    contents: ["{{.Env.USER}} = {{.Env.USER}}"]
   /proc/1/cmdline:
     exists: true
-    contains:
+    contents:
     - /usr/sbin/smbd
     - --no-process-group
     - --foreground

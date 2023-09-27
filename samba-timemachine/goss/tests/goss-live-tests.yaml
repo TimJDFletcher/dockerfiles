@@ -11,7 +11,7 @@ file:
     owner: root
     group: root
     filetype: file
-    contains: ["1324997410816"]
+    contents: ["1324997410816"]
   /backups/.com.apple.TimeMachine.supported:
     exists: true
     mode: "0444"
@@ -30,17 +30,17 @@ file:
     owner: root
     group: root
     filetype: file
-    contains: ["log level               = 4"]
+    contents: ["log level               = 4"]
   /etc/samba/users.map:
     exists: true
     mode: "0644"
     owner: root
     group: root
     filetype: file
-    contains: ["testuser = testuser"]
+    contents: ["testuser = testuser"]
   /proc/1/cmdline:
     exists: true
-    contains:
+    contents:
     - /usr/sbin/smbd
     - --no-process-group
     - --foreground
