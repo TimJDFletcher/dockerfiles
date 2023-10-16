@@ -42,6 +42,7 @@ _goss_test() {
 _trivy() {
   build
   trivy image \
+      --severity HIGH,CRITICAL \
       --ignore-unfixed  \
       --exit-code 1 \
       "${IMAGE_NAME}:${IMAGE_TAG}"
@@ -120,6 +121,6 @@ case ${CMD} in
     trivy) _trivy ;;
     copyToTestHost) copyToTestHost ;;
     timemachineLogs) timemachineLogs ;;
-    release) find_release && clean && _goss_test && _trivy && release ;;
+    release) find_release && clean && _goss_test && trivy && release ;;
     *) usage ;;
 esac

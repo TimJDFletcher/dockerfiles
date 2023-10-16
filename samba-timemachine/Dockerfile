@@ -1,10 +1,10 @@
-FROM debian:trixie-20230919-slim
+FROM debian:trixie-20231009-slim
 
 ENV USER="timemachine" PASS="password" PUID="999" GID="999" LOG_LEVEL="1" QUOTA="1024"
 ENV BACKUPDIR="/backups"
 VOLUME /backups
 
-ENV SAMBA_VERSION="2:4.19.0+dfsg-1"
+ENV SAMBA_VERSION="2:4.19.1+dfsg-4"
 RUN apt-get update && \
     apt-get --no-install-recommends --yes install \
         samba="${SAMBA_VERSION}" \
