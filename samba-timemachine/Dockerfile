@@ -14,7 +14,7 @@ RUN apt-get update && \
 COPY samba.conf.tmpl /etc/samba/smb.conf.tmpl
 COPY TimeMachine.quota.tmpl /etc/TimeMachine.quota.tmpl
 
-ENV GOSS_VER="v0.4.2" GOSS_DST="/goss"
+ENV GOSS_VER="v0.4.4" GOSS_DST="/goss"
 COPY goss/ /goss/
 RUN apt-get update && \
     apt-get --no-install-recommends --yes install curl ca-certificates && \
