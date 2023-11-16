@@ -43,8 +43,7 @@ configureBackupDir()
 configureSAMBA()
 {
     echo "Creating /etc/samba/smb.conf"
-    sed -e "s%QUOTA_IN_MEGABYTES%${QUOTA_IN_MEGABYTES}%g" \
-        -e "s%LOG_LEVEL%${LOG_LEVEL}%g" \
+    sed -e "s%LOG_LEVEL%${LOG_LEVEL}%g" \
         -e "s%BACKUPDIR%${BACKUPDIR}%g" \
         -e "s%USER%${USER}%" \
       /etc/samba/smb.conf.tmpl \

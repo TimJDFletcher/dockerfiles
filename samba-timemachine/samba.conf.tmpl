@@ -34,12 +34,8 @@ idmap config * : backend    = tdb
 idmap config * : range      = 300000-400000
 restrict anonymous          = 2
 
-# Quota setting
-max disk size               = QUOTA_IN_MEGABYTES
-
 [Data]
 fruit:time machine          = yes
-fruit:time machine max size = QUOTA_IN_MEGABYTES MB
 browseable                  = Yes
 comment                     = Apple TimeMachine Backup Target
 inherit acls                = yes
