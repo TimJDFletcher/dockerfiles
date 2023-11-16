@@ -11,8 +11,6 @@ RUN apt-get update && \
         samba-vfs-modules="${SAMBA_VERSION}" \
         smbclient=${SAMBA_VERSION} && \
     rm -rf /var/lib/apt/lists/* /etc/samba/smb.conf
-COPY samba.conf.tmpl /etc/samba/smb.conf.tmpl
-COPY TimeMachine.quota.tmpl /etc/TimeMachine.quota.tmpl
 
 ENV GOSS_VER="v0.4.4" GOSS_DST="/goss"
 COPY goss/ /goss/
@@ -23,11 +21,14 @@ RUN apt-get update && \
     apt-get autoremove --yes && \
     rm -rf /var/lib/apt/lists/*
 
-EXPOSE 10445/tcp
+COPY samba.conf.tmpl /etc/samba/smb.conf.tmpl
+COPY TimeMachine.quota.tmpl /etc/TimeMachine.quota.tmpl
 
 COPY entrypoint /entrypoint
 RUN chmod 0755 /entrypoint
 
 RUN /${GOSS_DST}/goss --gossfile /${GOSS_DST}/tests/goss-dockerfile-tests.yaml validate 
+
+EXPOSE 10445/tcp
 
 ENTRYPOINT ["/entrypoint"]

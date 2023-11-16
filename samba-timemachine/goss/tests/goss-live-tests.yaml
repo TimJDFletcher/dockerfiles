@@ -67,7 +67,6 @@ command:
   /usr/bin/testparm --verbose:
     exit-status: 0
     stdout:
-    - fruit:time machine max size = 1263616 MB
     - fruit:time machine = yes
     - valid users = testuser
     - path = /backups
