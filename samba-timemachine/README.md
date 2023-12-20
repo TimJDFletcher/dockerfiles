@@ -95,9 +95,9 @@ I have changed the backend storage that I use to ext4 which has been working wel
 
 # Software Used
 
-* [Debian Trixie](https://hub.docker.com/_/debian/tags?page=1&name=trixie-slim)
-* [SAMBA](https://packages.debian.org/bookworm/samba)
-* [GOSS](https://github.com/goss-org/goss)
+* [Debian Trixie](https://hub.docker.com/_/debian/tags?page=1&name=trixie)
+* [SAMBA](https://packages.debian.org/trixie/samba)
+* [GOSS](https://github.com/goss-org/goss/releases)
 
 # Areas for improvement
 
