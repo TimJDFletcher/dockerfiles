@@ -12,8 +12,10 @@ file:
 package:
   samba:
     installed: true
-  samba-vfs-modules:
+  smbclient:
     installed: true
+  samba-vfs-modules:
+    installed: false
   curl:
     installed: false
 command:
