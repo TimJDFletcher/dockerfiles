@@ -22,5 +22,5 @@ command:
   /goss/goss --version:
     exit-status: 0
     stdout: 
-    - v0.4.7
+    - v0.4.8
     timeout: 10000

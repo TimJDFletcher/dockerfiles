@@ -1,17 +1,17 @@
-FROM debian:trixie-20240701-slim
+FROM debian:trixie-20240722-slim
 
 ENV USER="timemachine" PASS="password" PUID="999" GID="999" LOG_LEVEL="1" QUOTA="1024"
 ENV BACKUPDIR="/backups"
 VOLUME /backups
 
-ENV SAMBA_VERSION="2:4.20.2+dfsg-7"
+ENV SAMBA_VERSION="2:4.20.2+dfsg-10"
 RUN apt-get update && \
     apt-get --no-install-recommends --yes install \
         samba="${SAMBA_VERSION}" \
         smbclient="${SAMBA_VERSION}" && \
     rm -rf /var/lib/apt/lists/* /etc/samba/smb.conf
 
-ENV GOSS_VER="v0.4.7" GOSS_DST="/goss"
+ENV GOSS_VER="v0.4.8" GOSS_DST="/goss"
 COPY goss/ /goss/
 RUN apt-get update && \
     apt-get --no-install-recommends --yes install curl ca-certificates && \
