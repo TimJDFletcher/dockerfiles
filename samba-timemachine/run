@@ -121,6 +121,6 @@ case ${CMD} in
     trivy) _trivy ;;
     copyToTestHost) copyToTestHost ;;
     timemachineLogs) timemachineLogs ;;
-    release) find_release && clean && _goss_test && trivy && release ;;
+    release) find_release && clean && _goss_test && _trivy && release ;;
     *) usage ;;
 esac
