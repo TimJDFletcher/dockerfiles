@@ -12,9 +12,9 @@ build () {
 
 clean () {
   docker compose down --remove-orphans
-  docker buildx prune --force
   docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" || true
   docker image rm "${IMAGE_NAME}:latest" || true
+  docker buildx prune --force
 }
 
 _up () {
