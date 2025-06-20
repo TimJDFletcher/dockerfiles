@@ -28,6 +28,9 @@ RUN chmod 0755 /entrypoint
 
 RUN ${GOSS_DST}/goss --gossfile ${GOSS_DST}/tests/goss-dockerfile-tests.yaml validate 
 
+HEALTHCHECK --interval=1m --timeout=10s \
+  CMD /goss/goss --gossfile /goss/tests/goss-healthcheck-tests.yaml validate || exit 1
+
 EXPOSE 10445/tcp
 
 ENTRYPOINT ["/entrypoint"]
