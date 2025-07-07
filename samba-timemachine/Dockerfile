@@ -23,8 +23,7 @@ RUN apt-get update && \
 COPY samba.conf.tmpl /etc/samba/smb.conf.tmpl
 COPY TimeMachine.quota.tmpl /etc/TimeMachine.quota.tmpl
 
-COPY entrypoint /entrypoint
-RUN chmod 0755 /entrypoint
+COPY --chmod=0755 entrypoint /entrypoint
 
 RUN ${GOSS_DST}/goss --gossfile ${GOSS_DST}/tests/goss-dockerfile-tests.yaml validate 
 
