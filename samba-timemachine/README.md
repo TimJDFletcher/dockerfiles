@@ -104,5 +104,6 @@ I have changed the backend storage that I use to ext4 which has been working wel
 * Figure out how to run rootless (WIP)
   * Backup directory ownership config
   * User configuration, maybe bake the user into the container but how to support UID/GID mapping?
-  * Maybe just a hard set UID/GID ?
+  * Maybe just a hard set UID/GID, and add docs about fixing directory perms, rely on healthcheck tests to capture incorrect config
 * Experiment with https://github.com/GoogleContainerTools/container-structure-test
+* Make listen port configurable, needs to pass in env var and templete config and tests
