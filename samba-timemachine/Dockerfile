@@ -1,4 +1,4 @@
-FROM debian:trixie-20250721-slim
+FROM debian:trixie-20250811-slim
 
 ENV USER="timemachine" PASS="password" PUID="999" GID="999" LOG_LEVEL="1" QUOTA="1024"
 ENV BACKUPDIR="/backups"
