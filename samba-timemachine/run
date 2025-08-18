@@ -15,6 +15,7 @@ clean () {
   docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" || true
   docker image rm "${IMAGE_NAME}:latest" || true
   docker buildx prune --force
+  docker buildx rm builder || true
 }
 
 _up () {
