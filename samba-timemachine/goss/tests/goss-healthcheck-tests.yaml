@@ -71,7 +71,7 @@ process:
   smbd:
     running: true
 mount:
-  /backups:
+  {{.Env.BACKUPDIR}}:
     exists: true
     usage: 
       lt: 95

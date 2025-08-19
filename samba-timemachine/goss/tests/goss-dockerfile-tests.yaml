@@ -19,8 +19,8 @@ package:
   curl:
     installed: false
 command:
-  /goss/goss --version:
+  {{.Env.GOSS_DST}}/goss --version:
     exit-status: 0
     stdout: 
-    - v0.4.9
+    - {{.Env.GOSS_VER}}
     timeout: 10000
