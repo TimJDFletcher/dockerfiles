@@ -1,11 +1,11 @@
 file:
-  /backups:
+  {{.Env.BACKUPDIR}}:
     exists: true
     mode: "0700"
     owner: {{.Env.USER}}
     group: {{.Env.USER}}
     filetype: directory
-  /backups/.com.apple.TimeMachine.supported:
+  {{.Env.BACKUPDIR}}/.com.apple.TimeMachine.supported:
     exists: true
     mode: "0444"
     owner: root

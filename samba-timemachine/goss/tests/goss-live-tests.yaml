@@ -1,18 +1,18 @@
 file:
-  /backups:
+  {{.Env.BACKUPDIR}}:
     exists: true
     mode: "0700"
     owner: testuser
     group: testuser
     filetype: directory
-  /backups/.com.apple.TimeMachine.quota.plist:
+  {{.Env.BACKUPDIR}}/.com.apple.TimeMachine.quota.plist:
     exists: true
     mode: "0444"
     owner: root
     group: root
     filetype: file
     contents: ["1324997410816"]
-  /backups/.com.apple.TimeMachine.supported:
+  {{.Env.BACKUPDIR}}/.com.apple.TimeMachine.supported:
     exists: true
     mode: "0444"
     owner: root
@@ -69,13 +69,13 @@ command:
     stdout:
     - fruit:time machine = yes
     - valid users = testuser
-    - path = /backups
+    - path = {{.Env.BACKUPDIR}}
     - restrict anonymous = 2
     - server min protocol = SMB3
     stderr:
     - Loaded services file OK.
     timeout: 10000
-  /usr/bin/touch /backups/.writetest:
+  /usr/bin/touch {{.Env.BACKUPDIR}}/.writetest:
     exit-status: 0
     timeout: 10000
   /usr/bin/smbclient --ip-address=127.0.0.1 --port 10445 --user=testuser%Password123 \\\\TIMECAPSULE\\Data -c ls:
@@ -89,7 +89,7 @@ process:
   smbd:
     running: true
 mount:
-  /backups:
+  {{.Env.BACKUPDIR}}:
     exists: true
 user:
   testuser:
@@ -98,7 +98,7 @@ user:
     gid: 4321
     groups:
     - testuser
-    home: /backups
+    home: {{.Env.BACKUPDIR}}
     shell: /usr/sbin/nologin
 group:
   testuser:

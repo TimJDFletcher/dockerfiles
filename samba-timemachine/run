@@ -4,6 +4,7 @@ IMAGE_NAME=timjdfletcher/samba-timemachine
 IMAGE_TAG=tmp
 PLATFORMS="linux/amd64,linux/arm64"
 TESTHOST=carbon
+GOSS_DST=/goss
 
 build () {
   docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --file Dockerfile .
@@ -35,8 +36,8 @@ _goss_test() {
   export PUID=1234 PGID=4321 USER=testuser PASS=Password123 QUOTA=1234 LOG_LEVEL=4 IMAGE_VERSION=tmp
   _up
   sleep 5
-  docker compose exec samba-timemachine bash -c "/goss/goss --gossfile /goss/tests/goss-live-tests.yaml validate"
-  docker compose exec samba-timemachine bash -c "/goss/goss --gossfile /goss/tests/goss-healthcheck-tests.yaml validate"
+  docker compose exec samba-timemachine bash -c "${GOSS_DST}/goss --gossfile ${GOSS_DST}/tests/goss-live-tests.yaml validate"
+  docker compose exec samba-timemachine bash -c "${GOSS_DST}/goss --gossfile ${GOSS_DST}/tests/goss-healthcheck-tests.yaml validate"
   _down
   unset PUID PGID USER PASS QUOTA LOG_LEVEL IMAGE_VERSION
 }
