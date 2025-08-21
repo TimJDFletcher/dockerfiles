@@ -1,13 +1,13 @@
 #!/bin/bash
 set -eu -o pipefail
 TOOL=strace
-CONTAINER_NAME=${TOOL}
+CONTAINER_NAME=tools
 IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
 IMAGE_TAG=tmp
 PLATFORMS="linux/amd64,linux/arm64"
 
 build () {
-  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --build-arg TOOL=${TOOL} --file Dockerfile .
+  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --file Dockerfile .
   docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
 }
 
@@ -32,14 +32,14 @@ find_release(){
 _buildx () {
   docker buildx use builder || docker buildx create --name builder
   docker buildx inspect --bootstrap
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --build-arg TOOL=${TOOL} --file Dockerfile .
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}"  --file Dockerfile .
 }
 
 release() {
   find_release
   _buildx
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --build-arg TOOL=${TOOL} --push --file Dockerfile .
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:latest"       --build-arg TOOL=${TOOL} --push --file Dockerfile .
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --push --file Dockerfile .
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:latest"       --push --file Dockerfile .
 }
 
 

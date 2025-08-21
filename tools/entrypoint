@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+if [[ -z $1 ]] || [[ ${1:0:1} == '-' ]] ; then
+    while true ; do
+      echo "Tools container is running..."
+      sleep 60
+    done
+else
+    exec "$@"
+fi
