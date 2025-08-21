@@ -48,6 +48,6 @@ shift || true
 case ${CMD} in
     build) build ;;
     clean) clean ;;
-    release) find_release && clean && release ;;
+    release) find_release && clean && _buildx && release ;;
     *) usage ;;
 esac
