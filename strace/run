@@ -38,8 +38,8 @@ _buildx () {
 release() {
   find_release
   _buildx
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --push --file Dockerfile .
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:latest"       --push --file Dockerfile .
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --build-arg TOOL=${TOOL} --push --file Dockerfile .
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:latest"       --build-arg TOOL=${TOOL} --push --file Dockerfile .
 }
 
 
@@ -49,6 +49,6 @@ shift || true
 case ${CMD} in
     build) build ;;
     clean) clean ;;
-    release) find_release && clean && _buildx && release ;;
+    release) find_release && clean && release ;;
     *) usage ;;
 esac
