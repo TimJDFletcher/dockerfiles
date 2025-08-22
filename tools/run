@@ -1,6 +1,5 @@
 #!/bin/bash
 set -eu -o pipefail
-TOOL=strace
 CONTAINER_NAME=tools
 IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
 IMAGE_TAG=tmp
