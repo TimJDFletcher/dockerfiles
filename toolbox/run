@@ -1,6 +1,6 @@
 #!/bin/bash
 set -eu -o pipefail
-CONTAINER_NAME=tools
+CONTAINER_NAME=toolbox
 IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
 IMAGE_TAG=tmp
 PLATFORMS="linux/amd64,linux/arm64"
@@ -31,7 +31,6 @@ find_release(){
 _buildx () {
   docker buildx use builder || docker buildx create --name builder
   docker buildx inspect --bootstrap
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}"  --file Dockerfile .
 }
 
 release() {
