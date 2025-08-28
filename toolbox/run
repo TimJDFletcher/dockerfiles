@@ -4,9 +4,11 @@ CONTAINER_NAME=toolbox
 IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
 IMAGE_TAG=tmp
 PLATFORMS="linux/amd64,linux/arm64"
+TOOLS="ca-certificates curl dnsutils jq less lsof net-tools procps strace tcpdump vim"
 
 build () {
-  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --file Dockerfile .
+  _buildx_setup
+  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --build-arg TOOLS="${TOOLS}" --file Dockerfile .
   docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
 }
 
@@ -28,18 +30,17 @@ find_release(){
   export IMAGE_TAG=$TAG
 }
 
-_buildx () {
+_buildx_setup () {
   docker buildx use builder || docker buildx create --name builder
   docker buildx inspect --bootstrap
 }
 
 release() {
   find_release
-  _buildx
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --push --file Dockerfile .
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:latest"       --push --file Dockerfile .
+  _buildx_setup
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --build-arg TOOLS="${TOOLS}" --push --file Dockerfile .
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:latest"       --build-arg TOOLS="${TOOLS}" --push --file Dockerfile .
 }
-
 
 CMD=${1:-}
 
