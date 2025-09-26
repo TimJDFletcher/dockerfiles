@@ -64,7 +64,7 @@ usage() {
 }
 
 find_release(){
-  TAG="$(git tag | sort -n | tail -n 1)"
+  TAG="$(git tag | grep timemachine | sort -n | tail -n 1)"
   git checkout "${TAG}"
   export IMAGE_TAG=$TAG
 }
