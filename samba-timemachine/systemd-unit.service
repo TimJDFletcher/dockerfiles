@@ -1,0 +1,19 @@
+[Unit]
+Description=Timemachine in Docker
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+Restart=always
+WorkingDirectory=/home/timemachine
+User=timemachine
+Group=docker
+ExecStart=/usr/bin/docker compose up
+ExecStop=/usr/bin/docker compose stop
+
+[Install]
+WantedBy=multi-user.target
+
+[Install]
+WantedBy=multi-user.target
