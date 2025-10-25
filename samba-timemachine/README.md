@@ -49,6 +49,10 @@ And copy the example [service file](timemachine.service) to `/etc/avahi/services
 
 The defaults are embedded in the Dockerfile
 
+# Systemd and Docker
+
+There is an [example](./systemd-unit.service) of a systemd unit file that auto starts the docker compose stack.
+
 # Security
 
 The security design is simple and assumes that timemachine backups are encrypted before leaving the source macOS system. 

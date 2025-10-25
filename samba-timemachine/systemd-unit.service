@@ -9,6 +9,7 @@ Restart=always
 WorkingDirectory=/home/timemachine
 User=timemachine
 Group=docker
+ExecStartPre=/usr/bin/docker compose pull
 ExecStart=/usr/bin/docker compose up
 ExecStop=/usr/bin/docker compose stop
 
