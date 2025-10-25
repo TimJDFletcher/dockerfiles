@@ -34,7 +34,7 @@ I do this by running avahi-daemon on the docker host system, for debian type sys
 apt install avahi-daemon
 ```
 
-And copy the example [service file](avahi-timemachine.service) to `/etc/avahi/services/timemachine.service`
+And copy the example [service file](avahi.service) to `/etc/avahi/services/timemachine.service`
 
 # Autostart with SystemD
 
