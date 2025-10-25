@@ -34,7 +34,13 @@ I do this by running avahi-daemon on the docker host system, for debian type sys
 apt install avahi-daemon
 ```
 
-And copy the example [service file](timemachine.service) to `/etc/avahi/services/`
+And copy the example [service file](avahi-timemachine.service) to `/etc/avahi/services/timemachine.service`
+
+# Autostart with SystemD
+
+There is an [example](./systemd-unit.service) of a systemd unit file that auto starts the docker compose stack.
+
+To enable the systemd unit, copy the file to `/etc/systemd/system/timemachine.service` and then run `systemd enable timemachine`
 
 # Settings
 
@@ -48,10 +54,6 @@ And copy the example [service file](timemachine.service) to `/etc/avahi/services
 | `QUOTA`     |      Time Machine Quota in GB       |        `1024` |
 
 The defaults are embedded in the Dockerfile
-
-# Systemd and Docker
-
-There is an [example](./systemd-unit.service) of a systemd unit file that auto starts the docker compose stack.
 
 # Security
 
