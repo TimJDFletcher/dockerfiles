@@ -1,0 +1,53 @@
+#!/bin/bash
+set -eu -o pipefail
+CONTAINER_NAME=yajsv
+IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
+IMAGE_TAG=tmp
+PLATFORMS="linux/amd64,linux/arm64"
+TOOL="yajsv"
+
+build () {
+  _buildx_setup
+  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --build-arg TOOL="${TOOL}" --file Dockerfile .
+  docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
+}
+
+clean () {
+  docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" || true
+  docker image rm "${IMAGE_NAME}:latest" || true
+  docker buildx prune --force
+  docker buildx rm builder || true
+}
+
+usage() {
+  echo "./run build - Build a local image called ${IMAGE_NAME}:${IMAGE_TAG}"
+  echo "./run release - Tests and then releases to dockerhub a multiarch version of the latest tag"
+}
+
+find_release(){
+  TAG="$(git tag | grep ^${CONTAINER_NAME} | sort -n | tail -n 1)"
+  git checkout "${TAG}"
+  export IMAGE_TAG=$TAG
+}
+
+_buildx_setup () {
+  docker buildx use builder || docker buildx create --name builder
+  docker buildx inspect --bootstrap
+}
+
+release() {
+  find_release
+  _buildx_setup
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --build-arg TOOLS="${TOOL}" --push --file Dockerfile .
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:latest"       --build-arg TOOLS="${TOOL}" --push --file Dockerfile .
+}
+
+CMD=${1:-}
+
+shift || true
+case ${CMD} in
+    build) build ;;
+    clean) clean ;;
+    release) find_release && clean && release ;;
+    *) usage ;;
+esac
