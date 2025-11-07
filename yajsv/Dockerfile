@@ -6,5 +6,6 @@ FROM scratch
 ARG TOOL
 
 COPY --from=builder  "/go/bin/yajsv" /yajsv
+RUN /yajsv
 
 ENTRYPOINT ["/yajsv"]
