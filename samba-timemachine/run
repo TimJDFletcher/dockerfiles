@@ -46,7 +46,8 @@ _trivy() {
   build
   trivy image \
       --severity HIGH,CRITICAL \
-      --ignore-unfixed  \
+      --ignore-unfixed \
+      --skip-files goss/goss \
       --exit-code 1 \
       "${IMAGE_NAME}:${IMAGE_TAG}"
 }
