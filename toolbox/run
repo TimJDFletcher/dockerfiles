@@ -4,7 +4,7 @@ CONTAINER_NAME=toolbox
 IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
 IMAGE_TAG=tmp
 PLATFORMS="linux/amd64,linux/arm64"
-TOOLS="ca-certificates curl dnsutils jq less lsof net-tools procps strace tcpdump vim"
+TOOLS="ca-certificates curl dnsutils jq less lsof mmc-utils net-tools procps strace tcpdump vim"
 
 build () {
   _buildx_setup
