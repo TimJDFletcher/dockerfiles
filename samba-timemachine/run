@@ -103,7 +103,9 @@ timemachineLogs () {
 }
 
 copyToTestHost () {
-    build
+    TEST_ARCH=amd64
+    IMAGE_TAG=${TEST_ARCH}
+    docker buildx build --platform linux/${TEST_ARCH} --tag "${IMAGE_NAME}:${IMAGE_TAG}" --load --file Dockerfile .
     size=$(docker image inspect ${IMAGE_NAME}:${IMAGE_TAG} | jq -r '.[0].Size')
     docker save  "${IMAGE_NAME}:${IMAGE_TAG}" |\
     pigz -c |\
