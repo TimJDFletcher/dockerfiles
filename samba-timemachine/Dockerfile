@@ -1,7 +1,7 @@
 ARG DEBIAN_VERSION="trixie-20251103-slim"
 FROM debian:${DEBIAN_VERSION}
 
-ARG SAMBA_VERSION="2:4.22.6+dfsg-0+deb13u1"
+ARG SAMBA_VERSION="2:4.23.4+dfsg-1~bpo13+1"
 ARG GOSS_VER="v0.4.9"
 ARG GOSS_DST="/goss"
 ARG BACKUPDIR="/backups"
@@ -11,8 +11,9 @@ ENV USER="timemachine" PASS="password" PUID="999" GID="999" LOG_LEVEL="1" QUOTA=
 ENV BACKUPDIR=${BACKUPDIR}
 VOLUME ${BACKUPDIR}
 
+RUN echo 'deb http://deb.debian.org/debian trixie-backports main' > /etc/apt/sources.list.d/backports.list 
 RUN apt-get update && \
-    apt-get --no-install-recommends --yes install \
+    apt-get --no-install-recommends --yes install -t stable-backports \
         samba="${SAMBA_VERSION}" \
         smbclient="${SAMBA_VERSION}" && \
     rm -rf /var/lib/apt/lists/* /etc/samba/smb.conf
