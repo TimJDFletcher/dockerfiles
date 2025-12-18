@@ -118,3 +118,4 @@ to fix them:
 * Experiment with https://github.com/GoogleContainerTools/container-structure-test
 * Make listen port configurable, needs to pass in env var and templete config and tests
 * Add docs to the container to auto populate the SMB share
+* Switch to envsubst for templating

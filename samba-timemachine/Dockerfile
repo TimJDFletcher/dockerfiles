@@ -5,9 +5,9 @@ ARG SAMBA_VERSION="2:4.23.4+dfsg-1~bpo13+1"
 ARG GOSS_VER="v0.4.9"
 ARG GOSS_DST="/goss"
 ARG BACKUPDIR="/backups"
-ARG DOCS="./README.md"
+ARG DOCS="docs/Container.md"
 
-ENV USER="timemachine" PASS="password" PUID="999" GID="999" LOG_LEVEL="1" QUOTA="1024"
+ENV USER="timemachine" PASS="password" PUID="999" PGID="999" LOG_LEVEL="1" QUOTA="1024"
 
 ENV BACKUPDIR=${BACKUPDIR}
 VOLUME ${BACKUPDIR}
@@ -16,7 +16,8 @@ RUN echo 'deb http://deb.debian.org/debian trixie-backports main' > /etc/apt/sou
 RUN apt-get update && \
     apt-get --no-install-recommends --yes install -t stable-backports \
         samba="${SAMBA_VERSION}" \
-        smbclient="${SAMBA_VERSION}" && \
+        smbclient="${SAMBA_VERSION}" \
+        gettext-base && \
     rm -rf /var/lib/apt/lists/* /etc/samba/smb.conf
 
 COPY goss/ ${GOSS_DST}

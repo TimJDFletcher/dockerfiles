@@ -39,7 +39,7 @@ configureBackupDir()
     chmod 0444 "${BACKUPDIR}/.com.apple.TimeMachine.supported"
 
     echo "Adding README.md to ${BACKUPDIR}"
-    cp /README.md "${BACKUPDIR}/README.md"
+    envsubst < README.md > "${BACKUPDIR}/README.md"
     chown root:root "${BACKUPDIR}/README.md"
     chmod 0444 "${BACKUPDIR}/README.md"
 }
