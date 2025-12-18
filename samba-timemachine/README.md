@@ -1,15 +1,13 @@
 # samba-timemachine-docker
 
-This is a docker container based on Debian bookworm with SAMBA configured to provide Apple "Time Capsule" like backups.
+This is a docker container based on Debian Trixie with SAMBA configured to provide Apple "Time Capsule" like backups.
 
 The Docker Hub [images](https://hub.docker.com/repository/docker/timjdfletcher/samba-timemachine/tags?page=1&ordering=last_updated)
-support x86_64, Raspberry Pi 3/4 and other modern ARM64 based systems.
+support AMD64, Raspberry Pi 3/4 and other modern ARM64 based systems.
 
 # Networking
 
-*BREAKING CHANGE in v2.9+* Changed default container listen port to 10445
-
-The container by default listens on port 10445 to allow this container to run alongside an existing SAMBA server and to remove 
+The container by default listens on port 10445, allowing this container to run alongside an existing SAMBA server and to remove 
 the need for root access in the container
 
 An example of how to use the container with raw docker
@@ -67,9 +65,7 @@ A custom password can be passed to the container with the environment variable `
 
 # Quota
 
-*BREAKING CHANGE in v2.7+* Quota is now configured in Gigabytes
-
-The container supports setting of quota to limit the max size of backups, it defaults to 1024GB (1TB).
+The container supports setting of quota, in Gigabytes to limit the max size of backups, it defaults to 1024GB (1TB).
 I'm unclear if this works correctly in modern versions of macOS.
 
 The SAMBA setting of `disk max size` is also configured to limit the reported size of the disk to the same as the configured quota. 
@@ -99,9 +95,17 @@ I have had some performance problems using ZFS as a backing store for the contai
 I'm not sure if this because of the slow SMR drive I was using or by ZFS's copy on write design interacting badly with APFS.
 I have changed the backend storage that I use to ext4 which has been working well.
 
+# Known Bugs
+
+I have had some macOS kernel watchdogd crashes in smbfs that I think might be related to this container, I've done the following things 
+to fix them:
+
+* Switch to using trixie backports for a newer version of SAMBA
+* Applied this [fix](https://community.synology.com/enu/forum/1/post/194563) to my MacBook
+
 # Software Used
 
-* [Debian Trixie](https://hub.docker.com/_/debian/tags?page=1&name=trixie)
+* [Debian Trixie](https://hub.docker.com/_/debian/tags?page=1&name=trixie-packports)
 * [SAMBA](https://packages.debian.org/trixie/samba)
 * [GOSS](https://github.com/goss-org/goss/releases)
 
