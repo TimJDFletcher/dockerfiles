@@ -4,7 +4,7 @@ netbios name            = TIMECAPSULE
 security                = user
 passdb backend          = tdbsam
 smb ports               = 10445
-log level               = LOG_LEVEL
+log level               = ${LOG_LEVEL}
 
 # disable things we don't need
 server role             = standalone
@@ -39,10 +39,10 @@ fruit:time machine          = yes
 browseable                  = Yes
 comment                     = Apple TimeMachine Backup Target
 inherit acls                = yes
-path                        = BACKUPDIR
+path                        = ${BACKUPDIR}
 read only                   = No
 spotlight                   = no
-valid users                 = USER
+valid users                 = ${USER}
 writable                    = yes
 
 # vi:syntax=samba

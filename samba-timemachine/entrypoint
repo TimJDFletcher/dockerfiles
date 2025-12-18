@@ -27,9 +27,7 @@ configureBackupDir()
     chmod -R u+rwX,g=,o= "${BACKUPDIR}"
 
     echo "Writing out TimeMachine quota configuration"
-    sed -e "s/QUOTA_IN_BYTES/${QUOTA_IN_BYTES}/g" \
-      /etc/TimeMachine.quota.tmpl \
-      > "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
+    envsubst < /etc/TimeMachine.quota.tmpl > "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
     chown root:root "${BACKUPDIR}/.com.apple.TimeMachine.quota.plist"
     chmod 0444 "${BACKUPDIR}/.com.apple.TimeMachine.quota.plist"
 
@@ -48,11 +46,7 @@ configureBackupDir()
 configureSAMBA()
 {
     echo "Creating /etc/samba/smb.conf"
-    sed -e "s%LOG_LEVEL%${LOG_LEVEL}%g" \
-        -e "s%BACKUPDIR%${BACKUPDIR}%g" \
-        -e "s%USER%${USER}%" \
-      /etc/samba/smb.conf.tmpl \
-      > /etc/samba/smb.conf
+    envsubst < /etc/samba/smb.conf.tmpl > /etc/samba/smb.conf
 }
 
 createUser()
