@@ -5,6 +5,7 @@ ARG SAMBA_VERSION="2:4.23.4+dfsg-1~bpo13+1"
 ARG GOSS_VER="v0.4.9"
 ARG GOSS_DST="/goss"
 ARG BACKUPDIR="/backups"
+ARG DOCS="./README.md"
 
 ENV USER="timemachine" PASS="password" PUID="999" GID="999" LOG_LEVEL="1" QUOTA="1024"
 
@@ -28,7 +29,7 @@ RUN apt-get update && \
 
 COPY --chmod=0444 samba.conf.tmpl /etc/samba/smb.conf.tmpl
 COPY --chmod=0444 TimeMachine.quota.tmpl /etc/TimeMachine.quota.tmpl
-COPY --chmod=0444 README.md /README.md
+COPY --chmod=0444 ${DOCS} /README.md
 COPY --chmod=0755 entrypoint /entrypoint
 
 RUN ${GOSS_DST}/goss --gossfile ${GOSS_DST}/tests/goss-dockerfile-tests.yaml validate 
