@@ -117,3 +117,4 @@ to fix them:
   * Maybe just a hard set UID/GID, and add docs about fixing directory perms, rely on healthcheck tests to capture incorrect config
 * Experiment with https://github.com/GoogleContainerTools/container-structure-test
 * Make listen port configurable, needs to pass in env var and templete config and tests
+* Add docs to the container to auto populate the SMB share
