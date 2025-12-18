@@ -18,6 +18,12 @@ file:
     owner: root
     group: root
     filetype: file
+  {{.Env.BACKUPDIR}}/README.md:
+    exists: true
+    mode: "0444"
+    owner: root
+    group: root
+    filetype: file
   /entrypoint:
     exists: true
     mode: "0755"

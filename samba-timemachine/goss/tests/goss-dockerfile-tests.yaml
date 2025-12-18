@@ -5,6 +5,12 @@ file:
     owner: root
     group: root
     filetype: file
+  /README.md:
+    exists: true
+    mode: "0444"
+    owner: root
+    group: root
+    filetype: file
   /etc/samba/smb.conf:
     exists: false
   /etc/samba/users.map:

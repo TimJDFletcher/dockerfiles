@@ -26,9 +26,9 @@ RUN apt-get update && \
     apt-get autoremove --yes && \
     rm -rf /var/lib/apt/lists/*
 
-COPY samba.conf.tmpl /etc/samba/smb.conf.tmpl
-COPY TimeMachine.quota.tmpl /etc/TimeMachine.quota.tmpl
-
+COPY --chmod=0444 samba.conf.tmpl /etc/samba/smb.conf.tmpl
+COPY --chmod=0444 TimeMachine.quota.tmpl /etc/TimeMachine.quota.tmpl
+COPY --chmod=0444 README.md /README.md
 COPY --chmod=0755 entrypoint /entrypoint
 
 RUN ${GOSS_DST}/goss --gossfile ${GOSS_DST}/tests/goss-dockerfile-tests.yaml validate 
