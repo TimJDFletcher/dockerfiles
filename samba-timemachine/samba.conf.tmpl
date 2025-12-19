@@ -19,13 +19,14 @@ disable netbios         = yes
 # https://wiki.samba.org/index.php/Configure_Samba_to_Work_Better_with_Mac_OS_X and
 # https://jansblog.org/2021/05/16/samba-based-timemachine-with-big-sur/
 vfs objects                                 = fruit catia acl_xattr streams_xattr
+fruit:aapl                                  = yes
+fruit:delete_empty_adfiles                  = yes
 fruit:metadata                              = stream
 fruit:model                                 = TimeCapsule6
+fruit:nfs_aces                              = no
 fruit:posix_rename                          = yes
 fruit:veto_appledouble                      = no
-fruit:nfs_aces                              = no
 fruit:wipe_intentionally_left_blank_rfork   = yes
-fruit:delete_empty_adfiles                  = yes
 
 # Security
 username map                = /etc/samba/users.map
@@ -35,9 +36,10 @@ idmap config * : range      = 300000-400000
 restrict anonymous          = 2
 
 [Data]
-fruit:time machine          = yes
 browseable                  = Yes
 comment                     = Apple TimeMachine Backup Target
+fruit:time machine          = yes
+fruit:time machine max size = ${QUOTA}
 inherit acls                = yes
 path                        = ${BACKUPDIR}
 read only                   = No
