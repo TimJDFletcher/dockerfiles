@@ -32,8 +32,8 @@ to fix them:
 
 # Software Used
 
-* [Debian Trixie](https://hub.docker.com/_/debian/tags?page=1&name=trixie-packports)
-* [SAMBA](https://packages.debian.org/trixie/samba)
+* [Debian Trixie](https://hub.docker.com/_/debian/tags?page=1&name=trixie-backports)
+* [SAMBA](https://packages.debian.org/trixie-backports/samba)
 * [GOSS](https://github.com/goss-org/goss/releases)
 
 # Getting Started with Time Machine
