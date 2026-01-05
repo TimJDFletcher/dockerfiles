@@ -49,7 +49,7 @@ To use a network drive for Time Machine, your Mac must first be able to see and 
 
 ---
 
-## 2. Configure Time Machine
+## 2. Configure Time Machine - GUI
 
 1. Open **System Settings** (macOS Ventura or later) or **System Preferences**.
 2. Go to **General** > **Time Machine**.
@@ -59,6 +59,94 @@ To use a network drive for Time Machine, your Mac must first be able to see and 
 6. Click **Done**. The backup will begin automatically within two minutes.
 
 ---
+
+## 2. Configure Time Machine - CLI
+
+# Encrypted Time Machine on SMB Share (Terminal Workflow)
+
+**Server Details:**
+* **Address:** `server.local`
+* **Share:** `data`
+* **User:** `timemachine`
+* **SMB Password:** `password`
+
+---
+
+### 1. Mount the SMB Share
+Create a temporary mount point to prepare the disk image.
+
+```bash
+# Create temp directory
+mkdir /tmp/tm_setup
+
+# Mount the share
+mount_smbfs //timemachine:password@server.local/data /tmp/tm_setup
+```
+
+### 2. Create the Encrypted Sparsebundle
+Create the backup container. This uses your computer's hostname so Time Machine recognizes the file.
+
+* **Note:** You will be prompted to enter a **new** password to encrypt the backup itself.
+* **Size:** Adjust `-size 2t` (2 Terabytes) as needed.
+
+```bash
+hdiutil create \
+  -size 2t \
+  -encryption AES-128 \
+  -agentpass \
+  -volname "Time Machine Backups" \
+  -fs "Case-sensitive APFS" \
+  -type SPARSEBUNDLE \
+  "/tmp/tm_setup/$(scutil --get ComputerName).sparsebundle"
+```
+
+### 3. Link the Backup to this Mac
+Inject your Mac's hardware UUID into the disk image so Time Machine accepts ownership of it immediately.
+
+```bash
+sudo tmutil inheritbackup "/tmp/tm_setup/$(scutil --get ComputerName).sparsebundle"
+```
+
+### 4. Save Encryption Password to System Keychain
+Time Machine runs as a system process (`root`). It requires the encryption password (set in Step 2) to be stored in the **System Keychain** to mount the drive automatically.
+
+**Replace `YOUR_BACKUP_ENCRYPTION_PASSWORD` below with the password you created in Step 2.**
+
+```bash
+# 1. Extract the Disk Image UUID
+TM_UUID=$(hdiutil isencrypted "/tmp/tm_setup/$(scutil --get ComputerName).sparsebundle" | awk '/UUID/ {print $2}')
+
+# 2. Add to System Keychain
+sudo security add-generic-password \
+  -a "$TM_UUID" \
+  -s "$TM_UUID.sparsebundle" \
+  -D "disk image password" \
+  -w "YOUR_BACKUP_ENCRYPTION_PASSWORD" \
+  -T /System/Library/PrivateFrameworks/DiskImages.framework/Versions/A/Resources/diskimages-helper \
+  /Library/Keychains/System.keychain
+```
+
+### 5. Set Destination and Start
+Point Time Machine to the server. It will detect the pre-made, inherited file and start the backup.
+
+```bash
+# 1. Unmount the manual connection
+umount /tmp/tm_setup
+
+# 2. Set the Time Machine Destination
+sudo tmutil setdestination "smb://timemachine:password@sulphur.local/data"
+
+# 3. Enable and Start
+sudo tmutil enable
+tmutil startbackup
+```
+
+### 6. Verify Status
+Check that the backup is running and mounting correctly.
+
+```bash
+tmutil status
+```
 
 ## 3. How to Recover Data
 
@@ -93,6 +181,7 @@ If your Mac is new, has a wiped drive, or won't boot, use this method:
 6. **Select Backup:** Choose the date you wish to restore to and let the process complete.
 
 ---
+
 
 ## Important Considerations
 
