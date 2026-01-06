@@ -36,9 +36,9 @@ to fix them:
 * [SAMBA](https://packages.debian.org/trixie-backports/samba)
 * [GOSS](https://github.com/goss-org/goss/releases)
 
-# Getting Started with Time Machine
+# Getting Started with Time Machine - GUI
 
-## 1. Connect to the Samba Share
+## Connect to the Samba Share
 
 To use a network drive for Time Machine, your Mac must first be able to see and mount the share.
 
@@ -49,7 +49,7 @@ To use a network drive for Time Machine, your Mac must first be able to see and 
 
 ---
 
-## 2. Configure Time Machine - GUI
+## Configure Time Machine
 
 1. Open **System Settings** (macOS Ventura or later) or **System Preferences**.
 2. Go to **General** > **Time Machine**.
@@ -60,11 +60,18 @@ To use a network drive for Time Machine, your Mac must first be able to see and 
 
 ---
 
-## 2. Configure Time Machine - CLI
 
-# Encrypted Time Machine on SMB Share (Terminal Workflow)
+## Important Considerations
 
-**Server Details:**
+* **Initial Backup:** The first backup is "full" and can take several hours. Use an **Ethernet cable** if possible to avoid Wi-Fi timeouts.
+* **Verification:** To ensure your network backup isn't corrupted, hold the **Option (⌥)** key while clicking the Time Machine menu bar icon and select **Verify Backups**.
+* **Sleep Mode:** If the backup is interrupted by the Mac sleeping, it will resume automatically when the Mac wakes up and reconnects to the network.
+
+
+# 3. Configure Time Machine - CLI
+
+Details used in this example
+
 * **Address:** `server.local`
 * **Share:** `data`
 * **User:** `timemachine`
@@ -72,7 +79,7 @@ To use a network drive for Time Machine, your Mac must first be able to see and 
 
 ---
 
-### 1. Mount the SMB Share
+## Mount the SMB Share
 Create a temporary mount point to prepare the disk image.
 
 ```bash
@@ -83,7 +90,7 @@ mkdir /tmp/tm_setup
 mount_smbfs //timemachine:password@server.local/data /tmp/tm_setup
 ```
 
-### 2. Create the Encrypted Sparsebundle
+## Create the Encrypted Sparsebundle
 Create the backup container. This uses your computer's hostname so Time Machine recognizes the file.
 
 * **Note:** You will be prompted to enter a **new** password to encrypt the backup itself.
@@ -100,14 +107,14 @@ hdiutil create \
   "/tmp/tm_setup/$(scutil --get ComputerName).sparsebundle"
 ```
 
-### 3. Link the Backup to this Mac
+## Link the Backup to this Mac
 Inject your Mac's hardware UUID into the disk image so Time Machine accepts ownership of it immediately.
 
 ```bash
 sudo tmutil inheritbackup "/tmp/tm_setup/$(scutil --get ComputerName).sparsebundle"
 ```
 
-### 4. Save Encryption Password to System Keychain
+## Save Encryption Password to System Keychain
 Time Machine runs as a system process (`root`). It requires the encryption password (set in Step 2) to be stored in the **System Keychain** to mount the drive automatically.
 
 **Replace `YOUR_BACKUP_ENCRYPTION_PASSWORD` below with the password you created in Step 2.**
@@ -126,7 +133,7 @@ sudo security add-generic-password \
   /Library/Keychains/System.keychain
 ```
 
-### 5. Set Destination and Start
+## Set Destination and Start
 Point Time Machine to the server. It will detect the pre-made, inherited file and start the backup.
 
 ```bash
@@ -141,18 +148,22 @@ sudo tmutil enable
 tmutil startbackup
 ```
 
-### 6. Verify Status
+## Verify Status
 Check that the backup is running and mounting correctly.
 
 ```bash
 tmutil status
 ```
 
-## 3. How to Recover Data
+## Important Considerations
+
+* **Initial Backup:** The first backup is "full" and can take several hours. Use an **Ethernet cable** if possible to avoid Wi-Fi timeouts.
+
+## 4. How to Recover Data
 
 There are two ways to recover data: restoring specific files while your Mac is running, or performing a full system recovery if the Mac won't boot.
 
-### A. Restoring Individual Files/Folders
+### Restoring Individual Files/Folders
 
 If you accidentally deleted a file or need an older version of a document:
 
@@ -162,7 +173,7 @@ If you accidentally deleted a file or need an older version of a document:
 4. Use the timeline on the right to go back in time.
 5. Select the file and click **Restore**.
 
-### B. Full System Recovery (macOS Recovery)
+### Full System Recovery (macOS Recovery)
 
 If your Mac is new, has a wiped drive, or won't boot, use this method:
 
@@ -183,11 +194,6 @@ If your Mac is new, has a wiped drive, or won't boot, use this method:
 ---
 
 
-## Important Considerations
-
-* **Initial Backup:** The first backup is "full" and can take several hours. Use an **Ethernet cable** if possible to avoid Wi-Fi timeouts.
-* **Verification:** To ensure your network backup isn't corrupted, hold the **Option (⌥)** key while clicking the Time Machine menu bar icon and select **Verify Backups**.
-* **Sleep Mode:** If the backup is interrupted by the Mac sleeping, it will resume automatically when the Mac wakes up and reconnects to the network.
 
 [Apple User Guide](https://support.apple.com/en-gb/guide/mac-help/mh35860/)
 
