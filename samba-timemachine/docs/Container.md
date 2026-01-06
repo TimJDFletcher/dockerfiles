@@ -68,7 +68,7 @@ To use a network drive for Time Machine, your Mac must first be able to see and 
 * **Sleep Mode:** If the backup is interrupted by the Mac sleeping, it will resume automatically when the Mac wakes up and reconnects to the network.
 
 
-# 3. Configure Time Machine - CLI
+# Configure Time Machine - CLI
 
 Details used in this example
 
@@ -159,7 +159,7 @@ tmutil status
 
 * **Initial Backup:** The first backup is "full" and can take several hours. Use an **Ethernet cable** if possible to avoid Wi-Fi timeouts.
 
-## 4. How to Recover Data
+# How to Recover Data
 
 There are two ways to recover data: restoring specific files while your Mac is running, or performing a full system recovery if the Mac won't boot.
 
