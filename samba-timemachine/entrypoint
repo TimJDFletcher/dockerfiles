@@ -36,6 +36,11 @@ configureBackupDir()
     chown root:root "${BACKUPDIR}/.com.apple.TimeMachine.supported"
     chmod 0444 "${BACKUPDIR}/.com.apple.TimeMachine.supported"
 
+    echo "Marking ${BACKUPDIR} as not to be indexed by spotlight"
+    touch "${BACKUPDIR}/.metadata_never_index"
+    chown root:root "${BACKUPDIR}/.metadata_never_index"
+    chmod 0444 "${BACKUPDIR}/.metadata_never_index"
+
     echo "Adding README.md to ${BACKUPDIR}"
     envsubst < README.md > "${BACKUPDIR}/README.md"
     chown root:root "${BACKUPDIR}/README.md"
