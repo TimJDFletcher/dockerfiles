@@ -1,85 +1,114 @@
 #!/bin/bash
 set -e -o pipefail
 
-calculateQuota()
-{
-    echo "Quota is ${QUOTA} GB"
-    export QUOTA_IN_GIGABYTES="${QUOTA}"
-    export QUOTA_IN_MEGABYTES="$((QUOTA_IN_GIGABYTES * 1024))"
-    export QUOTA_IN_BYTES="$((QUOTA_IN_MEGABYTES * 1024 * 1024))"
+# Helper to log with timestamps
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
 }
 
-checkBackupDir()
-{
-    printf "Backups will be written to: "
-    if ! grep "${BACKUPDIR}" /proc/mounts | awk '{print $1}' ; then
-        echo "error volume not found did you forget to add the volume?"
+calculateQuota() {
+    log "Configuring Quota: ${QUOTA} GB"
+    export QUOTA_IN_GIGABYTES="${QUOTA}"
+    export QUOTA_IN_BYTES="$((QUOTA_IN_GIGABYTES * 1024 * 1024 * 1024))"
+}
+
+checkBackupDir() {
+    log "Checking backup volume..."
+    if ! mountpoint -q "${BACKUPDIR}"; then
+        log "WARNING: '${BACKUPDIR}' does not appear to be a mountpoint."
+    fi
+
+    if [ ! -d "${BACKUPDIR}" ]; then
+        log "ERROR: Backup directory ${BACKUPDIR} does not exist."
         exit 1
     fi
 }
 
-configureBackupDir()
-{
-    echo "Changing ownership of ${BACKUPDIR} to ${PUID}:${PGID}, this may take a few minutes"
-    chown -R "${PUID}":"${PGID}" "${BACKUPDIR}"
+configureBackupDir() {
+    log "Configuring directory permissions..."
+    
+    CURRENT_UID=$(stat -c '%u' "${BACKUPDIR}")
+    CURRENT_GID=$(stat -c '%g' "${BACKUPDIR}")
 
-    echo "Restricting permissions on ${BACKUPDIR}, this may take a few minutes"
-    chmod -R u+rwX,g=,o= "${BACKUPDIR}"
+    if [ "$CURRENT_UID" != "$PUID" ] || [ "$CURRENT_GID" != "$PGID" ]; then
+        log "Fixing ownership of ${BACKUPDIR} root (non-recursive)..."
+        chown "${PUID}:${PGID}" "${BACKUPDIR}"
+        chmod 700 "${BACKUPDIR}"
+    fi
 
-    echo "Writing out TimeMachine quota configuration"
-    envsubst < /templates/TimeMachine.quota.tmpl > "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
-    chown root:root "${BACKUPDIR}/.com.apple.TimeMachine.quota.plist"
-    chmod 0444 "${BACKUPDIR}/.com.apple.TimeMachine.quota.plist"
+    if [ "${FORCE_PERMISSIONS_RESET}" = "true" ]; then
+        log "WARNING: FORCE_PERMISSIONS_RESET is set. Running recursive chown."
+        chown -R "${PUID}:${PGID}" "${BACKUPDIR}"
+        chmod -R u+rwX,g=,o= "${BACKUPDIR}"
+    fi
 
-    echo "Marking ${BACKUPDIR} as supported by timemmachine"
+    log "Generating Time Machine metadata..."
+    envsubst < /templates/TimeMachine.quota.tmpl > "${BACKUPDIR}/.com.apple.TimeMachine.quota.plist"
+
     touch "${BACKUPDIR}/.com.apple.TimeMachine.supported"
-    chown root:root "${BACKUPDIR}/.com.apple.TimeMachine.supported"
-    chmod 0444 "${BACKUPDIR}/.com.apple.TimeMachine.supported"
-
-    echo "Marking ${BACKUPDIR} as not to be indexed by spotlight"
     touch "${BACKUPDIR}/.metadata_never_index"
-    chown root:root "${BACKUPDIR}/.metadata_never_index"
-    chmod 0444 "${BACKUPDIR}/.metadata_never_index"
 
-    echo "Adding README.md to ${BACKUPDIR}"
+    chown root:root "${BACKUPDIR}/.com.apple.TimeMachine.quota.plist" \
+                    "${BACKUPDIR}/.com.apple.TimeMachine.supported" \
+                    "${BACKUPDIR}/.metadata_never_index"
+    chmod 0444 "${BACKUPDIR}/.com.apple.TimeMachine.quota.plist" \
+               "${BACKUPDIR}/.com.apple.TimeMachine.supported" \
+               "${BACKUPDIR}/.metadata_never_index"
+
+    log "Generating README..."
     envsubst < /templates/README.md > "${BACKUPDIR}/README.md"
     chown root:root "${BACKUPDIR}/README.md"
     chmod 0444 "${BACKUPDIR}/README.md"
 }
 
-
-configureSAMBA()
-{
-    echo "Creating /etc/samba/smb.conf"
+configureSAMBA() {
+    log "Generating smb.conf..."
+    # Ensure the directory exists just in case
+    mkdir -p /etc/samba
     envsubst < /templates/smb.conf.tmpl > /etc/samba/smb.conf
 }
 
-createUser()
-{
-    echo "Creating system user"
-    id -g "${USER}" > /dev/null 2>&1 || \
-        groupadd --force --gid "$PGID" "${USER}"
-    id -u "${USER}" > /dev/null 2>&1 || \
-        useradd --uid "$PUID" --gid "$PGID" --home ${BACKUPDIR} --shell /usr/sbin/nologin --no-create-home "${USER}"
-    echo "Creating SAMBA user ${USER}"
+createUser() {
+    log "Configuring user ${USER} (UID: ${PUID}, GID: ${PGID})..."
+    
+    if ! getent group "$PGID" >/dev/null; then
+        groupadd --gid "$PGID" "${USER}"
+    else
+        log "Group ID $PGID already exists, reusing it."
+    fi
+
+    if ! getent passwd "$PUID" >/dev/null; then
+        useradd --uid "$PUID" --gid "$PGID" \
+            --home-dir "${BACKUPDIR}" --no-create-home \
+            --shell /usr/sbin/nologin \
+            "${USER}"
+    fi
+
+    log "Setting Samba password..."
+    # NOW SAFE: smb.conf exists, so smbpasswd knows where the database is
     printf "%s\n%s\n" "${PASS}" "${PASS}" | smbpasswd -a -s "${USER}"
     echo "${USER} = ${USER}" > /etc/samba/users.map
 }
 
-startSMB()
-{
-    echo "==================================================================================="
-    echo "=                 Starting SAMBA, logs after this are from SAMBA                  ="
-    echo "==================================================================================="
+startSMB() {
+    log "==================================================================="
+    log " STARTING SAMBA (Log Level: ${LOG_LEVEL})"
+    log "==================================================================="
     exec /usr/sbin/smbd --no-process-group --foreground --debug-stdout "$@"
 }
 
 if [[ -z ${1} ]] || [[ ${1:0:1} == '-' ]] ; then
-    echo "Configuring container as a timemachine backup target"
+    log "Initializing Time Machine Container..."
+    
     calculateQuota
-    configureSAMBA
     checkBackupDir
+    
+    # ORDER FIX: Configure Samba FIRST so smb.conf exists
+    configureSAMBA
+    
+    # ORDER FIX: Create User SECOND so smbpasswd can read smb.conf
     createUser
+    
     configureBackupDir
     startSMB "$@"
 else
