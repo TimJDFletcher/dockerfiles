@@ -1,24 +1,24 @@
 [global]
-workgroup               = WORKGROUP
-netbios name            = TIMECAPSULE
-security                = user
-passdb backend          = tdbsam
-smb ports               = 10445
 log level               = ${LOG_LEVEL}
+netbios name            = TIMECAPSULE
+passdb backend          = tdbsam
+security                = user
+smb ports               = 10445
+workgroup               = WORKGROUP
 
 # disable things we don't need
+disable netbios         = yes
+disable spoolss         = yes
+load printers           = no
+printcap name           = /dev/null
+printing                = bsd
 server role             = standalone
 server services         = -dns, -nbt
-load printers           = no
-printing                = bsd
-printcap name           = /dev/null
-disable spoolss         = yes
-disable netbios         = yes
 
 # Apple configuration taken from:
 # https://wiki.samba.org/index.php/Configure_Samba_to_Work_Better_with_Mac_OS_X and
 # https://jansblog.org/2021/05/16/samba-based-timemachine-with-big-sur/
-vfs objects                                 = fruit catia acl_xattr streams_xattr
+vfs objects                                 = catia fruit streams_xattr acl_xattr 
 fruit:aapl                                  = yes
 fruit:delete_empty_adfiles                  = yes
 fruit:metadata                              = stream
@@ -29,20 +29,21 @@ fruit:veto_appledouble                      = no
 fruit:wipe_intentionally_left_blank_rfork   = yes
 
 # Security
-username map                = /etc/samba/users.map
-server min protocol         = SMB3
 idmap config * : backend    = tdb
 idmap config * : range      = 300000-400000
 restrict anonymous          = 2
+server min protocol         = SMB3
+username map                = /etc/samba/users.map
 
 [Data]
-browseable                  = Yes
+browseable                  = yes
 comment                     = Apple TimeMachine Backup Target
 fruit:time machine          = yes
 fruit:time machine max size = ${QUOTA_IN_GIGABYTES}G
 inherit acls                = yes
+nt acl support              = no
 path                        = ${BACKUPDIR}
-read only                   = No
+read only                   = no
 spotlight                   = no
 valid users                 = ${USER}
 writable                    = yes
