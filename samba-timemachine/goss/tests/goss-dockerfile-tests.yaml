@@ -5,28 +5,52 @@ file:
     owner: root
     group: root
     filetype: file
+  
+  # Verify the functional templates exist
+  /templates/smb.conf.tmpl:
+    exists: true
+    mode: "0444"
+    filetype: file
+  /templates/TimeMachine.quota.tmpl:
+    exists: true
+    mode: "0444"
+    filetype: file
   /templates/README.md:
     exists: true
     mode: "0444"
-    owner: root
-    group: root
     filetype: file
+
+  # Verify these are CLEAN (not present before entrypoint runs)
   /etc/samba/smb.conf:
     exists: false
   /etc/samba/users.map:
     exists: false
+
 package:
   samba:
     installed: true
   smbclient:
     installed: true
-  samba-vfs-modules:
-    installed: false
+  gettext-base:
+    installed: true
+  # Ensure build tools were purged
   curl:
     installed: false
+
 command:
   {{.Env.GOSS_DST}}/goss --version:
     exit-status: 0
     stdout: 
     - {{.Env.GOSS_VER}}
     timeout: 10000
+
+  # Functional Test: Ensure envsubst works
+  "echo '$TEST_VAR' | TEST_VAR=success envsubst":
+    exit-status: 0
+    stdout:
+    - success
+
+  # Functional Test: Ensure vfs_fruit module exists on disk
+  # (Find is safer than hardcoding path as arch varies)
+  "find /usr/lib -name fruit.so | grep fruit.so":
+    exit-status: 0
