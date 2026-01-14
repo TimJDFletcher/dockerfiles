@@ -24,6 +24,12 @@ file:
     owner: root
     group: root
     filetype: file
+  {{.Env.BACKUPDIR}}/.metadata_never_index:
+    exists: true
+    mode: "0444"
+    owner: root
+    group: root
+    filetype: file
   /entrypoint:
     exists: true
     mode: "0755"
