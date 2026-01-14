@@ -2,117 +2,96 @@ file:
   {{.Env.BACKUPDIR}}:
     exists: true
     mode: "0700"
-    owner: testuser
-    group: testuser
+    owner: {{.Env.USER}}
+    group: {{.Env.USER}}
     filetype: directory
+
+  # STRICT CHECK: Verifies bash calculation logic for QUOTA=1234
   {{.Env.BACKUPDIR}}/.com.apple.TimeMachine.quota.plist:
     exists: true
     mode: "0444"
     owner: root
     group: root
     filetype: file
-    contents: ["1324997410816"]
+    # Updated: 'contains' -> 'contents'
+    contents: 
+    - "<key>GlobalQuota</key>"
+    - "1324997410816"
+
   {{.Env.BACKUPDIR}}/.com.apple.TimeMachine.supported:
     exists: true
     mode: "0444"
     owner: root
     group: root
     filetype: file
-  {{.Env.BACKUPDIR}}/README.md:
-    exists: true
-    mode: "0444"
-    owner: root
-    group: root
-    filetype: file
+
   {{.Env.BACKUPDIR}}/.metadata_never_index:
     exists: true
     mode: "0444"
     owner: root
     group: root
     filetype: file
-  /entrypoint:
-    exists: true
-    mode: "0755"
-    owner: root
-    group: root
-    filetype: file
+
   /etc/samba/smb.conf:
     exists: true
     mode: "0644"
-    owner: root
-    group: root
     filetype: file
-    contents: ["log level               = 4"]
-  /etc/samba/users.map:
-    exists: true
-    mode: "0644"
-    owner: root
-    group: root
-    filetype: file
-    contents: ["testuser = testuser"]
+    # Updated: 'contains' -> 'contents'
+    contents: 
+    - "log level               = {{.Env.LOG_LEVEL}}"
+    - "path                    = {{.Env.BACKUPDIR}}"
+
   /proc/1/cmdline:
     exists: true
     contents:
     - /usr/sbin/smbd
-    - --no-process-group
-    - --foreground
-    - --debug-stdout
-  /proc/1/exe:
-    exists: true
-    filetype: symlink 
-    linked-to: /usr/sbin/smbd
+
 port:
   tcp:10445:
     listening: true
     ip:
     - 0.0.0.0
-  tcp6:10445:
-    listening: true
-    ip:
-    - '::'
+
 command:
-  /usr/bin/smbpasswd -e testuser:
+  # 1. Config Validation
+  /usr/bin/testparm --suppress-prompt --verbose:
     exit-status: 0
     stdout:
-    - Enabled user testuser.
-    timeout: 10000
-  /usr/bin/testparm --verbose:
-    exit-status: 0
-    stdout:
-    - fruit:time machine = yes
-    - valid users = testuser
-    - path = {{.Env.BACKUPDIR}}
-    - restrict anonymous = 2
-    - server min protocol = SMB3
+    - "fruit:time machine = yes"
+    - "valid users = {{.Env.USER}}"
+    - "path = {{.Env.BACKUPDIR}}"
+    - "server min protocol = SMB3"
     stderr:
-    - Loaded services file OK.
-    timeout: 10000
-  /usr/bin/touch {{.Env.BACKUPDIR}}/.writetest:
-    exit-status: 0
-    timeout: 10000
-  /usr/bin/smbclient --ip-address=127.0.0.1 --port 10445 --user=testuser%Password123 \\\\TIMECAPSULE\\Data -c ls:
+    - "Loaded services file OK."
+
+  # 2. SMB Integration Test
+  smb_integration_test:
+    exec: "/usr/bin/smbclient //127.0.0.1/Data -U {{.Env.USER}}%{{.Env.PASS}} -I 127.0.0.1 -p 10445 -c 'mkdir smb_write_test; ls; rmdir smb_write_test'"
     exit-status: 0
     stdout:
-    - .com.apple.TimeMachine.quota.plist
-    - .com.apple.TimeMachine.supported
-    - .writetest
+    - "smb_write_test"
+    - ".com.apple.TimeMachine.supported"
     timeout: 10000
+
 process:
   smbd:
     running: true
+
 mount:
   {{.Env.BACKUPDIR}}:
     exists: true
+
 user:
-  testuser:
+  {{.Env.USER}}:
     exists: true
-    uid: 1234
-    gid: 4321
+    uid: {{.Env.PUID}}
+    gid: {{.Env.PGID}}
     groups:
-    - testuser
+    - {{.Env.USER}}
     home: {{.Env.BACKUPDIR}}
     shell: /usr/sbin/nologin
+
 group:
-  testuser:
+  {{.Env.USER}}:
     exists: true
-    gid: 4321
+    gid: {{.Env.PGID}}

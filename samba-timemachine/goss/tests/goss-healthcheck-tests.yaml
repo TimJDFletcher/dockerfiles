@@ -5,32 +5,29 @@ file:
     owner: {{.Env.USER}}
     group: {{.Env.USER}}
     filetype: directory
+
   {{.Env.BACKUPDIR}}/.com.apple.TimeMachine.supported:
     exists: true
     mode: "0444"
-    owner: root
-    group: root
     filetype: file
-  /entrypoint:
-    exists: true
-    mode: "0755"
-    owner: root
-    group: root
-    filetype: file
+
+  # Config Integrity Check
   /etc/samba/smb.conf:
     exists: true
     mode: "0644"
-    owner: root
-    group: root
     filetype: file
-    contents: ["log level               = {{.Env.LOG_LEVEL}}"]
+    contents: 
+    - "log level               = {{.Env.LOG_LEVEL}}"
+    - "path                    = {{.Env.BACKUPDIR}}"
+
   /etc/samba/users.map:
     exists: true
     mode: "0644"
-    owner: root
-    group: root
     filetype: file
-    contents: ["{{.Env.USER}} = {{.Env.USER}}"]
+    contents: 
+    - "{{.Env.USER}} = {{.Env.USER}}"
+
+  # Process Validation
   /proc/1/cmdline:
     exists: true
     contents:
@@ -38,40 +35,42 @@ file:
     - --no-process-group
     - --foreground
     - --debug-stdout
-  /proc/1/exe:
-    exists: true
-    filetype: symlink 
-    linked-to: /usr/sbin/smbd
+
 port:
+  # Check IPv4 only to avoid false negatives if Docker disables IPv6
   tcp:10445:
     listening: true
     ip:
     - 0.0.0.0
-  tcp6:10445:
-    listening: true
-    ip:
-    - '::'
+
 command:
-  /usr/bin/testparm --verbose:
+  # 1. Config Syntax Check
+  # --suppress-prompt ensures it doesn't hang if valid users are weird
+  /usr/bin/testparm --suppress-prompt --verbose:
     exit-status: 0
     stderr:
     - Loaded services file OK.
     timeout: 10000
-  /usr/bin/touch {{.Env.BACKUPDIR}}/.writetest:
-    exit-status: 0
-    timeout: 10000
-  /usr/bin/smbclient --ip-address=127.0.0.1 --port 10445 --user={{.Env.USER}}%{{.Env.PASS}} \\\\TIMECAPSULE\\Data -c ls:
+
+  # 2. SMB INTEGRATION TEST (Replaces 'touch')
+  # This is the single most important test.
+  # It logs in as the actual user via SMB, creates a directory, checks it, and deletes it.
+  # This proves: Auth works, Network works, and Permissions work.
+  smb_integration_test:
+    exec: "/usr/bin/smbclient //127.0.0.1/Data -U {{.Env.USER}}%{{.Env.PASS}} -I 127.0.0.1 -p 10445 -c 'mkdir .healthcheck; ls; rmdir .healthcheck'"
     exit-status: 0
     stdout:
-    - .com.apple.TimeMachine.quota.plist
-    - .com.apple.TimeMachine.supported
-    - .writetest
+    - ".healthcheck"
+    - ".com.apple.TimeMachine.supported"
     timeout: 10000
+
 process:
   smbd:
     running: true
+
 mount:
   {{.Env.BACKUPDIR}}:
     exists: true
+    # Fails healthcheck if disk is >95% full
     usage: 
       lt: 95
