@@ -1,51 +1,57 @@
 [global]
-log level               = ${LOG_LEVEL}
-netbios name            = TIMECAPSULE
-passdb backend          = tdbsam
-security                = user
-smb ports               = 10445
-workgroup               = WORKGROUP
+    # Basic Server Settings
+    log level               = ${LOG_LEVEL}
+    workgroup               = WORKGROUP
+    server min protocol     = SMB3_00
+    smb ports               = 10445
 
-# disable things we don't need
-disable netbios         = yes
-disable spoolss         = yes
-load printers           = no
-printcap name           = /dev/null
-printing                = bsd
-server role             = standalone
-server services         = -dns, -nbt
+    # Network & Security (Docker Optimized)
+    # Disable NetBIOS/NBT; we rely on DNS/IP and Docker networking
+    disable netbios         = yes
+    server services         = -dns, -nbt
+    restrict anonymous      = 2
+    
+    # We don't need these in a container
+    load printers           = no
+    printing                = bsd
+    printcap name           = /dev/null
+    disable spoolss         = yes
 
-# Apple configuration taken from:
-# https://wiki.samba.org/index.php/Configure_Samba_to_Work_Better_with_Mac_OS_X and
-# https://jansblog.org/2021/05/16/samba-based-timemachine-with-big-sur/
-vfs objects                                 = catia fruit streams_xattr acl_xattr 
-fruit:aapl                                  = yes
-fruit:delete_empty_adfiles                  = yes
-fruit:metadata                              = stream
-fruit:model                                 = TimeCapsule6
-fruit:nfs_aces                              = no
-fruit:posix_rename                          = yes
-fruit:veto_appledouble                      = no
-fruit:wipe_intentionally_left_blank_rfork   = yes
-
-# Security
-idmap config * : backend    = tdb
-idmap config * : range      = 300000-400000
-restrict anonymous          = 2
-server min protocol         = SMB3
-username map                = /etc/samba/users.map
+    # Apple / Time Machine Compatibility (vfs_fruit)
+    # Order matters: catia (character mapping) -> fruit (metadata) -> streams_xattr (store streams)
+    vfs objects             = catia fruit streams_xattr
+    
+    # Fruit Global Settings
+    fruit:aapl              = yes
+    fruit:nfs_aces          = no
+    fruit:metadata          = stream
+    fruit:model             = TimeCapsule6
+    fruit:posix_rename      = yes
+    fruit:veto_appledouble  = no
+    fruit:wipe_intentionally_left_blank_rfork = yes
+    fruit:delete_empty_adfiles = yes
+    
+    # Critical for Time Machine reliability on modern macOS
+    fruit:advertise_fullsync = true
 
 [Data]
-browseable                  = yes
-comment                     = Apple TimeMachine Backup Target
-fruit:time machine          = yes
-fruit:time machine max size = ${QUOTA_IN_GIGABYTES}G
-inherit acls                = yes
-nt acl support              = no
-path                        = ${BACKUPDIR}
-read only                   = no
-spotlight                   = no
-valid users                 = ${USER}
-writable                    = yes
+    comment                 = Apple TimeMachine Backup
+    path                    = ${BACKUPDIR}
+    valid users             = ${USER}
+    read only               = no
+    writable                = yes
+    browseable              = yes
+    
+    # Time Machine Specifics
+    fruit:time machine      = yes
+    fruit:time machine max size = ${QUOTA_IN_GIGABYTES}G
+    
+    # Permissions & ACLs
+    # "nt acl support = no" forces client to use standard POSIX perms, which is usually safer for Docker volumes
+    inherit acls            = yes
+    nt acl support          = no
+    
+    # Spotlight is best handled by the client for simple Docker setups
+    spotlight               = no
 
 # vi:syntax=samba
