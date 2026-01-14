@@ -27,7 +27,7 @@ configureBackupDir()
     chmod -R u+rwX,g=,o= "${BACKUPDIR}"
 
     echo "Writing out TimeMachine quota configuration"
-    envsubst < /etc/TimeMachine.quota.tmpl > "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
+    envsubst < /templates/TimeMachine.quota.tmpl > "${BACKUPDIR}"/.com.apple.TimeMachine.quota.plist
     chown root:root "${BACKUPDIR}/.com.apple.TimeMachine.quota.plist"
     chmod 0444 "${BACKUPDIR}/.com.apple.TimeMachine.quota.plist"
 
@@ -42,7 +42,7 @@ configureBackupDir()
     chmod 0444 "${BACKUPDIR}/.metadata_never_index"
 
     echo "Adding README.md to ${BACKUPDIR}"
-    envsubst < README.md > "${BACKUPDIR}/README.md"
+    envsubst < /templates/README.md > "${BACKUPDIR}/README.md"
     chown root:root "${BACKUPDIR}/README.md"
     chmod 0444 "${BACKUPDIR}/README.md"
 }
@@ -51,7 +51,7 @@ configureBackupDir()
 configureSAMBA()
 {
     echo "Creating /etc/samba/smb.conf"
-    envsubst < /etc/samba/smb.conf.tmpl > /etc/samba/smb.conf
+    envsubst < /templates/smb.conf.tmpl > /etc/samba/smb.conf
 }
 
 createUser()

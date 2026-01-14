@@ -5,7 +5,7 @@ file:
     owner: root
     group: root
     filetype: file
-  /README.md:
+  /templates/README.md:
     exists: true
     mode: "0444"
     owner: root

@@ -1,42 +1,59 @@
 ARG DEBIAN_VERSION="trixie-20251229-slim"
 FROM debian:${DEBIAN_VERSION}
 
+# Arguments
 ARG SAMBA_VERSION="2:4.23.4+dfsg-1~bpo13+1"
 ARG GOSS_VER="v0.4.9"
 ARG GOSS_DST="/goss"
 ARG BACKUPDIR="/backups"
 ARG DOCS="docs/Container.md"
 
-ENV USER="timemachine" PASS="password" PUID="999" PGID="999" LOG_LEVEL="1" QUOTA="1024"
+# Environment Variables
+ENV USER="timemachine" \
+    PASS="password" \
+    PUID="999" \
+    PGID="999" \
+    LOG_LEVEL="1" \
+    QUOTA="1024" \
+    BACKUPDIR=${BACKUPDIR}
 
-ENV BACKUPDIR=${BACKUPDIR}
+# Setup Volume
 VOLUME ${BACKUPDIR}
 
-RUN echo 'deb http://deb.debian.org/debian trixie-backports main' > /etc/apt/sources.list.d/backports.list 
-RUN apt-get update && \
-    apt-get --no-install-recommends --yes install -t stable-backports \
+# Install Dependencies & Samba
+COPY goss/ ${GOSS_DST}
+RUN echo 'deb http://deb.debian.org/debian trixie-backports main' > /etc/apt/sources.list.d/backports.list && \
+    apt-get update && \
+    # Install runtime dependencies and Samba
+    apt-get --no-install-recommends --yes install \
+        curl \
+        ca-certificates \
+        gettext-base \
+    && \
+    apt-get --no-install-recommends --yes install -t trixie-backports \
         samba="${SAMBA_VERSION}" \
         smbclient="${SAMBA_VERSION}" \
-        gettext-base && \
-    rm -rf /var/lib/apt/lists/* /etc/samba/smb.conf
-
-COPY goss/ ${GOSS_DST}
-RUN apt-get update && \
-    apt-get --no-install-recommends --yes install curl ca-certificates && \
+    && \
+    # Install Goss (requires curl/ca-certificates)
     sh ${GOSS_DST}/goss-installer && \
+    # Cleanup
     apt-get purge --yes curl ca-certificates && \
     apt-get autoremove --yes && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* /etc/samba/smb.conf
 
-COPY --chmod=0444 samba.conf.tmpl /etc/samba/smb.conf.tmpl
-COPY --chmod=0444 TimeMachine.quota.tmpl /etc/TimeMachine.quota.tmpl
-COPY --chmod=0444 ${DOCS} /README.md
+# Configuration & Scripts
+RUN mkdir /templates
+COPY --chmod=0444 samba.conf.tmpl /templates/smb.conf.tmpl
+COPY --chmod=0444 TimeMachine.quota.tmpl /templates/TimeMachine.quota.tmpl
+COPY --chmod=0444 ${DOCS} /templates/README.md
 COPY --chmod=0755 entrypoint /entrypoint
 
-RUN ${GOSS_DST}/goss --gossfile ${GOSS_DST}/tests/goss-dockerfile-tests.yaml validate 
+# Build-time Validation with goss
+RUN ${GOSS_DST}/goss --gossfile ${GOSS_DST}/tests/goss-dockerfile-tests.yaml validate
 
+# Healthcheck
 HEALTHCHECK --interval=1m --timeout=10s \
-  CMD {GOSS_DST}/goss --gossfile ${GOSS_DST}/tests/goss-healthcheck-tests.yaml validate || exit 1
+  CMD ${GOSS_DST}/goss --gossfile ${GOSS_DST}/tests/goss-healthcheck-tests.yaml validate || exit 1
 
 EXPOSE 10445/tcp
 
