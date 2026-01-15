@@ -1,49 +1,102 @@
 #!/bin/bash
 set -eu -o pipefail
-IMAGE_NAME=timjdfletcher/samba-timemachine
-IMAGE_TAG=tmp
-PLATFORMS="linux/amd64,linux/arm64"
-TESTHOST=carbon
-GOSS_DST=/goss
 
-build () {
+IMAGE_NAME="timjdfletcher/samba-timemachine"
+# Default to 'tmp' if not running a release
+IMAGE_TAG="${IMAGE_TAG:-tmp}"
+PLATFORMS="linux/amd64,linux/arm64"
+TESTHOST="carbon"
+GOSS_DST="/goss"
+CONTAINER_NAME="samba-timemachine"
+
+# --- Helper Functions ---
+
+log() {
+  echo "[$(date +'%H:%M:%S')] $1"
+}
+
+# Determine date command for macOS (BSD) vs Linux (GNU) compatibility
+get_start_date() {
+  if date --version >/dev/null 2>&1; then
+    date -d '12 hours ago' +'%Y-%m-%d %H:%M:%S' # Linux
+  else
+    date -j -v-12H +'%Y-%m-%d %H:%M:%S' # macOS
+  fi
+}
+
+wait_for_health() {
+  log "Waiting for container to become healthy..."
+  for _ in {1..30}; do
+    if docker compose ps --format json | grep -q '"Health":"healthy"'; then
+      log "Container is healthy!"
+      return 0
+    fi
+    sleep 1
+  done
+  log "Timeout waiting for container health."
+  return 1
+}
+
+# --- Core Tasks ---
+
+build() {
+  log "Building local image: ${IMAGE_NAME}:${IMAGE_TAG}"
   docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --file Dockerfile .
   docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
 }
 
-clean () {
-  docker compose down --remove-orphans
-  docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" || true
-  docker image rm "${IMAGE_NAME}:latest" || true
-  docker buildx prune --force
-  docker buildx rm builder || true
+clean() {
+  log "Cleaning up..."
+  docker compose down --remove-orphans || true
+  docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest" 2>/dev/null || true
+  docker buildx prune --force --filter "until=24h"
 }
 
-_up () {
+_up() {
   build
+  log "Starting environment..."
   docker compose up --remove-orphans --detach
 }
 
-_exec () {
-  docker compose exec samba-timemachine /bin/bash - || echo "You need to ./run up first"
-}
-
-_down () {
+_down() {
   docker compose down --remove-orphans
 }
 
+_exec() {
+  # Ensure we are up before exec
+  if [ -z "$(docker compose ps -q)" ]; then
+    log "Container not running. Starting up..."
+    _up
+  fi
+  docker compose exec "${CONTAINER_NAME}" /bin/bash
+}
+
+# Run tests in a subshell to isolate ENV variables
 _goss_test() {
-  export PUID=1234 PGID=4321 USER=testuser PASS=Password123 QUOTA=1234 LOG_LEVEL=4 IMAGE_VERSION=tmp
-  _up
-  sleep 5
-  docker compose exec samba-timemachine bash -c "${GOSS_DST}/goss --gossfile ${GOSS_DST}/tests/goss-live-tests.yaml validate"
-  docker compose exec samba-timemachine bash -c "${GOSS_DST}/goss --gossfile ${GOSS_DST}/tests/goss-healthcheck-tests.yaml validate"
+  (
+    export PUID=1234 PGID=4321 USER=testuser PASS=Password123 QUOTA=1234 LOG_LEVEL=4
+    
+    log "Starting Test Environment..."
+    _up
+    
+    wait_for_health
+    
+    log "Running Live Validation..."
+    docker compose exec "${CONTAINER_NAME}" \
+      "${GOSS_DST}/goss" --gossfile "${GOSS_DST}/tests/goss-live-tests.yaml" validate
+    
+    log "Running Healthcheck Validation..."
+    docker compose exec "${CONTAINER_NAME}" \
+      "${GOSS_DST}/goss" --gossfile "${GOSS_DST}/tests/goss-healthcheck-tests.yaml" validate
+      
+    log "Tests Passed."
+  )
   _down
-  unset PUID PGID USER PASS QUOTA LOG_LEVEL IMAGE_VERSION
 }
 
 _trivy() {
   build
+  log "Running Trivy Scan..."
   trivy image \
       --severity HIGH,CRITICAL \
       --ignore-unfixed \
@@ -52,81 +105,104 @@ _trivy() {
       "${IMAGE_NAME}:${IMAGE_TAG}"
 }
 
-usage() {
-  echo "./run build - Build a local image called ${IMAGE_NAME}:${IMAGE_TAG}"
-  echo "./run up - Build and start the container locally using docker compose"
-  echo "./run down - Shutdown local container and clean up with docker compose"
-  echo "./run exec - Build and start the container locally, and drop you into a shell inside the container"
-  echo "./run test - Builds a local image and runs goss tests against it"
-  echo "./run trivy - Builds a local image and runs the trivy scanner against it"
-  echo "./run release - Tests and then releases to dockerhub a multiarch version of the latest tag"
-  echo "./run copyToTestHost - Copies ${IMAGE_NAME}:${IMAGE_TAG} to ${TESTHOST}"
-  echo "./run timemachineLogs - Gathers timemachine logs from local macOS"
+# --- Release & Deployment ---
+
+copyToTestHost() {
+  local TEST_ARCH="amd64"
+  log "Building for ${TEST_ARCH} and copying to ${TESTHOST}..."
+  
+  docker buildx build --platform "linux/${TEST_ARCH}" --tag "${IMAGE_NAME}:${TEST_ARCH}" --load --file Dockerfile .
+  
+  local size
+  size=$(docker image inspect "${IMAGE_NAME}:${TEST_ARCH}" | jq -r '.[0].Size')
+  
+  docker save "${IMAGE_NAME}:${TEST_ARCH}" | \
+    pigz -c | \
+    pv -s "${size}" | \
+    ssh -C "${TESTHOST}" "pigz -d | docker load"
 }
 
-find_release(){
-  TAG="$(git tag | grep timemachine | sort -n | tail -n 1)"
-  git checkout "${TAG}"
-  export IMAGE_TAG=$TAG
-}
-
-_buildx () {
-  docker buildx use builder || docker buildx create --name builder
-  docker buildx inspect --bootstrap
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --file Dockerfile .
-}
-
-release() {
-  find_release
-  _buildx
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --push --file Dockerfile .
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:latest"       --push --file Dockerfile .
-}
-
-timemachineLogs () {
-  filter='processImagePath contains "backupd" and subsystem beginswith "com.apple.TimeMachine"'
-
-  # show the last 12 hours
-  start="$(date -j -v-12H +'%Y-%m-%d %H:%M:%S')"
+timemachineLogs() {
+  local filter='processImagePath contains "backupd" and subsystem beginswith "com.apple.TimeMachine"'
+  local start
+  start=$(get_start_date)
 
   echo ""
   echo "[History (from ${start})]"
   echo ""
-
   log show --style syslog --info --start "${start}" --predicate "${filter}"
 
   echo ""
   echo "[Following]"
   echo ""
-
   log stream --style syslog --info --predicate "$filter"
 }
 
-copyToTestHost () {
-    TEST_ARCH=amd64
-    IMAGE_TAG=${TEST_ARCH}
-    docker buildx build --platform linux/${TEST_ARCH} --tag "${IMAGE_NAME}:${IMAGE_TAG}" --load --file Dockerfile .
-    size=$(docker image inspect ${IMAGE_NAME}:${IMAGE_TAG} | jq -r '.[0].Size')
-    docker save  "${IMAGE_NAME}:${IMAGE_TAG}" |\
-    pigz -c |\
-    pv -s "${size}" |\
-    ssh -C "${TESTHOST}" "pigz -d | docker load"
+release() {
+  # clean
+  _goss_test
+  _trivy
+
+  # Find the latest tag on the current commit
+  # We use --exact-match to ensure we are actually ON the tag we are releasing
+  if ! CURRENT_TAG=$(git describe --tags --exact-match 2>/dev/null); then
+    log "Error: Current commit is not tagged. Please tag the commit before releasing."
+    exit 1
+  fi
+  
+  log "Releasing version: ${CURRENT_TAG}"
+
+  # Ensure builder exists
+  if ! docker buildx inspect builder >/dev/null 2>&1; then
+    docker buildx create --name builder --use
+  fi
+  
+  log "Building and Pushing Multi-arch Image..."
+  # Optimization: Build once, tag twice (version + latest), push immediately
+  docker buildx build \
+    --platform "${PLATFORMS}" \
+    --tag "${IMAGE_NAME}:${CURRENT_TAG}" \
+    --tag "${IMAGE_NAME}:latest" \
+    --push \
+    --file Dockerfile .
+    
+  log "Release ${CURRENT_TAG} complete."
 }
 
-CMD=${1:-}
+usage() {
+  cat <<EOF
+Usage: ./run [COMMAND]
 
+Commands:
+  build             Build local image (${IMAGE_NAME}:${IMAGE_TAG})
+  up                Build and start with docker compose
+  down              Stop and remove containers
+  exec              Build, start, and shell into container
+  test              Run full GOSS test suite (Lifecycle + Healthcheck)
+  trivy             Run security scan
+  release           Test, Scan, Build Multi-arch, and Push tags to DockerHub
+  copyToTestHost    Copy image to ${TESTHOST} via SSH
+  timemachineLogs   Stream macOS TimeMachine logs
+  clean             Remove images and prune builder
+EOF
+}
+
+# --- Main Execution ---
+
+CMD=${1:-}
 shift || true
+
 case ${CMD} in
-    up) _up ;;
-    down) _down ;;
-    exec) _exec ;;
-    build) build ;;
-    buildx) _buildx ;; 
-    clean) clean ;;
-    test) _goss_test ;;
-    trivy) _trivy ;;
-    copyToTestHost) copyToTestHost ;;
+    up)              _up ;;
+    down)            _down ;;
+    exec)            _exec ;;
+    build)           build ;;
+    clean)           clean ;;
+    test)            _goss_test ;;
+    trivy)           _trivy ;;
+    copyToTestHost)  copyToTestHost ;;
     timemachineLogs) timemachineLogs ;;
-    release) find_release && clean && _goss_test && _trivy && release ;;
-    *) usage ;;
+    release)         release ;;
+    help|--help|-h)  usage ;;
+    *)               usage ;;
 esac
