@@ -18,6 +18,14 @@ checkBackupDir() {
     fi
 }
 
+cleanupLegacyFiles() {
+    local legacy_quota_file="${BACKUPDIR}/.com.apple.TimeMachine.quota.plist"
+    if [ -f "${legacy_quota_file}" ]; then
+        log "Removing legacy quota file: ${legacy_quota_file}"
+        rm -f "${legacy_quota_file}"
+    fi
+}
+
 configureBackupDir() {
     log "Configuring directory permissions..."
     
@@ -91,6 +99,7 @@ if [[ -z ${1} ]] || [[ ${1:0:1} == '-' ]] ; then
     log "Initializing Time Machine Container..."
     
     checkBackupDir
+    cleanupLegacyFiles
     
     # ORDER FIX: Configure Samba FIRST so smb.conf exists
     configureSAMBA
