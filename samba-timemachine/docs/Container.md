@@ -15,8 +15,25 @@ The source code is in [github](https://github.com/TimJDFletcher/dockerfiles/tree
 | `PASS`      |        Password for the user        |      `${PASS}` |
 | `PGID`      | Unix Group ID for Time Machine user |      `${PGID}` |
 | `PUID`      | Unix User ID for Time Machine user  |      `${PUID}` |
-| `QUOTA`     |      Time Machine Quota in GB       |     `${QUOTA}` |
 | `USER`      |       Username to connect as        |      `${USER}` |
+
+# Quota
+
+Quota management is now handled on the client side using the `tmutil` command. This is more reliable and consistent with modern macOS versions.
+
+To set a quota, you first need to identify the `destination_id` for your Time Machine backup. You can do this by running:
+
+```bash
+tmutil destinationinfo
+```
+
+This will output information about your backup destination(s), including the ID. Once you have the ID, you can set the quota.
+
+For example, to set a quota of 500GB on a destination with the ID `A1B2C3D4-E5F6-G7H8-I9J0-K1L2M3N4O5P6`, you would run:
+
+```bash
+sudo tmutil setquota A1B2C3D4-E5F6-G7H8-I9J0-K1L2M3N4O5P6 500
+```
 
 # Security
 
