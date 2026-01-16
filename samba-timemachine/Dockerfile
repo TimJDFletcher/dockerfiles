@@ -14,6 +14,7 @@ ENV USER="timemachine" \
     PUID="999" \
     PGID="999" \
     LOG_LEVEL="1" \
+    FORCE_PERMISSIONS_RESET="false" \
     BACKUPDIR=${BACKUPDIR}
 
 # Setup Volume
