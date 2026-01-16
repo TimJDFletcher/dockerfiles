@@ -49,7 +49,6 @@ To enable the systemd unit, copy the file to `/etc/systemd/system/timemachine.se
 | `PUID`      | Unix User ID for Time Machine user  |         `999` |
 | `PGID`      | Unix Group ID for Time Machine user |         `999` |
 | `LOG_LEVEL` |         SAMBA logging level         |           `1` |
-| `QUOTA`     |      Time Machine Quota in GB       |        `1024` |
 
 The defaults are embedded in the Dockerfile
 
@@ -65,11 +64,21 @@ A custom password can be passed to the container with the environment variable `
 
 # Quota
 
-The container supports setting of quota, in Gigabytes to limit the max size of backups, it defaults to 1024GB (1TB).
-I'm unclear if this works correctly in modern versions of macOS.
+Quota management is now handled on the client side using the `tmutil` command. This is more reliable and consistent with modern macOS versions.
 
-The SAMBA setting of `disk max size` is also configured to limit the reported size of the disk to the same as the configured quota. 
-This is a soft limit not a hard limit.
+To set a quota, you first need to identify the `destination_id` for your Time Machine backup. You can do this by running:
+
+```bash
+tmutil destinationinfo
+```
+
+This will output information about your backup destination(s), including the ID. Once you have the ID, you can set the quota.
+
+For example, to set a quota of 500GB on a destination with the ID `A1B2C3D4-E5F6-G7H8-I9J0-K1L2M3N4O5P6`, you would run:
+
+```bash
+sudo tmutil setquota A1B2C3D4-E5F6-G7H8-I9J0-K1L2M3N4O5P6 500
+```
 
 # Building the Docker image
 

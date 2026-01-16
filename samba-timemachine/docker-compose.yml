@@ -8,7 +8,6 @@ services:
       USER: "${USER:-timemachine}"
       PASS: "${PASS:-password}"
       LOG_LEVEL: "${LOG_LEVEL:-1}"
-      QUOTA: "${QUOTA:-1024}"
     healthcheck:
       test:
       - CMD-SHELL

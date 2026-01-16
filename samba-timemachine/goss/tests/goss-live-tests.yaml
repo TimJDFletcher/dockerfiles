@@ -6,18 +6,6 @@ file:
     group: {{.Env.USER}}
     filetype: directory
 
-  # STRICT CHECK: Verifies bash calculation logic for QUOTA=1234
-  {{.Env.BACKUPDIR}}/.com.apple.TimeMachine.quota.plist:
-    exists: true
-    mode: "0444"
-    owner: root
-    group: root
-    filetype: file
-    # Updated: 'contains' -> 'contents'
-    contents: 
-    - "<key>GlobalQuota</key>"
-    - "1324997410816"
-
   {{.Env.BACKUPDIR}}/.com.apple.TimeMachine.supported:
     exists: true
     mode: "0444"

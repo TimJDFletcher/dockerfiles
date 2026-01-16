@@ -74,7 +74,7 @@ _exec() {
 # Run tests in a subshell to isolate ENV variables
 _goss_test() {
   (
-    export PUID=1234 PGID=4321 USER=testuser PASS=Password123 QUOTA=1234 LOG_LEVEL=4
+    export PUID=1234 PGID=4321 USER=testuser PASS=Password123 LOG_LEVEL=4
     
     log "Starting Test Environment..."
     _up

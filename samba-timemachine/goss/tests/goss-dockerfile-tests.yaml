@@ -11,10 +11,6 @@ file:
     exists: true
     mode: "0444"
     filetype: file
-  /templates/TimeMachine.quota.tmpl:
-    exists: true
-    mode: "0444"
-    filetype: file
   /templates/README.md:
     exists: true
     mode: "0444"

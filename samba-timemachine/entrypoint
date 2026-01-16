@@ -6,12 +6,6 @@ log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
 }
 
-calculateQuota() {
-    log "Configuring Quota: ${QUOTA} GB"
-    export QUOTA_IN_GIGABYTES="${QUOTA}"
-    export QUOTA_IN_BYTES="$((QUOTA_IN_GIGABYTES * 1024 * 1024 * 1024))"
-}
-
 checkBackupDir() {
     log "Checking backup volume..."
     if ! mountpoint -q "${BACKUPDIR}"; then
@@ -43,16 +37,12 @@ configureBackupDir() {
     fi
 
     log "Generating Time Machine metadata..."
-    envsubst < /templates/TimeMachine.quota.tmpl > "${BACKUPDIR}/.com.apple.TimeMachine.quota.plist"
-
     touch "${BACKUPDIR}/.com.apple.TimeMachine.supported"
     touch "${BACKUPDIR}/.metadata_never_index"
 
-    chown root:root "${BACKUPDIR}/.com.apple.TimeMachine.quota.plist" \
-                    "${BACKUPDIR}/.com.apple.TimeMachine.supported" \
+    chown root:root "${BACKUPDIR}/.com.apple.TimeMachine.supported" \
                     "${BACKUPDIR}/.metadata_never_index"
-    chmod 0444 "${BACKUPDIR}/.com.apple.TimeMachine.quota.plist" \
-               "${BACKUPDIR}/.com.apple.TimeMachine.supported" \
+    chmod 0444 "${BACKUPDIR}/.com.apple.TimeMachine.supported" \
                "${BACKUPDIR}/.metadata_never_index"
 
     log "Generating README..."
@@ -100,7 +90,6 @@ startSMB() {
 if [[ -z ${1} ]] || [[ ${1:0:1} == '-' ]] ; then
     log "Initializing Time Machine Container..."
     
-    calculateQuota
     checkBackupDir
     
     # ORDER FIX: Configure Samba FIRST so smb.conf exists

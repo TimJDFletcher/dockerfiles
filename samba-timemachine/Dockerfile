@@ -14,7 +14,6 @@ ENV USER="timemachine" \
     PUID="999" \
     PGID="999" \
     LOG_LEVEL="1" \
-    QUOTA="1024" \
     BACKUPDIR=${BACKUPDIR}
 
 # Setup Volume
@@ -44,7 +43,6 @@ RUN echo 'deb http://deb.debian.org/debian trixie-backports main' > /etc/apt/sou
 # Configuration & Scripts
 RUN mkdir /templates
 COPY --chmod=0444 samba.conf.tmpl /templates/smb.conf.tmpl
-COPY --chmod=0444 TimeMachine.quota.tmpl /templates/TimeMachine.quota.tmpl
 COPY --chmod=0444 ${DOCS} /templates/README.md
 COPY --chmod=0755 entrypoint /entrypoint
 
