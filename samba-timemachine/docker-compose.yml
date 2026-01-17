@@ -8,6 +8,7 @@ services:
       USER: "${USER:-timemachine}"
       PASS: "${PASS:-password}"
       LOG_LEVEL: "${LOG_LEVEL:-1}"
+      FORCE_PERMISSIONS_RESET: "${FORCE_PERMISSIONS_RESET:-false}"
     healthcheck:
       test:
       - CMD-SHELL
@@ -37,3 +38,4 @@ networks:
 volumes:
   backups:
     name: samba-timemachine_backups
+    external: true
