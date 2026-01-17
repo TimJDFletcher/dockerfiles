@@ -1,0 +1,7 @@
+# This test validates the FORCE_PERMISSIONS_RESET feature.
+# It checks the ownership of a pre-created test file.
+file:
+  /backups/permission-test-file:
+    exists: true
+    owner: "{{ .Env.EXPECTED_OWNER }}"
+    group: "{{ .Env.EXPECTED_GROUP }}"

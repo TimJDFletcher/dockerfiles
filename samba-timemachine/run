@@ -47,7 +47,7 @@ build() {
 
 clean() {
   log "Cleaning up..."
-  docker compose down --remove-orphans || true
+  docker compose down --volumes --remove-orphans || true
   docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest" 2>/dev/null || true
   docker buildx prune --force --filter "until=24h"
 }
@@ -74,24 +74,57 @@ _exec() {
 # Run tests in a subshell to isolate ENV variables
 _goss_test() {
   (
+    # --- Setup ---
+    log "--- Preparing Test Environment ---"
     export PUID=1234 PGID=4321 USER=testuser PASS=Password123 LOG_LEVEL=4
-    
-    log "Starting Test Environment..."
+    local volume_name="samba-timemachine_backups"
+    local test_file="/backups/permission-test-file"
+
+    log "Cleaning up previous test runs..."
+    docker compose down --volumes --remove-orphans 2>/dev/null || true
+    docker volume create "${volume_name}" >/dev/null
+
+    log "Creating test file with root ownership..."
+    docker run --rm -v "${volume_name}:/backups" debian:stable-slim bash -c \
+      "touch ${test_file} && chown root:root ${test_file}"
+
+    # --- Phase 1: Test with FORCE_PERMISSIONS_RESET=false ---
+    log "--- Running Test Phase 1: Default Permissions (No Reset) ---"
+    export FORCE_PERMISSIONS_RESET="false"
     _up
-    
     wait_for_health
-    
+
     log "Running Live Validation..."
     docker compose exec "${CONTAINER_NAME}" \
       "${GOSS_DST}/goss" --gossfile "${GOSS_DST}/tests/goss-live-tests.yaml" validate
-    
+
     log "Running Healthcheck Validation..."
     docker compose exec "${CONTAINER_NAME}" \
       "${GOSS_DST}/goss" --gossfile "${GOSS_DST}/tests/goss-healthcheck-tests.yaml" validate
-      
-    log "Tests Passed."
+
+    log "Running Permissions Check (Expecting root)..."
+    docker compose exec -e EXPECTED_OWNER=root -e EXPECTED_GROUP=root "${CONTAINER_NAME}" \
+      "${GOSS_DST}/goss" --gossfile "${GOSS_DST}/tests/goss-permissions-tests.yaml" validate
+
+    log "Phase 1 Passed. Shutting down..."
+    _down
+
+    # --- Phase 2: Test with FORCE_PERMISSIONS_RESET=true ---
+    log "--- Running Test Phase 2: Forced Permissions Reset ---"
+    export FORCE_PERMISSIONS_RESET="true"
+    _up
+    wait_for_health
+
+    log "Running Permissions Check (Expecting ${USER})..."
+    docker compose exec -e EXPECTED_OWNER=${USER} -e EXPECTED_GROUP=${USER} "${CONTAINER_NAME}" \
+      "${GOSS_DST}/goss" --gossfile "${GOSS_DST}/tests/goss-permissions-tests.yaml" validate
+
+    log "Phase 2 Passed."
+    log "--- All Tests Passed ---"
   )
+  # --- Cleanup ---
   _down
+  docker volume rm "samba-timemachine_backups" >/dev/null
 }
 
 _trivy() {
