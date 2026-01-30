@@ -114,18 +114,16 @@ to fix them:
 
 # Software Used
 
-* [Debian Trixie](https://hub.docker.com/_/debian/tags?page=1&name=trixie-backports)
+* [Debian Trixie](https://hub.docker.com/_/debian/tags?page=1&name=trixie)
 * [SAMBA](https://packages.debian.org/trixie-backports/samba)
 * [GOSS](https://github.com/goss-org/goss/releases)
 
 # Areas for improvement
 
 * Figure out how to run rootless (WIP)
-  * Backup directory ownership config
+  * Backup directory ownership config - init container?
   * User configuration, maybe bake the user into the container but how to support UID/GID mapping?
   * Maybe just a hard set UID/GID, and add docs about fixing directory perms, rely on healthcheck tests to capture incorrect config
   * Hard set UID/GID and create a unix user at build time, then set the smb password without root access needed
 * Experiment with https://github.com/GoogleContainerTools/container-structure-test
 * Make listen port configurable, needs to pass in env var and templete config and tests
-* Add docs to the container to auto populate the SMB share
-* Switch to envsubst for templating

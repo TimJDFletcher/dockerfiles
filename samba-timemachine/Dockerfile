@@ -2,7 +2,7 @@ ARG DEBIAN_VERSION="trixie-20260112-slim"
 FROM debian:${DEBIAN_VERSION}
 
 # Arguments
-ARG SAMBA_VERSION="2:4.23.4+dfsg-1~bpo13+1"
+ARG SAMBA_VERSION="2:4.23.5+dfsg-1~bpo13+1"
 ARG GOSS_VER="v0.4.9"
 ARG GOSS_DST="/goss"
 ARG BACKUPDIR="/backups"
