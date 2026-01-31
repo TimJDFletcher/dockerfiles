@@ -1,0 +1,7 @@
+# /etc/cron.d/monitor_backups
+
+# 1. Define Environment Variable
+WEBHOOK_URL=https://example.com/hook
+
+# 2. Run the command
+0 11 * * * timemachine /path/to/timemachine/data/backup-check.sh
