@@ -57,6 +57,10 @@ The `./run` script is the primary interface for managing the project.
 *   **`./run trivy`**: Builds the image and runs a `trivy` scan for high/critical vulnerabilities.
 *   **`./run release`**: The release process. It runs the `test` and `trivy` commands, then builds and pushes a multi-platform (`linux/amd64`, `linux/arm64`) image to Docker Hub, tagged with the current Git tag and `latest`.
 
+### 5.1. Tagging Process
+
+The project follows [Semantic Versioning](https://semver.org/). Release tags always start with `timemachine-v` followed by the version number (e.g., `timemachine-v1.2.3`).
+
 ## 6. Testing & Validation (`goss`)
 
 The project uses `goss` to define the expected state of the container in different phases. The tests act as executable specifications.
