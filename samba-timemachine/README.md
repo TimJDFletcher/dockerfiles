@@ -104,6 +104,18 @@ I have had some performance problems using ZFS as a backing store for the contai
 I'm not sure if this because of the slow SMR drive I was using or by ZFS's copy on write design interacting badly with APFS.
 I have changed the backend storage that I use to ext4 which has been working well.
 
+# Backup Monitoring
+
+The repository includes a `backup-check.sh` script in the `scripts/` directory. This script is designed to monitor the health of your Time Machine backups.
+
+It works by scanning for `.sparsebundle` directories and checking the modification times of the files within them. If no files have been modified within a configurable number of days (default is 14), it is considered "stale," and a notification can be sent.
+
+## Features
+
+- **Stale Backup Detection:** Identifies backups that haven't been updated recently.
+- **Webhook Integration:** Can trigger a webhook (e.g., to a service like Healthchecks.io or a custom notification system) by setting the `WEBHOOK_URL` environment variable. If the variable is not set, it performs a dry run.
+- **Cron Job Ready:** The script can be scheduled to run automatically. An example cron file, `scripts/backup-check.cron`, is provided to show how to execute it periodically.
+
 # Known Bugs
 
 I have had some macOS kernel watchdogd crashes in smbfs that I think might be related to this container, I've done the following things 
