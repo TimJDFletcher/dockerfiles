@@ -57,6 +57,11 @@ configureBackupDir() {
     envsubst < /templates/README.md > "${BACKUPDIR}/README.md"
     chown root:root "${BACKUPDIR}/README.md"
     chmod 0444 "${BACKUPDIR}/README.md"
+
+    log "Copying backup check script..."
+    cp /scripts/backup-check.sh "${BACKUPDIR}/backup-check.sh"
+    chown root:root "${BACKUPDIR}/backup-check.sh"
+    chmod +x "${BACKUPDIR}/backup-check.sh"
 }
 
 configureSAMBA() {

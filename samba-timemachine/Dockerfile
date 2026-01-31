@@ -45,6 +45,7 @@ RUN echo 'deb http://deb.debian.org/debian trixie-backports main' > /etc/apt/sou
 RUN mkdir /templates
 COPY --chmod=0444 samba.conf.tmpl /templates/smb.conf.tmpl
 COPY --chmod=0444 ${DOCS} /templates/README.md
+COPY --chmod=0755 scripts/backup-check.sh /scripts/backup-check.sh
 COPY --chmod=0755 entrypoint /entrypoint
 
 # Build-time Validation with goss

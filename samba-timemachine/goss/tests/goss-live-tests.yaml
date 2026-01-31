@@ -20,6 +20,13 @@ file:
     group: root
     filetype: file
 
+  {{.Env.BACKUPDIR}}/backup-check.sh:
+    exists: true
+    mode: "0755"
+    owner: root
+    group: root
+    filetype: file
+
   /etc/samba/smb.conf:
     exists: true
     mode: "0644"
