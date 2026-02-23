@@ -1,85 +1,74 @@
 # Samba-TimeMachine Agent Documentation
 
-This document provides a comprehensive technical overview of the `samba-timemachine` project for AI agents. It covers the container's architecture, configuration, developer workflow, and testing methodology.
+Docker container running Samba configured to emulate an Apple Time Capsule for macOS Time Machine backups.
 
-## 1. Project Goal
+## Core Components
 
-The project provides a Docker container running a Samba server configured to emulate an Apple Time Capsule. This allows macOS clients to perform Time Machine backups to a network share provided by the container.
+* **Base Image:** `debian:trixie-slim`
+* **Core Service:** `samba` (from `trixie-backports`)
+* **Templating:** `envsubst` (from `gettext-base`) generates config files from templates
+* **Testing:** `goss` for build-time validation, runtime health checks, and live integration tests
+* **Orchestration:** `./run` shell script and Docker Compose
 
-## 2. Core Components & Technology
+## Environment Variables
 
-*   **Base Image:** `debian:trixie-slim`
-*   **Core Service:** `samba` (from `trixie-backports` for a newer version)
-*   **Templating:** `envsubst` (from `gettext-base`) is used to generate configuration files from templates.
-*   **Testing & Health Checks:** `goss` is used for build-time validation, live integration tests, and runtime health checks.
-*   **Orchestration:** The project is managed via the `./run` shell script and Docker Compose.
+| Variable | Default | Used In |
+|---|---|---|
+| `USER` | `timemachine` | `entrypoint`, `smb.conf.tmpl` |
+| `PASS` | `password` | `entrypoint` (`smbpasswd`) |
+| `PUID` | `999` | `entrypoint` (`useradd`, `chown`) |
+| `PGID` | `999` | `entrypoint` (`groupadd`, `chown`) |
+| `LOG_LEVEL` | `1` | `smb.conf.tmpl` |
+| `BACKUPDIR` | `/backups` | `entrypoint`, `smb.conf.tmpl` |
+| `FORCE_PERMISSIONS_RESET` | `false` | `entrypoint` (recursive `chown`) |
 
-## 3. Container Configuration (Runtime)
+## Entrypoint Initialization Order
 
-The container's behavior is controlled by environment variables, which are substituted into templates by the `entrypoint` script.
+Order is critical — `configureSAMBA` must run before `createUser` (see Pitfalls).
 
-| Variable    | Description                                     | Default       | Used In                               |
-|-------------|-------------------------------------------------|---------------|---------------------------------------|
-| `USER`      | The username for the Time Machine share.        | `timemachine` | `entrypoint`, `smb.conf.tmpl`         |
-| `PASS`      | The password for the Time Machine user.         | `password`    | `entrypoint` (for `smbpasswd`)        |
-| `PUID`      | The Unix User ID (UID) of the user.             | `999`         | `entrypoint` (for `useradd`, `chown`) |
-| `PGID`      | The Unix Group ID (GID) of the user.            | `999`         | `entrypoint` (for `groupadd`, `chown`)|
-| `LOG_LEVEL` | The Samba logging level.                        | `1`           | `smb.conf.tmpl`                       |
-| `BACKUPDIR` | The internal path for the backup volume.        | `/backups`    | `entrypoint`, `smb.conf.tmpl`         |
+1. **`checkBackupDir`** — Verifies `${BACKUPDIR}` exists and warns if not a mountpoint.
+2. **`cleanupLegacyFiles`** — Removes obsolete `.com.apple.TimeMachine.quota.plist`.
+3. **`configureSAMBA`** — Generates `/etc/samba/smb.conf` from template via `envsubst`.
+4. **`createUser`** — Creates group/user with `PGID`/`PUID`, sets Samba password via `smbpasswd`.
+5. **`configureBackupDir`** — Sets ownership, creates Apple metadata files, copies `backup-check.sh`.
+6. **`startSMB`** — Runs `smbd` in the foreground as PID 1.
 
-## 4. Container Initialization (`entrypoint` script)
+## Developer Workflow (`./run`)
 
-The `entrypoint` script is responsible for setting up the container environment at startup. The order of operations is critical:
+| Command | Description |
+|---|---|
+| `build` | Build local image tagged `timjdfletcher/samba-timemachine:tmp` |
+| `up` | Build and start via `docker compose up` |
+| `down` | Stop and remove containers |
+| `exec` | Start (if needed) and shell into container |
+| `test` | Full goss test suite (sets `PUID=1234`, `USER=testuser`, etc. in a subshell) |
+| `trivy` | Build and run Trivy security scan |
+| `release` | Test + Trivy + multi-arch build/push to Docker Hub |
+| `clean` | Remove images and prune builder |
+| `copyToTestHost` | Build and copy image to test host via SSH |
+| `timemachineLogs` | Stream macOS Time Machine logs |
 
-1.  **`checkBackupDir`:** Ensures the `${BACKUPDIR}` directory exists.
-2.  **`configureSAMBA`:** Uses `envsubst` to create `/etc/samba/smb.conf` from `/templates/smb.conf.tmpl`. This must happen before user creation.
-3.  **`createUser`:** Creates the group and user with the specified `PGID` and `PUID`. It then sets the user's Samba password using `smbpasswd`.
-4.  **`configureBackupDir`:**
-    *   Sets ownership of `${BACKUPDIR}` to `${PUID}:${PGID}`.
-    *   Creates metadata files: `.com.apple.TimeMachine.supported` and `.metadata_never_index`.
-    *   Generates a `README.md` inside the backup directory.
-5.  **`startSMB`:** Starts the `smbd` process in the foreground, passing any additional command-line arguments.
+Release tags follow SemVer: `timemachine-v<VERSION>` (e.g., `timemachine-v1.2.3`).
 
-## 5. Developer Workflow (`./run` script)
+## Testing (`goss`)
 
-The `./run` script is the primary interface for managing the project.
+Three test suites, each validating a different phase:
 
-*   **`./run build`**: Builds the Docker image locally with the tag `timjdfletcher/samba-timemachine:tmp`.
-*   **`./run up`**: Builds the image and starts the container using `docker compose up`.
-*   **`./run down`**: Stops and removes the container using `docker compose down`.
-*   **`./run exec`**: Starts the container (if not running) and opens a `bash` shell inside it.
-*   **`./run test`**: The main testing command. It performs the following steps:
-    1.  Sets specific test environment variables (`PUID=1234`, `USER=testuser`, etc.).
-    2.  Calls `./run up` to start the container with these variables.
-    3.  Waits for the container to pass its health check.
-    4.  Executes the `goss-live-tests.yaml` and `goss-healthcheck-tests.yaml` suites inside the running container.
-    5.  Calls `./run down` to clean up.
-*   **`./run trivy`**: Builds the image and runs a `trivy` scan for high/critical vulnerabilities.
-*   **`./run release`**: The release process. It runs the `test` and `trivy` commands, then builds and pushes a multi-platform (`linux/amd64`, `linux/arm64`) image to Docker Hub, tagged with the current Git tag and `latest`.
+* **`goss-dockerfile-tests.yaml`** (build-time) — Templates and entrypoint exist with correct permissions; `smb.conf` does *not* exist yet; required packages installed, build deps purged.
+* **`goss-healthcheck-tests.yaml`** (runtime) — `smbd` running, port `10445` listening, `testparm` passes, `smbclient` loopback integration test (mkdir/ls/rmdir), disk usage < 95%.
+* **`goss-live-tests.yaml`** (integration) — User/group created with correct UID/GID, `smb.conf` contains expected values, `smbclient` write test.
+* **`goss-permissions-tests.yaml`** (permissions) — Validates `FORCE_PERMISSIONS_RESET` feature by checking file ownership against `EXPECTED_OWNER`/`EXPECTED_GROUP` env vars.
 
-### 5.1. Tagging Process
+## Pitfalls & Gotchas
 
-The project follows [Semantic Versioning](https://semver.org/). Release tags always start with `timemachine-v` followed by the version number (e.g., `timemachine-v1.2.3`).
+**Samba listens on port `10445` inside the container** (`smb ports = 10445` in `samba.conf.tmpl`). The compose file `ports.target` is the container-side port and must match. `ports.published` is the host-side port. All goss tests run inside the container via `docker compose exec` and connect to `127.0.0.1:10445` directly, so they **do not validate Docker port mapping**.
 
-## 6. Testing & Validation (`goss`)
+**Entrypoint ordering: `configureSAMBA` before `createUser`.** `smbpasswd` reads `smb.conf` to locate the passdb backend. If `smb.conf` doesn't exist yet, `smbpasswd` fails with a cryptic error.
 
-The project uses `goss` to define the expected state of the container in different phases. The tests act as executable specifications.
+**`COPY goss/` busts the apt layer cache.** It appears before `RUN apt-get install` in the Dockerfile. Any change to goss test files invalidates the package install cache. This is a trade-off: the goss-installer script must run during that `RUN` step.
 
-### `goss-dockerfile-tests.yaml` (Build-time)
-This runs during `docker build` to validate the image itself, *before* the entrypoint has run.
-*   **Verifies:** `entrypoint` script and template files exist with correct permissions.
-*   **Ensures:** Generated config files like `/etc/samba/smb.conf` do *not* exist yet.
-*   **Checks:** Required packages (`samba`) are installed and build-time packages (`curl`) have been removed.
+**`backup-check.sh` is for the host, not the container.** It requires `curl` (purged from the image at build time). The entrypoint copies it into `${BACKUPDIR}/` so it can be run from the host or a host cron job.
 
-### `goss-healthcheck-tests.yaml` (Runtime Health)
-This is used for the `HEALTHCHECK` instruction in the `Dockerfile`. It performs a lightweight check to ensure the service is operational.
-*   **Verifies:** The `smbd` process is running.
-*   **Checks:** Port `10445` is listening.
-*   **Validates:** The generated `smb.conf` is syntactically correct via `testparm`.
-*   **Integration Test:** Performs an `smbclient` loopback connection to create and delete a directory, proving that authentication, networking, and permissions are working correctly.
+**`docker-compose-autoheal.yml` is a standalone production example.** It is not used by `./run` commands and may have divergent configuration from `docker-compose.yml`.
 
-### `goss-live-tests.yaml` (Live Integration)
-This is a more comprehensive test suite run by the `./run test` command. It validates the container's state against the specific test variables set by the `run` script.
-*   **Verifies:** Correct user/group creation with the test `PUID`/`PGID`.
-*   **Validates:** The `smb.conf` contains the correct values for `log level`, `path`, etc.
-*   **Integration Test:** Similar to the health check, it uses `smbclient` to confirm write access to the share.
+**`USER` env var collides with the standard shell variable.** The `./run test` command exports `USER=testuser` in a subshell to avoid clobbering the parent shell's login user.
