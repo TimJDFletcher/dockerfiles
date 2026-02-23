@@ -72,3 +72,17 @@ Three test suites, each validating a different phase:
 **`docker-compose-autoheal.yml` is a standalone production example.** It is not used by `./run` commands and may have divergent configuration from `docker-compose.yml`.
 
 **`USER` env var collides with the standard shell variable.** The `./run test` command exports `USER=testuser` in a subshell to avoid clobbering the parent shell's login user.
+
+## Updating Dependencies
+
+Three pinned versions in the Dockerfile `ARG` block need periodic checking:
+
+| Dependency | ARG | Where to check latest |
+|---|---|---|
+| Debian base image | `DEBIAN_VERSION` | Docker Hub tags matching `trixie-*-slim` — use the API: `https://hub.docker.com/v2/repositories/library/debian/tags?name=trixie&page_size=20&ordering=last_updated` |
+| Samba | `SAMBA_VERSION` | `https://packages.debian.org/trixie-backports/samba` — the version string is the Debian package version (e.g. `2:4.23.5+dfsg-1~bpo13+1`) |
+| Goss | `GOSS_VER` | `https://github.com/goss-org/goss/releases/latest` |
+
+The Samba version must match what's available in `trixie-backports`. If the version is bumped and the old version is removed from the repo, the build will fail. The `smbclient` package is pinned to the same version as `samba` — always update both together.
+
+After updating, run `./run test` to validate the build and all integration tests still pass.
