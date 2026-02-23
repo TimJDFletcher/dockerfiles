@@ -18,8 +18,15 @@ clean () {
   docker buildx rm builder || true
 }
 
+start () {
+  docker run --rm -it \
+    -v "${HOME}/.gam:/root/.gam" \
+    "${IMAGE_NAME}:latest" "$@"
+}
+
 usage() {
   echo "./run build - Build a local image called ${IMAGE_NAME}:${IMAGE_TAG}"
+  echo "./run start - Run the latest image with ~/.gam bind-mounted for config"
   echo "./run release - Tests and then releases to dockerhub a multiarch version of the latest tag"
 }
 
@@ -47,6 +54,7 @@ shift || true
 case ${CMD} in
     build) build ;;
     clean) clean ;;
+    start) start "$@" ;;
     release) find_release && clean && release ;;
     *) usage ;;
 esac

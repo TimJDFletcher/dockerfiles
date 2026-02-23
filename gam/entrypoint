@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e -o pipefail
 
-if [[ -z ${1} ]] || [[ ${1:0:1} == '-' ]] ; then
-    gam "$@"
-else
+if command -v "${1:-}" > /dev/null 2>&1 ; then
     exec "$@"
+else
+    exec gam "$@"
 fi
