@@ -1,0 +1,8 @@
+#!/bin/bash
+set -e -o pipefail
+
+if [[ -z ${1} ]] || [[ ${1:0:1} == '-' ]] ; then
+    gam "$@"
+else
+    exec "$@"
+fi
