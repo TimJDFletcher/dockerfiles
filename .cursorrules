@@ -1,0 +1,52 @@
+# Dockerfiles Monorepo — Cursor Rules
+
+## Repository Structure
+
+This is a monorepo of Docker container projects. Each subdirectory is a self-contained project with its own `Dockerfile`, `run` script, and optionally `AGENTS.md`, `docker-compose.yml`, and test files.
+
+## Conventions
+
+### `./run` Script
+
+Every project uses a `./run` bash script as the primary developer interface. Common commands across projects:
+
+- `./run build` — Build a local image tagged `timjdfletcher/<project>:tmp`
+- `./run clean` — Remove local images and prune buildx cache
+- `./run release` — Test (if applicable), build multi-arch (`linux/amd64`, `linux/arm64`), and push to Docker Hub
+
+All `run` scripts start with `set -eu -o pipefail`. When adding new commands, follow the existing `case` dispatch pattern.
+
+### Tagging & Releases
+
+Tags use the format `<project>-v<MAJOR>.<MINOR>.<PATCH>` (e.g., `timemachine-v3.8.3`, `gam-v0.1`). The release process requires the current commit to be tagged before running `./run release`. The release builds and pushes both the versioned tag and `latest` to Docker Hub.
+
+To release:
+1. `git tag <project>-v<VERSION>`
+2. `./run release`
+3. `git push && git push --tags`
+
+### Dockerfiles
+
+- Base images use pinned versions via `ARG` (e.g., `ARG DEBIAN_VERSION="trixie-20260202-slim"`).
+- Build-time dependencies are installed then purged in the same `RUN` layer.
+- Use `--no-install-recommends` for `apt-get install`.
+- Prefer `COPY --chmod=` over separate `chmod` commands.
+
+### AGENTS.md
+
+Per-project agent documentation lives in `<project>/AGENTS.md`. These files should contain:
+- Project goal and core components
+- Environment variables with defaults
+- Developer workflow (./run commands)
+- Testing methodology (if applicable)
+- Pitfalls and gotchas specific to that project
+- Dependency update instructions with URLs to check for new versions
+
+Keep AGENTS.md concise — use tables over prose, avoid repeating what the code makes obvious.
+
+## Working in This Repo
+
+- Always `cd` into the project subdirectory before running `./run` commands.
+- Run `./run test` (if it exists) before committing changes that affect the Dockerfile, entrypoint, or config templates.
+- After updating dependency versions, run the full test suite to validate.
+- Do not push to remote without being asked — the user will push when ready.
