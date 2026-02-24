@@ -1,19 +1,20 @@
 command:
-  # === Modern/default sshd (test-sshd) ===
-  # Should complete audit successfully (exit 0-3 depending on minor issues)
+  # === Hardened sshd (test-sshd) ===
+  # Should pass audit with exit code 0 (no warnings or failures)
   ssh-audit -p 2222 test-sshd:
-    exit-status:
-      le: 3
+    exit-status: 0
     stdout:
       - "(gen) banner:"
       - "(kex)"
       - "(key)"
+    stderr:
+      - "!/\\[fail\\]/"
+      - "!/\\[warn\\]/"
     timeout: 15000
 
-  # JSON output mode against modern sshd
+  # JSON output mode against hardened sshd
   ssh-audit -p 2222 --json test-sshd:
-    exit-status:
-      le: 3
+    exit-status: 0
     stdout:
       - '"banner":'
       - '"kex":'

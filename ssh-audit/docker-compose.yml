@@ -1,5 +1,5 @@
 services:
-  # Default/modern sshd configuration - should pass most checks
+  # Hardened sshd configuration - should pass ssh-audit with exit code 0
   test-sshd:
     image: linuxserver/openssh-server:latest
     environment:
@@ -8,11 +8,13 @@ services:
       - PASSWORD_ACCESS=true
       - USER_NAME=testuser
       - USER_PASSWORD=testpass
+    volumes:
+      - ./test-configs/secure-sshd_config:/etc/ssh/sshd_config:ro
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "2222"]
       interval: 2s
       timeout: 5s
-      retries: 10
+      retries: 15
 
   # Intentionally weak sshd configuration - should fail audit
   weak-sshd:

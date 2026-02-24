@@ -1,0 +1,25 @@
+# Hardened SSH configuration - should pass ssh-audit with exit code 0
+
+Port 2222
+
+# Strong key exchange algorithms only (no NIST curves)
+KexAlgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512
+
+# Strong ciphers only
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+
+# Strong MACs only (ETM mode, no SHA-1, no small tags)
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com
+
+# Only use secure host key algorithms (no ECDSA NIST)
+HostKeyAlgorithms ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+
+# Host keys to generate/use
+HostKey /etc/ssh/ssh_host_ed25519_key
+HostKey /etc/ssh/ssh_host_rsa_key
+
+# Authentication
+PasswordAuthentication yes
+PermitEmptyPasswords no
+PubkeyAuthentication yes
+PermitRootLogin no

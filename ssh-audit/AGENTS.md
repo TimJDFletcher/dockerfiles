@@ -32,20 +32,26 @@ Two test suites:
 
 ```
 docker-compose.yml
-├── test-sshd (default config)
-│   └── Modern OpenSSH - should pass most checks
+├── test-sshd (hardened config)
+│   └── Uses test-configs/secure-sshd_config - must pass with exit code 0
 ├── weak-sshd (intentionally insecure)
-│   └── Uses test-configs/weak-sshd_config with weak ciphers/KEX/MACs
+│   └── Uses test-configs/weak-sshd_config - must fail with exit code >= 2
 └── ssh-audit
     └── Runs goss tests against both servers
 ```
 
-The weak-sshd validates that ssh-audit actually detects issues:
-- Weak key exchange (diffie-hellman-group1-sha1, etc.)
+**Hardened sshd (test-sshd)** validates a secure baseline:
+- Strong KEX only (curve25519, sntrup761, DH group16/18)
+- Strong ciphers only (chacha20, AES-GCM, AES-CTR)
+- Strong MACs only (SHA-256/512-ETM, umac-128-etm)
+- No NIST curves, no SHA-1
+
+**Weak sshd (weak-sshd)** validates detection of issues:
+- Weak KEX (diffie-hellman-group1-sha1, NIST curves)
 - Weak ciphers (3des-cbc, aes*-cbc)
 - Weak MACs (hmac-md5, hmac-sha1-96)
 
-Tests verify that weak-sshd returns exit code >= 2 and output contains `[fail]`.
+Tests verify hardened returns exit 0, weak returns exit >= 2 with `[fail]` in output.
 
 The `./run test` command:
 1. Builds the ssh-audit image
