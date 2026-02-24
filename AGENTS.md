@@ -65,6 +65,11 @@ Eight projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `che
 1. **Direct artifact tests**: Version and help output
 2. **Goss tests**: Entrypoint permissions, version match, help output
 
+**gam** includes network connectivity tests:
+1. **Build-time tests**: Version, help, pip package verification
+2. **Entrypoint tests**: Verify exec path works (e.g., `python --version`)
+3. **Network tests**: `gam checkconnection` validates connectivity to 40+ Google APIs (~25s)
+
 ### Shared goss-bin Volume
 
 All test suites use a shared `goss-bin` Docker volume containing a pinned goss binary downloaded from GitHub. This removes dependencies on pre-built images and ensures version consistency.
@@ -78,7 +83,7 @@ docker run --rm -v goss-bin:/target alpine:latest chown 101:102 /target
 docker run --rm -v goss-bin:/target --entrypoint sh curlimages/curl:latest -c \
   'curl -fsSL <url> -o /target/goss && chmod 755 /target/goss'
 
-# For containers with a shell (checkov, ssh-audit, offlineimap, postfix, tcpdump):
+# For containers with a shell (checkov, ssh-audit, offlineimap, postfix, tcpdump, gam):
 docker run --rm -v goss-bin:/goss-bin:ro ... /goss-bin/goss validate
 
 # For scratch containers (yajsv):

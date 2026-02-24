@@ -53,9 +53,26 @@ The default `CMD` is `--help`, so running the container with no arguments prints
 ## 7. Testing
 
 Uses the shared `goss-bin` Docker volume pattern. Tests validate:
-- `/entrypoint` exists with correct permissions
-- `gam version` outputs expected version
-- `gam --help` works
+
+| Test | Purpose | Duration |
+|------|---------|----------|
+| `/entrypoint` file | Exists with 0755 permissions | <1s |
+| `gam version` | Shows correct version (7.34.06) | ~1s |
+| `gam --help` | Help output works | ~1s |
+| `pip show gam7` | Exact package version installed | <1s |
+| `python --version` | Entrypoint exec path works | <1s |
+| `gam checkconnection` | Network to 40+ Google APIs | ~25s |
+
+Total test time: ~28 seconds (network test dominates).
+
+### Offline Commands
+
+These GAM commands work without credentials:
+- `gam version` — Show version info
+- `gam --help` — Show help
+- `gam checkconnection` — Test network connectivity to Google APIs
+
+Most other commands require OAuth2 credentials.
 
 ## 8. Tagging & Release Process
 
@@ -102,8 +119,18 @@ Three approaches, in order of simplicity:
 
 ## 11. Upstream Details
 
-*   **Repository:** https://github.com/GAM-team/GAM
-*   **PyPI Package:** `gam7`
-*   **Python Requirement:** >=3.10
-*   **Key Dependencies:** google-api-python-client, google-auth, cryptography, lxml
-*   **License:** Apache 2.0
+| Item | Value |
+|------|-------|
+| Repository | https://github.com/GAM-team/GAM |
+| PyPI Package | `gam7` |
+| Python Requirement | >=3.10 |
+| Key Dependencies | google-api-python-client, google-auth, cryptography, lxml |
+| License | Apache 2.0 |
+
+## 12. Pitfalls & Gotchas
+
+- **Version display**: GAM displays version `7.34.6` as `7.34.06` (leading zero in patch)
+- **Warnings on stderr**: `gam version` prints RequestsDependencyWarning and config warnings to stderr before the version output — filter with `2>/dev/null` when parsing
+- **Config initialization**: GAM creates `~/.gam/` directory and config file on first run, even for `--help`
+- **Network test duration**: `gam checkconnection` takes ~25 seconds (tests 40+ Google API endpoints)
+- **Entrypoint logic**: First argument is checked with `command -v` — if it's a valid command (like `python`, `bash`), it's exec'd directly; otherwise passed to `gam`
