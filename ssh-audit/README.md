@@ -113,6 +113,112 @@ docker run --rm -v $(pwd):/policies timjdfletcher/ssh-audit -P /policies/ssh-pol
     fi
 ```
 
+## Auditing a Local Network
+
+Scan multiple SSH servers on your network using a targets file.
+
+### Create a Targets File
+
+```bash
+# Option 1: Manual list of known hosts
+cat > targets.txt << 'EOF'
+192.168.8.1
+192.168.8.2
+192.168.8.4
+router.local
+EOF
+
+# Option 2: Generate from a subnet (requires nmap)
+nmap -sn 192.168.8.0/24 -oG - | awk '/Up/{print $2}' > targets.txt
+
+# Option 3: Use your ARP cache for recently-seen hosts
+arp -a | grep '192.168.8' | awk -F'[()]' '{print $2}' > targets.txt
+```
+
+### Scan All Targets
+
+```bash
+# Basic network scan (default 32 threads)
+docker run --rm \
+  -v $(pwd):/data:ro \
+  timjdfletcher/ssh-audit -T /data/targets.txt
+
+# Limit concurrent connections to avoid rate-limiting
+docker run --rm \
+  -v $(pwd):/data:ro \
+  timjdfletcher/ssh-audit -T /data/targets.txt --threads 4
+
+# JSON output for processing with jq
+docker run --rm \
+  -v $(pwd):/data:ro \
+  timjdfletcher/ssh-audit -T /data/targets.txt --json > network-audit.json
+```
+
+### Extract Findings from JSON
+
+```bash
+# List all targets with failures
+cat network-audit.json | jq -r '.[] | select(.recommendations.critical) | .target'
+
+# Show recommendations for each host
+cat network-audit.json | jq -r '.[] | "\(.target): \(.recommendations)"'
+
+# Count hosts by SSH version
+cat network-audit.json | jq -r '.[].banner.software' | sort | uniq -c
+```
+
+### Network Audit Script Example
+
+```bash
+#!/bin/bash
+# audit-network.sh - Audit all SSH servers on local network
+
+SUBNET="192.168.8.0/24"
+TARGETS=$(mktemp)
+RESULTS=$(mktemp)
+
+# Discover hosts with SSH
+echo "Discovering SSH hosts on $SUBNET..."
+for ip in $(seq 1 254); do
+  timeout 1 nc -z 192.168.8.$ip 22 2>/dev/null && echo "192.168.8.$ip" >> "$TARGETS"
+done &
+wait
+
+HOST_COUNT=$(wc -l < "$TARGETS")
+echo "Found $HOST_COUNT hosts with SSH open"
+
+# Run audit
+docker run --rm \
+  -v "$TARGETS":/targets.txt:ro \
+  timjdfletcher/ssh-audit -T /targets.txt --threads 4 --json > "$RESULTS"
+
+# Summary
+echo ""
+echo "=== Audit Summary ==="
+echo "Hosts with critical issues:"
+jq -r '.[] | select(.recommendations.critical) | "  - \(.target)"' "$RESULTS"
+
+echo ""
+echo "Hosts with warnings only:"
+jq -r '.[] | select(.recommendations.warning and (.recommendations.critical | not)) | "  - \(.target)"' "$RESULTS"
+
+# Cleanup
+rm -f "$TARGETS" "$RESULTS"
+```
+
+### Non-Standard Ports
+
+```bash
+# Scan hosts on different ports
+cat > targets.txt << 'EOF'
+192.168.8.1:22
+192.168.8.2:2222
+192.168.8.10:22222
+EOF
+
+docker run --rm -v $(pwd):/data:ro timjdfletcher/ssh-audit -T /data/targets.txt
+```
+
 ## References
 
 - [ssh-audit GitHub](https://github.com/jtesta/ssh-audit)
