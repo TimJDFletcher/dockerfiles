@@ -19,7 +19,7 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 | `postfix` | SMTP relay | Stale | Pinned to bullseye-20200224; needs upgrade |
 | `tcpdump` | Network debugging | Minimal | One-liner; has AGENTS.md with test proposal |
 | `ssh-audit` | SSH security auditing | Active | Full test suite with hardened/weak sshd; has AGENTS.md, README |
-| `goss` | Goss testing framework | Active | Shared test image for other projects |
+| `goss` | Goss testing framework | Optional | Standalone image; tests use goss-bin volume instead |
 | `media` | Media server stack | Reference | Compose-only; third-party images |
 
 ## Known Issues & Tech Debt
@@ -62,15 +62,13 @@ Four projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, and `
 1. **Build-time tests**: Validate binary install and version
 2. **Integration tests**: Audit a hardened sshd (must pass with exit 0) and a weak sshd (must fail with exit >= 2)
 
-**yajsv** uses the shared `goss` image (since main image is `scratch`):
+**yajsv** extracts binary and runs goss externally (scratch image has no shell):
 1. **Positive tests**: Valid JSON files pass schema validation
 2. **Negative tests**: Invalid files (missing fields, wrong types, extra properties) are rejected
 
 **checkov** mounts goss into the Python container:
 1. **Direct artifact tests**: Version and help output
 2. **Goss tests**: Entrypoint permissions, version match, help output
-
-**goss** is a shared testing image used by other projects. Build it first with `cd goss && ./run build`.
 
 ### Shared goss-bin Volume
 

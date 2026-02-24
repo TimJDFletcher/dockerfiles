@@ -42,10 +42,14 @@ docker run --rm \
   --gossfile /tests/goss.yaml validate
 ```
 
-## Usage in Other Projects
+## Note: Optional for Testing
 
-This image is used by other projects in this repo for testing:
-- `yajsv` — Extracts binary, mounts it, runs goss validation
+This image is **no longer required** for running tests in other projects. All test suites now use a shared `goss-bin` Docker volume with goss downloaded directly from GitHub.
+
+This image remains useful for:
+- Direct command-line use
+- Users who prefer a container over volume-based testing
+- Reference implementation of goss packaging
 
 ## Updating Dependencies
 
