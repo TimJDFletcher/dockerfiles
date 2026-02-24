@@ -43,6 +43,15 @@ See `.cursorrules` for full details. Key points:
 
 ## Testing Philosophy
 
+**Use Test-Driven Development (TDD)**: Write tests first, verify they fail, then implement the fix.
+
+Example workflow:
+1. Write a test that checks for the expected behavior (e.g., version string)
+2. Run the test — it should fail
+3. Update the code to make the test pass
+4. Run the test — it should pass
+5. Commit
+
 Three projects have test suites: `samba-timemachine`, `ssh-audit`, and `yajsv`.
 
 **samba-timemachine** tests three phases:

@@ -7,7 +7,7 @@ command:
   yajsv -v:
     exit-status: 0
     stdout:
-      - "/^v[0-9]+\\.[0-9]+/"
+      - "v1.4.1"
     timeout: 5000
 
   # === Positive Tests: Valid JSON ===

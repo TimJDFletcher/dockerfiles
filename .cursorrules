@@ -44,6 +44,18 @@ Per-project agent documentation lives in `<project>/AGENTS.md`. These files shou
 
 Keep AGENTS.md concise — use tables over prose, avoid repeating what the code makes obvious.
 
+### Test-Driven Development (TDD)
+
+Use TDD when adding or modifying functionality:
+
+1. **Write the test first** — Add a test that checks for the expected behavior
+2. **Run the test** — Verify it fails (proves the test is valid)
+3. **Implement the change** — Update code to make the test pass
+4. **Run the test** — Verify it passes
+5. **Commit** — Include both test and implementation
+
+Example: To pin a dependency version, first add a test that checks for that version, verify it fails, then update the Dockerfile.
+
 ## Working in This Repo
 
 - Always `cd` into the project subdirectory before running `./run` commands.

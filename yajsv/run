@@ -31,11 +31,44 @@ log() {
 }
 
 GOSS_IMAGE="timjdfletcher/goss:tmp"
+YAJSV_VERSION="v1.4.1"
 
 test() {
   build
 
-  log "Extracting yajsv binary from built image..."
+  log "Testing container artifact directly..."
+  
+  # Test default CMD shows correct pinned version
+  log "Test: version is ${YAJSV_VERSION}"
+  local actual_version
+  actual_version=$(docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}")
+  if [ "${actual_version}" != "${YAJSV_VERSION}" ]; then
+    echo "  FAIL: expected ${YAJSV_VERSION}, got ${actual_version}"
+    exit 1
+  fi
+  echo "  PASS"
+
+  # Test valid file passes
+  log "Test: valid JSON passes validation"
+  docker run --rm \
+    -v "$(pwd)/test-data:/data:ro" \
+    "${IMAGE_NAME}:${IMAGE_TAG}" \
+    -s /data/schema.json /data/valid.json | grep -q "pass"
+  echo "  PASS"
+
+  # Test invalid file fails with exit code 1
+  log "Test: invalid JSON fails with exit 1"
+  if docker run --rm \
+    -v "$(pwd)/test-data:/data:ro" \
+    "${IMAGE_NAME}:${IMAGE_TAG}" \
+    -s /data/schema.json /data/invalid-missing-required.json 2>&1; then
+    echo "  FAIL: expected non-zero exit"
+    exit 1
+  else
+    echo "  PASS"
+  fi
+
+  log "Running extended goss validation tests..."
   mkdir -p .tmp
   trap "rm -rf .tmp" EXIT
 
@@ -45,7 +78,6 @@ test() {
   docker rm "${tmp_container}" >/dev/null
   chmod 755 ".tmp/yajsv"
 
-  log "Running goss validation tests..."
   docker run --rm \
     -v "$(pwd)/.tmp/yajsv:/usr/local/bin/yajsv:ro" \
     -v "$(pwd)/goss/tests:/goss:ro" \

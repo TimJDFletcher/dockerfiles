@@ -1,12 +1,14 @@
-FROM golang:1.25 AS builder
+ARG GO_VERSION="1.25"
+FROM golang:${GO_VERSION} AS builder
 
-RUN go install --ldflags '-linkmode external -extldflags "-static"' github.com/neilpa/yajsv@latest
+ARG YAJSV_VERSION="v1.4.1"
+
+RUN go install -ldflags "-linkmode external -extldflags '-static' -X main.version=${YAJSV_VERSION}" github.com/neilpa/yajsv@${YAJSV_VERSION}
 RUN /go/bin/yajsv -v
 
-FROM scratch 
-ARG TOOL
+FROM scratch
 
-COPY --from=builder  "/go/bin/yajsv" /yajsv
+COPY --from=builder "/go/bin/yajsv" /yajsv
 
 ENTRYPOINT ["/yajsv"]
 CMD ["-v"]

@@ -84,9 +84,22 @@ Run tests with `./run test`.
 
 **Build goss image first.** Tests depend on `timjdfletcher/goss:tmp`. Run `cd ../goss && ./run build` if it doesn't exist.
 
+## Build Args
+
+| Arg | Default | Purpose |
+|-----|---------|---------|
+| `GO_VERSION` | `1.25` | Go builder image version |
+| `YAJSV_VERSION` | `v1.4.1` | yajsv release tag |
+
+Version is injected via ldflags (`-X main.version`) because the upstream source embeds a dev version string.
+
 ## Updating Dependencies
 
 | Dependency | Where to check |
 |------------|----------------|
 | yajsv | https://github.com/neilpa/yajsv/releases |
 | Go | https://hub.docker.com/_/golang |
+
+After updating `YAJSV_VERSION`, also update:
+- `run` script: `YAJSV_VERSION` variable
+- `goss/tests/goss-validation-tests.yaml`: version check
