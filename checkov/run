@@ -4,14 +4,66 @@ CONTAINER_NAME=checkov
 IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
 IMAGE_TAG=tmp
 PLATFORMS="linux/amd64,linux/arm64"
+GOSS_IMAGE="timjdfletcher/goss:tmp"
+CHECKOV_VERSION="3.2.506"
 
-build () {
+log() {
+  echo "==> $*"
+}
+
+build() {
   _buildx_setup
   docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --file Dockerfile .
   docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
 }
 
-clean () {
+test() {
+  build
+
+  log "Testing container artifact..."
+  
+  # Test version matches pinned version
+  log "Test: checkov version is ${CHECKOV_VERSION}"
+  local actual_version
+  actual_version=$(docker run --rm --entrypoint checkov "${IMAGE_NAME}:${IMAGE_TAG}" --version)
+  if [ "${actual_version}" != "${CHECKOV_VERSION}" ]; then
+    echo "  FAIL: expected ${CHECKOV_VERSION}, got ${actual_version}"
+    exit 1
+  fi
+  echo "  PASS"
+
+  # Test help works
+  log "Test: checkov --help works"
+  docker run --rm --entrypoint checkov "${IMAGE_NAME}:${IMAGE_TAG}" --help | grep -q "usage:"
+  echo "  PASS"
+
+  log "Running goss tests inside container..."
+  
+  # Ensure goss-bin volume exists and is populated
+  if ! docker volume inspect goss-bin >/dev/null 2>&1; then
+    log "Creating goss-bin volume..."
+    docker volume create goss-bin
+  fi
+  
+  # Update goss binary in volume (idempotent)
+  docker run --rm \
+    -v goss-bin:/target \
+    --entrypoint "" \
+    "${GOSS_IMAGE}" \
+    cp /usr/local/bin/goss /target/goss
+
+  # Run goss inside the checkov container
+  docker run --rm \
+    -v goss-bin:/goss-bin:ro \
+    -v "$(pwd)/goss/tests:/goss:ro" \
+    --entrypoint "" \
+    "${IMAGE_NAME}:${IMAGE_TAG}" \
+    /goss-bin/goss --gossfile /goss/goss-dockerfile-tests.yaml validate
+
+  log "All tests passed!"
+}
+
+clean() {
   docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" || true
   docker image rm "${IMAGE_NAME}:latest" || true
   docker buildx prune --force
@@ -19,8 +71,10 @@ clean () {
 }
 
 usage() {
-  echo "./run build - Build a local image called ${IMAGE_NAME}:${IMAGE_TAG}"
-  echo "./run release - Tests and then releases to dockerhub a multiarch version of the latest tag"
+  echo "./run build   - Build a local image called ${IMAGE_NAME}:${IMAGE_TAG}"
+  echo "./run test    - Build and run tests"
+  echo "./run clean   - Remove images and prune builder"
+  echo "./run release - Test and release multi-arch to Docker Hub"
 }
 
 find_release(){
@@ -46,7 +100,8 @@ CMD=${1:-}
 shift || true
 case ${CMD} in
     build) build ;;
+    test) test ;;
     clean) clean ;;
-    release) find_release && clean && release ;;
+    release) test && find_release && clean && release ;;
     *) usage ;;
 esac

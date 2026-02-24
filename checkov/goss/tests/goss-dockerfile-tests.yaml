@@ -1,0 +1,23 @@
+# Checkov Dockerfile tests
+# Run inside the container to validate build
+
+file:
+  /entrypoint:
+    exists: true
+    mode: "0755"
+    filetype: file
+
+command:
+  # Version must match pinned version
+  checkov --version:
+    exit-status: 0
+    stdout:
+      - "3.2.506"
+    timeout: 10000
+
+  # Help output works
+  checkov --help:
+    exit-status: 0
+    stdout:
+      - "usage:"
+    timeout: 10000

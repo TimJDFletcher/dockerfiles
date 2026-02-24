@@ -1,10 +1,13 @@
-FROM python:3
+ARG PYTHON_VERSION="3.13.12-slim"
+ARG CHECKOV_VERSION="3.2.506"
 
-RUN pip install checkov
+FROM python:${PYTHON_VERSION}
 
-ADD entrypoint /entrypoint
+ARG CHECKOV_VERSION
 
-RUN chmod 0755 /entrypoint
+RUN pip install --no-cache-dir checkov==${CHECKOV_VERSION}
+
+COPY --chmod=0755 entrypoint /entrypoint
 
 ENTRYPOINT ["/entrypoint"]
 

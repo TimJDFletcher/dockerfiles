@@ -12,7 +12,7 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 |---------|---------|--------|-------|
 | `samba-timemachine` | macOS Time Machine backup server via Samba | Active | Most mature; has goss tests, AGENTS.md |
 | `gam` | Google Workspace CLI (GAM) container | Active | Has AGENTS.md |
-| `checkov` | Bridgecrew Checkov security scanner | Maintained | Simple pip install; unpinned versions |
+| `checkov` | Bridgecrew Checkov security scanner | Active | Pinned versions; has goss tests |
 | `toolbox` | Generic Debian toolbox container | Maintained | Build-arg driven; customizable tools |
 | `yajsv` | JSON schema validator (Go) | Active | Multi-stage scratch build (~5MB); has tests |
 | `offlineimap` | Email sync with supercronic | Stale | Pinned to bullseye-20220125; needs upgrade |
@@ -26,7 +26,6 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 
 ### Medium Priority
 - **Stale base images**: `offlineimap` and `postfix` use Debian bullseye from 2020-2022; should upgrade to bookworm or trixie
-- **checkov Dockerfile style**: Uses `ADD` instead of `COPY`, separate `chmod` instead of `COPY --chmod=`
 
 ### Low Priority
 - Missing `./run` script: `media` (uses docker compose directly)
@@ -52,7 +51,7 @@ Example workflow:
 4. Run the test — it should pass
 5. Commit
 
-Three projects have test suites: `samba-timemachine`, `ssh-audit`, and `yajsv`.
+Four projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, and `checkov`.
 
 **samba-timemachine** tests three phases:
 1. **Build-time tests**: Validate image structure
@@ -67,7 +66,28 @@ Three projects have test suites: `samba-timemachine`, `ssh-audit`, and `yajsv`.
 1. **Positive tests**: Valid JSON files pass schema validation
 2. **Negative tests**: Invalid files (missing fields, wrong types, extra properties) are rejected
 
+**checkov** mounts goss into the Python container:
+1. **Direct artifact tests**: Version and help output
+2. **Goss tests**: Entrypoint permissions, version match, help output
+
 **goss** is a shared testing image used by other projects. Build it first with `cd goss && ./run build`.
+
+### Shared goss-bin Volume
+
+For containers with a shell, inject goss via a named Docker volume rather than extracting each time:
+
+```bash
+# Create volume (once)
+docker volume create goss-bin
+
+# Populate from goss image
+docker run --rm -v goss-bin:/target --entrypoint "" timjdfletcher/goss:tmp cp /usr/local/bin/goss /target/goss
+
+# Mount in test container
+docker run --rm -v goss-bin:/goss-bin:ro ... /goss-bin/goss validate
+```
+
+This volume persists across test runs. See `checkov/run` for the full pattern.
 
 When adding tests to other projects, follow these patterns.
 
