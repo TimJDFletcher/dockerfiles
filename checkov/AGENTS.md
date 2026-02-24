@@ -31,7 +31,7 @@ Tests run in two phases:
 1. **Direct artifact tests** — Verify version output and help work
 2. **Goss tests** — Run inside container validating entrypoint permissions and checkov behavior
 
-Test files are in `goss/tests/goss-dockerfile-tests.yaml`. The goss binary is injected via a shared `goss-bin` Docker volume (created automatically on first test run).
+Test files are in `goss/tests/goss-dockerfile-tests.yaml`. Goss `v0.4.9` is downloaded from GitHub to a shared `goss-bin` Docker volume (created automatically on first test run).
 
 ## Usage
 

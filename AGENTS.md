@@ -74,20 +74,22 @@ Four projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, and `
 
 ### Shared goss-bin Volume
 
-For containers with a shell, inject goss via a named Docker volume rather than extracting each time:
+All test suites use a shared `goss-bin` Docker volume containing a pinned goss binary downloaded from GitHub. This removes dependencies on pre-built images and ensures version consistency.
 
 ```bash
-# Create volume (once)
-docker volume create goss-bin
+# The _ensure_goss_volume() function in each run script:
+# 1. Creates goss-bin volume if missing
+# 2. Downloads pinned goss version from GitHub (idempotent)
+# 3. Mounts volume read-only into test containers
 
-# Populate from goss image
-docker run --rm -v goss-bin:/target --entrypoint "" timjdfletcher/goss:tmp cp /usr/local/bin/goss /target/goss
-
-# Mount in test container
+# For containers with a shell (checkov, ssh-audit):
 docker run --rm -v goss-bin:/goss-bin:ro ... /goss-bin/goss validate
+
+# For scratch containers (yajsv):
+docker run --rm -v goss-bin:/goss-bin:ro debian:trixie-slim /goss-bin/goss validate
 ```
 
-This volume persists across test runs. See `checkov/run` for the full pattern.
+The volume persists across test runs. Each project pins `GOSS_VERSION` (currently `v0.4.9`).
 
 When adding tests to other projects, follow these patterns.
 

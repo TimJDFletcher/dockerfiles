@@ -11,8 +11,8 @@ IMAGE_NAME="timjdfletcher/ssh-audit"
 IMAGE_TAG="${IMAGE_TAG:-tmp}"
 PLATFORMS="linux/amd64,linux/arm64"
 CONTAINER_NAME="ssh-audit"
-GOSS_IMAGE="timjdfletcher/goss:tmp"
 SSH_AUDIT_VERSION="3.3.0"
+GOSS_VERSION="v0.4.9"
 
 log() {
   echo "==> $1"
@@ -24,12 +24,26 @@ _ensure_goss_volume() {
     docker volume create goss-bin
   fi
   
-  # Update goss binary in volume (idempotent)
+  # Download pinned goss version to volume (idempotent)
+  log "Ensuring goss ${GOSS_VERSION} in volume..."
   docker run --rm \
     -v goss-bin:/target \
-    --entrypoint "" \
-    "${GOSS_IMAGE}" \
-    cp /usr/local/bin/goss /target/goss
+    alpine:latest sh -c "
+      if [ -f /target/goss ] && /target/goss --version 2>&1 | grep -q '${GOSS_VERSION}'; then
+        echo 'goss ${GOSS_VERSION} already installed'
+      else
+        apk add --no-cache curl >/dev/null
+        ARCH=\$(uname -m)
+        case \$ARCH in
+          x86_64)  GOSS_ARCH=amd64 ;;
+          aarch64) GOSS_ARCH=arm64 ;;
+          *)       echo \"Unsupported arch: \$ARCH\"; exit 1 ;;
+        esac
+        curl -fsSL \"https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}/goss-linux-\${GOSS_ARCH}\" -o /target/goss
+        chmod 755 /target/goss
+        echo 'goss ${GOSS_VERSION} installed'
+      fi
+    "
 }
 
 build() {

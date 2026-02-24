@@ -45,15 +45,17 @@ Since yajsv uses a `scratch` image (no OS), tests extract the binary and run gos
 ```
 ./run test
 ├── Build yajsv scratch image
+├── Ensure goss v0.4.9 in goss-bin volume (downloaded from GitHub)
 ├── Extract /yajsv binary to .tmp/
-├── Run timjdfletcher/goss container with:
+├── Run debian:trixie-slim container with:
+│   ├── goss-bin volume mounted (provides /goss-bin/goss)
 │   ├── yajsv binary mounted to /usr/local/bin/
 │   ├── goss test files mounted
 │   └── test-data/ mounted
 └── Clean up .tmp/
 ```
 
-Requires the `timjdfletcher/goss:tmp` image to be built first (from `../goss`).
+Uses the shared `goss-bin` volume with a pinned goss version downloaded from GitHub.
 
 ### Test Cases
 
@@ -82,7 +84,7 @@ Run tests with `./run test`.
 
 **yajsv binary needs glibc.** Despite the `-static` flag, the binary has glibc dependencies (DNS), so tests run in debian-based goss image not alpine.
 
-**Build goss image first.** Tests depend on `timjdfletcher/goss:tmp`. Run `cd ../goss && ./run build` if it doesn't exist.
+**Goss downloaded on first run.** Tests download goss `v0.4.9` from GitHub to a shared `goss-bin` volume if not present.
 
 ## Build Args
 
