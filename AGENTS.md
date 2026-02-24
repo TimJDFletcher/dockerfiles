@@ -71,9 +71,13 @@ Seven projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `che
 All test suites use a shared `goss-bin` Docker volume containing a pinned goss binary downloaded from GitHub. This removes dependencies on pre-built images and ensures version consistency.
 
 ```bash
-# The _ensure_goss_volume() function downloads goss using curlimages/curl:
-docker run --rm -v goss-bin:/target --user root --entrypoint sh \
-  curlimages/curl:latest -c 'curl -fsSL <url> -o /target/goss && chmod 755 /target/goss'
+# Volume creation sets permissions for curlimages/curl user (uid 101):
+docker volume create goss-bin
+docker run --rm -v goss-bin:/target alpine:latest chown 101:102 /target
+
+# Then curlimages/curl can download without root:
+docker run --rm -v goss-bin:/target --entrypoint sh curlimages/curl:latest -c \
+  'curl -fsSL <url> -o /target/goss && chmod 755 /target/goss'
 
 # For containers with a shell (checkov, ssh-audit, offlineimap, postfix, tcpdump):
 docker run --rm -v goss-bin:/goss-bin:ro ... /goss-bin/goss validate
@@ -82,7 +86,7 @@ docker run --rm -v goss-bin:/goss-bin:ro ... /goss-bin/goss validate
 docker run --rm -v goss-bin:/goss-bin:ro debian:trixie-slim /goss-bin/goss validate
 ```
 
-The volume persists across test runs. Each project pins `GOSS_VERSION` (currently `v0.4.9`). The `--user root` flag is required because `curlimages/curl` runs as non-root by default.
+The volume persists across test runs. Each project pins `GOSS_VERSION` (currently `v0.4.9`).
 
 When adding tests to other projects, follow these patterns.
 
