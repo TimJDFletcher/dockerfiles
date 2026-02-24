@@ -96,6 +96,33 @@ The volume persists across test runs. Each project pins `GOSS_VERSION` (currentl
 
 When adding tests to other projects, follow these patterns.
 
+## Security Scanning
+
+Use the `checkov` container to scan Dockerfiles:
+
+```bash
+docker run --rm -v "$(pwd):/tf" timjdfletcher/checkov:tmp \
+  --directory /tf --framework dockerfile --compact --quiet
+```
+
+### Acceptable Findings
+
+Some checkov findings are acceptable for this repo:
+
+| Check | Finding | Why It's OK |
+|-------|---------|-------------|
+| CKV_DOCKER_3 | No USER instruction | CLI tools often need root (tcpdump, postfix) or handle users at runtime (gam, samba-timemachine) |
+| CKV_DOCKER_2 | No HEALTHCHECK | Most containers are CLI tools, not long-running services. Only `samba-timemachine` needs HEALTHCHECK |
+
+### Required Practices
+
+- No secrets committed (no `.env`, credentials, keys, PEM files)
+- Use `COPY` not `ADD` (except for URLs, which we avoid)
+- Pin all versions via `ARG`
+- Clean up apt lists: `rm -rf /var/lib/apt/lists/*`
+- Use `pip install --no-cache-dir`
+- Avoid running as root when downloading from the internet
+
 ## Dependency Update Workflow
 
 1. Check upstream for new versions (see project AGENTS.md for URLs)
