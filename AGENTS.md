@@ -88,6 +88,8 @@ docker run --rm -v goss-bin:/goss-bin:ro debian:trixie-slim /goss-bin/goss valid
 
 The volume persists across test runs. Each project pins `GOSS_VERSION` (currently `v0.4.9`).
 
+**Security note:** We avoid running as root when downloading from the internet. The volume permissions are set once (using alpine as root) so that subsequent curl downloads run as non-root user (uid 101).
+
 When adding tests to other projects, follow these patterns.
 
 ## Dependency Update Workflow

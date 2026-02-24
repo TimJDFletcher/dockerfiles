@@ -32,6 +32,11 @@ To release:
 - Use `--no-install-recommends` for `apt-get install`.
 - Prefer `COPY --chmod=` over separate `chmod` commands.
 
+### Security
+
+- **Avoid running as root when downloading from the internet.** Use non-root users for curl/wget operations. If volume permissions are needed, set them once with a minimal container, then download as non-root.
+- Pin versions for reproducibility and security auditing.
+
 ### AGENTS.md
 
 Per-project agent documentation lives in `<project>/AGENTS.md`. These files should contain:
