@@ -10,11 +10,26 @@ fi
 IMAGE_NAME="timjdfletcher/ssh-audit"
 IMAGE_TAG="${IMAGE_TAG:-tmp}"
 PLATFORMS="linux/amd64,linux/arm64"
-GOSS_DST="/goss"
 CONTAINER_NAME="ssh-audit"
+GOSS_IMAGE="timjdfletcher/goss:tmp"
+SSH_AUDIT_VERSION="3.3.0"
 
 log() {
-  echo "[$(date +'%H:%M:%S')] $1"
+  echo "==> $1"
+}
+
+_ensure_goss_volume() {
+  if ! docker volume inspect goss-bin >/dev/null 2>&1; then
+    log "Creating goss-bin volume..."
+    docker volume create goss-bin
+  fi
+  
+  # Update goss binary in volume (idempotent)
+  docker run --rm \
+    -v goss-bin:/target \
+    --entrypoint "" \
+    "${GOSS_IMAGE}" \
+    cp /usr/local/bin/goss /target/goss
 }
 
 build() {
@@ -31,6 +46,7 @@ clean() {
 }
 
 _up() {
+  _ensure_goss_volume
   build
   log "Starting test environment..."
   docker compose up --remove-orphans --detach
@@ -58,12 +74,38 @@ wait_for_sshd() {
 
 _test() {
   log "--- Running ssh-audit Tests ---"
-  _up
+  
+  _ensure_goss_volume
+  build
+  
+  # Phase 1: Build-time tests (validate image structure)
+  log "Running build-time tests..."
+  
+  log "Test: ssh-audit version is ${SSH_AUDIT_VERSION}"
+  local actual_version
+  actual_version=$(docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" --help 2>&1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+  if [ "${actual_version}" != "v${SSH_AUDIT_VERSION}" ]; then
+    echo "  FAIL: expected v${SSH_AUDIT_VERSION}, got ${actual_version}"
+    exit 1
+  fi
+  echo "  PASS"
+  
+  log "Running goss build-time tests..."
+  docker run --rm \
+    -v goss-bin:/goss-bin:ro \
+    -v "$(pwd)/goss/tests:/goss:ro" \
+    --entrypoint "" \
+    "${IMAGE_NAME}:${IMAGE_TAG}" \
+    /goss-bin/goss --gossfile /goss/goss-dockerfile-tests.yaml validate
+  
+  # Phase 2: Integration tests (requires docker-compose sshd containers)
+  log "Starting test sshd containers..."
+  docker compose up --remove-orphans --detach
   wait_for_sshd
 
   log "Running integration tests..."
   docker compose exec "${CONTAINER_NAME}" \
-    "${GOSS_DST}/goss" --gossfile "${GOSS_DST}/tests/goss-integration-tests.yaml" validate
+    /goss-bin/goss --gossfile /goss/tests/goss-integration-tests.yaml validate
 
   log "--- All Tests Passed ---"
   _down
@@ -101,7 +143,7 @@ Usage: ./run [COMMAND]
 
 Commands:
   build    Build local image (${IMAGE_NAME}:${IMAGE_TAG})
-  test     Run goss integration tests against test sshd
+  test     Run goss build-time and integration tests
   clean    Remove images and prune builder
   release  Test, build multi-arch, and push to Docker Hub
 EOF

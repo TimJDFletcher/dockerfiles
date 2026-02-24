@@ -4,29 +4,33 @@ Docker container for [ssh-audit](https://github.com/jtesta/ssh-audit), an SSH se
 
 ## Core Components
 
-* **Base Image:** `python:3-slim`
-* **Package:** `ssh-audit` via pip (pinned version)
-* **Testing:** `goss` for build-time and integration validation
+| Component | Value |
+|-----------|-------|
+| Base Image | `python:3.13.12-slim` |
+| Package | `ssh-audit==3.3.0` via pip |
 
-## Environment Variables
+## Build Args
 
-None required. ssh-audit is stateless.
+| Arg | Default | Description |
+|-----|---------|-------------|
+| `PYTHON_VERSION` | `3.13.12-slim` | Python base image tag |
+| `SSH_AUDIT_VERSION` | `3.3.0` | ssh-audit package version |
 
 ## Developer Workflow (`./run`)
 
 | Command | Description |
 |---------|-------------|
 | `build` | Build local image tagged `timjdfletcher/ssh-audit:tmp` |
-| `test` | Run integration tests against a test sshd container |
+| `test` | Run build-time and integration tests |
 | `clean` | Remove images and prune builder |
 | `release` | Test + multi-arch build/push to Docker Hub |
 
-## Testing (`goss`)
+## Testing
 
-Two test suites:
+Tests run in two phases using the shared `goss-bin` Docker volume:
 
-* **`goss-dockerfile-tests.yaml`** (build-time) — Validates ssh-audit binary exists, version matches, help works
-* **`goss-integration-tests.yaml`** (integration) — Runs ssh-audit against a live sshd container (standard and JSON output modes)
+1. **Build-time tests** — Version check and goss validation of binary/help
+2. **Integration tests** — docker-compose spins up hardened + weak sshd containers
 
 ### Test Architecture
 
@@ -37,7 +41,7 @@ docker-compose.yml
 ├── weak-sshd (intentionally insecure)
 │   └── Uses test-configs/weak-sshd_config - must fail with exit code >= 2
 └── ssh-audit
-    └── Runs goss tests against both servers
+    └── Mounts goss-bin volume, runs tests against both servers
 ```
 
 **Hardened sshd (test-sshd)** validates a secure baseline:
@@ -52,13 +56,6 @@ docker-compose.yml
 - Weak MACs (hmac-md5, hmac-sha1-96)
 
 Tests verify hardened returns exit 0, weak returns exit >= 2 with `[fail]` in output.
-
-The `./run test` command:
-1. Builds the ssh-audit image
-2. Starts both containers via docker-compose
-3. Waits for test-sshd healthcheck
-4. Runs goss integration tests from inside ssh-audit container
-5. Tears down the environment
 
 ## Usage
 
@@ -95,9 +92,9 @@ docker run --rm timjdfletcher/ssh-audit --make-policy example.com > policy.txt
 
 ## Updating Dependencies
 
-| Dependency | ARG | Where to check latest |
-|------------|-----|----------------------|
-| ssh-audit | `SSH_AUDIT_VERSION` | https://pypi.org/project/ssh-audit/ |
-| Goss | `GOSS_VER` | https://github.com/goss-org/goss/releases/latest |
+| Dependency | Where to check | Files to update |
+|------------|----------------|-----------------|
+| ssh-audit | https://pypi.org/project/ssh-audit/ | `Dockerfile`, `run`, `goss/tests/goss-dockerfile-tests.yaml` |
+| Python base | https://hub.docker.com/_/python | `Dockerfile` |
 
 After updating, run `./run test` to validate.
