@@ -41,15 +41,18 @@ _down() {
 }
 
 wait_for_sshd() {
-  log "Waiting for test-sshd to become healthy..."
-  for _ in {1..30}; do
-    if docker compose ps --format json | grep -q '"Health":"healthy"'; then
-      log "test-sshd is healthy!"
+  log "Waiting for sshd containers to become healthy..."
+  for _ in {1..45}; do
+    local healthy_count
+    healthy_count=$(docker compose ps --format json | grep -c '"Health":"healthy"' || true)
+    if [ "$healthy_count" -ge 2 ]; then
+      log "All sshd containers healthy!"
       return 0
     fi
     sleep 1
   done
-  log "Timeout waiting for test-sshd health."
+  log "Timeout waiting for sshd containers."
+  docker compose ps
   return 1
 }
 

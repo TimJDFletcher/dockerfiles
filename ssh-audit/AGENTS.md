@@ -32,11 +32,20 @@ Two test suites:
 
 ```
 docker-compose.yml
-├── test-sshd (linuxserver/openssh-server)
-│   └── Healthcheck: nc -z localhost 2222
+├── test-sshd (default config)
+│   └── Modern OpenSSH - should pass most checks
+├── weak-sshd (intentionally insecure)
+│   └── Uses test-configs/weak-sshd_config with weak ciphers/KEX/MACs
 └── ssh-audit
-    └── Runs goss tests against test-sshd
+    └── Runs goss tests against both servers
 ```
+
+The weak-sshd validates that ssh-audit actually detects issues:
+- Weak key exchange (diffie-hellman-group1-sha1, etc.)
+- Weak ciphers (3des-cbc, aes*-cbc)
+- Weak MACs (hmac-md5, hmac-sha1-96)
+
+Tests verify that weak-sshd returns exit code >= 2 and output contains `[fail]`.
 
 The `./run test` command:
 1. Builds the ssh-audit image

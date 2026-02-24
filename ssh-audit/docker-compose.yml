@@ -1,4 +1,5 @@
 services:
+  # Default/modern sshd configuration - should pass most checks
   test-sshd:
     image: linuxserver/openssh-server:latest
     environment:
@@ -13,6 +14,23 @@ services:
       timeout: 5s
       retries: 10
 
+  # Intentionally weak sshd configuration - should fail audit
+  weak-sshd:
+    image: linuxserver/openssh-server:latest
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - PASSWORD_ACCESS=true
+      - USER_NAME=testuser
+      - USER_PASSWORD=testpass
+    volumes:
+      - ./test-configs/weak-sshd_config:/etc/ssh/sshd_config:ro
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2222"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
   ssh-audit:
     image: timjdfletcher/ssh-audit:tmp
     build:
@@ -20,6 +38,8 @@ services:
       dockerfile: Dockerfile
     depends_on:
       test-sshd:
+        condition: service_healthy
+      weak-sshd:
         condition: service_healthy
     entrypoint: ["/bin/sh", "-c"]
     command: ["sleep infinity"]

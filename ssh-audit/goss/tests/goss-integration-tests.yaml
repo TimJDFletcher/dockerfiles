@@ -1,6 +1,6 @@
 command:
-  # Full audit against test sshd container (port 2222)
-  # Exit codes: 0=pass, 1=warnings, 2=failures, 3=critical (all valid for test)
+  # === Modern/default sshd (test-sshd) ===
+  # Should complete audit successfully (exit 0-3 depending on minor issues)
   ssh-audit -p 2222 test-sshd:
     exit-status:
       le: 3
@@ -10,11 +10,34 @@ command:
       - "(key)"
     timeout: 15000
 
-  # JSON output mode
+  # JSON output mode against modern sshd
   ssh-audit -p 2222 --json test-sshd:
     exit-status:
       le: 3
     stdout:
       - '"banner":'
       - '"kex":'
+    timeout: 15000
+
+  # === Weak/insecure sshd (weak-sshd) ===
+  # Should detect security issues and report failures
+  ssh-audit -p 2222 weak-sshd:
+    exit-status:
+      # Expect exit code 2 or 3 (failures or critical issues)
+      ge: 2
+    stdout:
+      # Must detect weak algorithms
+      - "[fail]"
+      - "(kex)"
+      - "(enc)"
+      - "(mac)"
+    timeout: 15000
+
+  # JSON output should contain failure indicators
+  ssh-audit -p 2222 --json weak-sshd:
+    exit-status:
+      ge: 2
+    stdout:
+      - '"banner":'
+      - '"fail"'
     timeout: 15000
