@@ -1,6 +1,6 @@
 # Dockerfiles Monorepo — Agent Context
 
-This file provides context for AI agents working on this repository. For project-specific details, see `<project>/AGENTS.md` where available.
+This file provides context for AI agents working on this repository. Every project has its own `<project>/AGENTS.md` with specific details.
 
 ## Repository Overview
 
@@ -12,14 +12,15 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 |---------|---------|--------|-------|
 | `samba-timemachine` | macOS Time Machine backup server via Samba | Active | Most mature; has goss tests, AGENTS.md |
 | `gam` | Google Workspace CLI (GAM) container | Active | Has AGENTS.md |
-| `checkov` | Bridgecrew Checkov security scanner | Maintained | Simple pip install |
-| `toolbox` | Generic Debian toolbox container | Maintained | Build-arg driven |
-| `yajsv` | JSON schema validator (Go) | Maintained | Multi-stage scratch build |
-| `offlineimap` | Email sync with supercronic | Stale | Pinned to bullseye-20220125 |
-| `postfix` | SMTP relay | Stale | Pinned to bullseye-20200224 |
-| `tcpdump` | Network debugging | Minimal | One-liner |
-| `ssh-audit` | SSH security auditing | Active | Has goss tests, AGENTS.md |
-| `media` | Media server stack | Reference | Compose-only, third-party images |
+| `checkov` | Bridgecrew Checkov security scanner | Maintained | Simple pip install; unpinned versions |
+| `toolbox` | Generic Debian toolbox container | Maintained | Build-arg driven; customizable tools |
+| `yajsv` | JSON schema validator (Go) | Active | Multi-stage scratch build (~5MB); has tests |
+| `offlineimap` | Email sync with supercronic | Stale | Pinned to bullseye-20220125; needs upgrade |
+| `postfix` | SMTP relay | Stale | Pinned to bullseye-20200224; needs upgrade |
+| `tcpdump` | Network debugging | Minimal | One-liner; has AGENTS.md with test proposal |
+| `ssh-audit` | SSH security auditing | Active | Full test suite with hardened/weak sshd; has AGENTS.md, README |
+| `goss` | Goss testing framework | Active | Shared test image for other projects |
+| `media` | Media server stack | Reference | Compose-only; third-party images |
 
 ## Known Issues & Tech Debt
 
@@ -28,8 +29,7 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 - **checkov Dockerfile style**: Uses `ADD` instead of `COPY`, separate `chmod` instead of `COPY --chmod=`
 
 ### Low Priority
-- Missing `./run` scripts: `ssh-audit`, `media`
-- Missing AGENTS.md: Most projects (only `samba-timemachine` and `gam` have them)
+- Missing `./run` script: `media` (uses docker compose directly)
 
 ## Conventions (Quick Reference)
 
@@ -43,13 +43,24 @@ See `.cursorrules` for full details. Key points:
 
 ## Testing Philosophy
 
-Only `samba-timemachine` has a test suite. Its approach is exemplary:
+Three projects have test suites: `samba-timemachine`, `ssh-audit`, and `yajsv`.
 
-1. **Build-time tests** (`goss-dockerfile-tests.yaml`): Validate image structure
-2. **Healthcheck tests** (`goss-healthcheck-tests.yaml`): Validate running container
-3. **Live integration tests** (`goss-live-tests.yaml`): Validate user-facing behavior
+**samba-timemachine** tests three phases:
+1. **Build-time tests**: Validate image structure
+2. **Healthcheck tests**: Validate running container
+3. **Live integration tests**: Validate user-facing behavior
 
-When adding tests to other projects, follow this pattern.
+**ssh-audit** tests both positive and negative cases:
+1. **Build-time tests**: Validate binary install and version
+2. **Integration tests**: Audit a hardened sshd (must pass with exit 0) and a weak sshd (must fail with exit >= 2)
+
+**yajsv** uses the shared `goss` image (since main image is `scratch`):
+1. **Positive tests**: Valid JSON files pass schema validation
+2. **Negative tests**: Invalid files (missing fields, wrong types, extra properties) are rejected
+
+**goss** is a shared testing image used by other projects. Build it first with `cd goss && ./run build`.
+
+When adding tests to other projects, follow these patterns.
 
 ## Dependency Update Workflow
 

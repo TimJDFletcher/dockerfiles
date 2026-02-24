@@ -73,6 +73,26 @@ docker run --rm timjdfletcher/ssh-audit --json example.com
 docker run --rm timjdfletcher/ssh-audit --make-policy example.com > policy.txt
 ```
 
+## Pitfalls & Gotchas
+
+**ssh-audit doesn't support CIDR notation.** Use `-T` with a targets file. Generate IPs with bash brace expansion: `printf '%s\n' 192.168.1.{1..254} > targets.txt`
+
+**`--version` flag doesn't exist.** ssh-audit prints version in the help output header. The `--version` flag returns exit code 255.
+
+**Exit codes indicate audit severity:**
+- 0 = No issues
+- 1 = Warnings only  
+- 2 = Failures found
+- 3 = Critical issues
+
+**`-M/--make-policy` requires a filename argument** that doesn't exist yet. It won't write to `/dev/stdout`. Use a temp file instead.
+
+**Argument order matters.** The target host must come last: `ssh-audit -p 2222 --json hostname` (correct), not `ssh-audit hostname -p 2222`.
+
+**Rate limiting on target servers.** When scanning multiple hosts or running repeated tests, sshd may rate-limit connections. Use `--threads 4` to reduce concurrency or `--skip-rate-test` to suppress DHEat vulnerability checks.
+
+**Volume mounts with Colima/Docker Desktop.** File mounts may fail silently. Mount the parent directory instead: `-v $(pwd):/data:ro` then reference `/data/targets.txt`.
+
 ## Updating Dependencies
 
 | Dependency | ARG | Where to check latest |

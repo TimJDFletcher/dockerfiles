@@ -20,8 +20,40 @@ clean () {
 }
 
 usage() {
-  echo "./run build - Build a local image called ${IMAGE_NAME}:${IMAGE_TAG}"
-  echo "./run release - Tests and then releases to dockerhub a multiarch version of the latest tag"
+  echo "./run build   - Build a local image called ${IMAGE_NAME}:${IMAGE_TAG}"
+  echo "./run test    - Build and run validation tests"
+  echo "./run clean   - Remove images and prune builder"
+  echo "./run release - Test and release multi-arch to Docker Hub"
+}
+
+log() {
+  echo "==> $*"
+}
+
+GOSS_IMAGE="timjdfletcher/goss:tmp"
+
+test() {
+  build
+
+  log "Extracting yajsv binary from built image..."
+  mkdir -p .tmp
+  trap "rm -rf .tmp" EXIT
+
+  local tmp_container
+  tmp_container=$(docker create "${IMAGE_NAME}:${IMAGE_TAG}")
+  docker cp "${tmp_container}:/yajsv" ".tmp/yajsv"
+  docker rm "${tmp_container}" >/dev/null
+  chmod 755 ".tmp/yajsv"
+
+  log "Running goss validation tests..."
+  docker run --rm \
+    -v "$(pwd)/.tmp/yajsv:/usr/local/bin/yajsv:ro" \
+    -v "$(pwd)/goss/tests:/goss:ro" \
+    -v "$(pwd)/test-data:/data:ro" \
+    "${GOSS_IMAGE}" \
+    --gossfile /goss/goss-validation-tests.yaml validate
+
+  log "All tests passed!"
 }
 
 find_release(){
@@ -47,7 +79,8 @@ CMD=${1:-}
 shift || true
 case ${CMD} in
     build) build ;;
+    test) test ;;
     clean) clean ;;
-    release) find_release && clean && release ;;
+    release) test && find_release && clean && release ;;
     *) usage ;;
 esac

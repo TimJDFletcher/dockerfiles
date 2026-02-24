@@ -1,0 +1,63 @@
+# yajsv validation tests
+# Tests both positive (valid JSON) and negative (invalid JSON) cases
+# Binary extracted from built image and tested via goss container
+
+command:
+  # === Version Check ===
+  yajsv -v:
+    exit-status: 0
+    stdout:
+      - "/^v[0-9]+\\.[0-9]+/"
+    timeout: 5000
+
+  # === Positive Tests: Valid JSON ===
+  
+  # Valid file with all fields
+  yajsv -s /data/schema.json /data/valid.json:
+    exit-status: 0
+    stdout:
+      - "pass"
+    timeout: 5000
+
+  # Valid file with only required fields
+  yajsv -s /data/schema.json /data/valid2.json:
+    exit-status: 0
+    stdout:
+      - "pass"
+    timeout: 5000
+
+  # Multiple valid files at once
+  yajsv -s /data/schema.json /data/valid.json /data/valid2.json:
+    exit-status: 0
+    stdout:
+      - "/valid\\.json: pass/"
+      - "/valid2\\.json: pass/"
+    timeout: 5000
+
+  # === Negative Tests: Invalid JSON ===
+
+  # Missing required field (age)
+  yajsv -s /data/schema.json /data/invalid-missing-required.json:
+    exit-status: 1
+    stdout:
+      - "fail"
+      - "age is required"
+    timeout: 5000
+
+  # Wrong type (age is string instead of integer)
+  yajsv -s /data/schema.json /data/invalid-wrong-type.json:
+    exit-status: 1
+    stdout:
+      - "fail"
+      - "Invalid type"
+      - "Expected: integer"
+    timeout: 5000
+
+  # Extra property not allowed by schema
+  yajsv -s /data/schema.json /data/invalid-extra-property.json:
+    exit-status: 1
+    stdout:
+      - "fail"
+      - "Additional property"
+      - "nickname"
+    timeout: 5000
