@@ -1,0 +1,117 @@
+#!/bin/bash
+set -eu -o pipefail
+
+# Ensure Docker daemon is running (macOS/Colima)
+if ! docker info >/dev/null 2>&1; then
+  echo "Docker not running. Starting Colima..."
+  colima start
+fi
+
+IMAGE_NAME="timjdfletcher/ssh-audit"
+IMAGE_TAG="${IMAGE_TAG:-tmp}"
+PLATFORMS="linux/amd64,linux/arm64"
+GOSS_DST="/goss"
+CONTAINER_NAME="ssh-audit"
+
+log() {
+  echo "[$(date +'%H:%M:%S')] $1"
+}
+
+build() {
+  log "Building local image: ${IMAGE_NAME}:${IMAGE_TAG}"
+  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --file Dockerfile .
+  docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
+}
+
+clean() {
+  log "Cleaning up..."
+  docker compose down --volumes --remove-orphans 2>/dev/null || true
+  docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest" 2>/dev/null || true
+  docker buildx prune --force --filter "until=24h"
+}
+
+_up() {
+  build
+  log "Starting test environment..."
+  docker compose up --remove-orphans --detach
+}
+
+_down() {
+  docker compose down --remove-orphans
+}
+
+wait_for_sshd() {
+  log "Waiting for test-sshd to become healthy..."
+  for _ in {1..30}; do
+    if docker compose ps --format json | grep -q '"Health":"healthy"'; then
+      log "test-sshd is healthy!"
+      return 0
+    fi
+    sleep 1
+  done
+  log "Timeout waiting for test-sshd health."
+  return 1
+}
+
+_test() {
+  log "--- Running ssh-audit Tests ---"
+  _up
+  wait_for_sshd
+
+  log "Running integration tests..."
+  docker compose exec "${CONTAINER_NAME}" \
+    "${GOSS_DST}/goss" --gossfile "${GOSS_DST}/tests/goss-integration-tests.yaml" validate
+
+  log "--- All Tests Passed ---"
+  _down
+}
+
+_buildx_setup() {
+  docker buildx use builder 2>/dev/null || docker buildx create --name builder --use
+  docker buildx inspect --bootstrap
+}
+
+release() {
+  _test
+
+  if ! CURRENT_TAG=$(git describe --tags --exact-match 2>/dev/null); then
+    log "Error: Current commit is not tagged. Please tag the commit before releasing."
+    exit 1
+  fi
+
+  log "Releasing version: ${CURRENT_TAG}"
+  _buildx_setup
+
+  docker buildx build \
+    --platform "${PLATFORMS}" \
+    --tag "${IMAGE_NAME}:${CURRENT_TAG}" \
+    --tag "${IMAGE_NAME}:latest" \
+    --push \
+    --file Dockerfile .
+
+  log "Release ${CURRENT_TAG} complete."
+}
+
+usage() {
+  cat <<EOF
+Usage: ./run [COMMAND]
+
+Commands:
+  build    Build local image (${IMAGE_NAME}:${IMAGE_TAG})
+  test     Run goss integration tests against test sshd
+  clean    Remove images and prune builder
+  release  Test, build multi-arch, and push to Docker Hub
+EOF
+}
+
+CMD=${1:-}
+shift || true
+
+case ${CMD} in
+    build)   build ;;
+    test)    _test ;;
+    clean)   clean ;;
+    release) release ;;
+    help|--help|-h) usage ;;
+    *) usage ;;
+esac

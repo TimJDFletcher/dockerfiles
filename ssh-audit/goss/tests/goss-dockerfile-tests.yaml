@@ -1,0 +1,12 @@
+file:
+  /usr/local/bin/ssh-audit:
+    exists: true
+    filetype: file
+
+command:
+  ssh-audit --help:
+    exit-status: 0
+    stdout:
+      - "v3.3.0"
+      - "usage:"
+    timeout: 5000

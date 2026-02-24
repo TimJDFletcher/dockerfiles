@@ -1,0 +1,25 @@
+services:
+  test-sshd:
+    image: linuxserver/openssh-server:latest
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - PASSWORD_ACCESS=true
+      - USER_NAME=testuser
+      - USER_PASSWORD=testpass
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2222"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  ssh-audit:
+    image: timjdfletcher/ssh-audit:tmp
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      test-sshd:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["sleep infinity"]

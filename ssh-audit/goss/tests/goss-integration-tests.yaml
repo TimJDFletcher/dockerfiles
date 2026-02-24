@@ -1,0 +1,20 @@
+command:
+  # Full audit against test sshd container (port 2222)
+  # Exit codes: 0=pass, 1=warnings, 2=failures, 3=critical (all valid for test)
+  ssh-audit -p 2222 test-sshd:
+    exit-status:
+      le: 3
+    stdout:
+      - "(gen) banner:"
+      - "(kex)"
+      - "(key)"
+    timeout: 15000
+
+  # JSON output mode
+  ssh-audit -p 2222 --json test-sshd:
+    exit-status:
+      le: 3
+    stdout:
+      - '"banner":'
+      - '"kex":'
+    timeout: 15000
