@@ -115,24 +115,26 @@ docker run --rm -v $(pwd):/policies timjdfletcher/ssh-audit -P /policies/ssh-pol
 
 ## Auditing a Local Network
 
-Scan multiple SSH servers on your network using a targets file.
+ssh-audit doesn't support CIDR notation directly - it requires a targets file with one host per line. Here's how to scan a subnet.
 
-### Create a Targets File
+### Generate a Targets File
 
 ```bash
-# Option 1: Manual list of known hosts
+# Bash brace expansion - no external tools needed (scans all IPs)
+printf '%s\n' 192.168.1.{1..254} > targets.txt
+
+# Or use nmap to find only live hosts first (faster, fewer timeouts)
+nmap -sn 192.168.1.0/24 -oG - | awk '/Up/{print $2}' > targets.txt
+
+# Or use your ARP cache for recently-seen hosts
+arp -a | grep '192.168.1' | awk -F'[()]' '{print $2}' > targets.txt
+
+# Manual list of known hosts
 cat > targets.txt << 'EOF'
-192.168.8.1
-192.168.8.2
-192.168.8.4
-router.local
+192.168.1.1
+192.168.1.10
+192.168.1.20
 EOF
-
-# Option 2: Generate from a subnet (requires nmap)
-nmap -sn 192.168.8.0/24 -oG - | awk '/Up/{print $2}' > targets.txt
-
-# Option 3: Use your ARP cache for recently-seen hosts
-arp -a | grep '192.168.8' | awk -F'[()]' '{print $2}' > targets.txt
 ```
 
 ### Scan All Targets
@@ -173,34 +175,36 @@ cat network-audit.json | jq -r '.[].banner.software' | sort | uniq -c
 #!/bin/bash
 # audit-network.sh - Audit all SSH servers on local network
 
-SUBNET="192.168.8.0/24"
+NETWORK_PREFIX="192.168.1"
 TARGETS=$(mktemp)
 RESULTS=$(mktemp)
 
-# Discover hosts with SSH
-echo "Discovering SSH hosts on $SUBNET..."
-for ip in $(seq 1 254); do
-  timeout 1 nc -z 192.168.8.$ip 22 2>/dev/null && echo "192.168.8.$ip" >> "$TARGETS"
-done &
-wait
+# Generate all IPs in subnet
+printf '%s\n' ${NETWORK_PREFIX}.{1..254} > "$TARGETS"
 
-HOST_COUNT=$(wc -l < "$TARGETS")
-echo "Found $HOST_COUNT hosts with SSH open"
+echo "Scanning ${NETWORK_PREFIX}.0/24 for SSH servers..."
 
-# Run audit
+# Run audit (ssh-audit handles connection failures gracefully)
 docker run --rm \
   -v "$TARGETS":/targets.txt:ro \
-  timjdfletcher/ssh-audit -T /targets.txt --threads 4 --json > "$RESULTS"
+  timjdfletcher/ssh-audit -T /targets.txt --threads 8 --json 2>/dev/null > "$RESULTS"
 
 # Summary
-echo ""
-echo "=== Audit Summary ==="
-echo "Hosts with critical issues:"
-jq -r '.[] | select(.recommendations.critical) | "  - \(.target)"' "$RESULTS"
+TOTAL=$(jq -r '[.[] | select(.banner.protocol != null)] | length' "$RESULTS")
+CRITICAL=$(jq -r '[.[] | select(.recommendations.critical)] | length' "$RESULTS")
+WARNINGS=$(jq -r '[.[] | select(.recommendations.warning and (.recommendations.critical | not))] | length' "$RESULTS")
 
 echo ""
-echo "Hosts with warnings only:"
-jq -r '.[] | select(.recommendations.warning and (.recommendations.critical | not)) | "  - \(.target)"' "$RESULTS"
+echo "=== Audit Summary ==="
+echo "SSH servers found: $TOTAL"
+echo "Critical issues:   $CRITICAL"
+echo "Warnings only:     $WARNINGS"
+
+if [ "$CRITICAL" -gt 0 ]; then
+  echo ""
+  echo "Hosts with critical issues:"
+  jq -r '.[] | select(.recommendations.critical) | "  - \(.target)"' "$RESULTS"
+fi
 
 # Cleanup
 rm -f "$TARGETS" "$RESULTS"
@@ -209,14 +213,18 @@ rm -f "$TARGETS" "$RESULTS"
 ### Non-Standard Ports
 
 ```bash
-# Scan hosts on different ports
+# Scan hosts on different ports (HOST:PORT format)
 cat > targets.txt << 'EOF'
-192.168.8.1:22
-192.168.8.2:2222
-192.168.8.10:22222
+192.168.1.1:22
+192.168.1.10:2222
+192.168.1.20:22222
 EOF
 
 docker run --rm -v $(pwd):/data:ro timjdfletcher/ssh-audit -T /data/targets.txt
+
+# Or set a default port for all hosts
+printf '%s\n' 192.168.1.{1..254} > targets.txt
+docker run --rm -v $(pwd):/data:ro timjdfletcher/ssh-audit -T /data/targets.txt -p 2222
 ```
 
 ## References
