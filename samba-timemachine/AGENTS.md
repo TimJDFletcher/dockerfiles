@@ -69,7 +69,7 @@ Three test suites, each validating a different phase:
 
 **`backup-check.sh` is for the host, not the container.** It requires `curl` (purged from the image at build time). The entrypoint copies it into `${BACKUPDIR}/` so it can be run from the host or a host cron job.
 
-**`docker-compose-autoheal.yml` is a standalone production example.** It is not used by `./run` commands and may have divergent configuration from `docker-compose.yml`.
+**`systemd-unit.service`** is a production deployment example for running via systemd.
 
 **`USER` env var collides with the standard shell variable.** The `./run test` command exports `USER=testuser` in a subshell to avoid clobbering the parent shell's login user.
 

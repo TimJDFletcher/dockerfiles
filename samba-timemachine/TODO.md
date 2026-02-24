@@ -2,7 +2,7 @@
 
 ## Bugs
 
-- [ ] **Port mapping mismatch in compose files** — `docker-compose.yml` and `docker-compose-autoheal.yml` both map `target: 445` but Samba listens on port `10445` inside the container (`smb ports = 10445` in `samba.conf.tmpl`). `target` should be `10445`. The goss tests don't catch this because they run inside the container via `docker compose exec` and connect to `127.0.0.1:10445` directly, bypassing Docker's port mapping.
+- [ ] **Port mapping mismatch in compose file** — `docker-compose.yml` maps `target: 445` but Samba listens on port `10445` inside the container (`smb ports = 10445` in `samba.conf.tmpl`). `target` should be `10445`. The goss tests don't catch this because they run inside the container via `docker compose exec` and connect to `127.0.0.1:10445` directly, bypassing Docker's port mapping.
 
 ## Security
 
@@ -21,6 +21,6 @@
 
 - [ ] **External volume requires manual pre-creation** — `docker-compose.yml` declares the backups volume as `external: true`, meaning users must run `docker volume create samba-timemachine_backups` before `docker compose up`. Remove `external: true` for the dev compose file or document the requirement prominently.
 - [x] **Duplicate `[Install]` section in `systemd-unit.service`** — ~~The file has two identical `[Install]` blocks.~~ Fixed and improved: added RestartSec, TimeoutStartSec, non-fatal pull, journal logging, cleanup on stop.
-- [x] **Stale `QUOTA` env var in `docker-compose-autoheal.yml`** — ~~References a `QUOTA` variable that no longer exists in the codebase.~~ Removed.
-- [ ] **Inconsistency between compose files** — `docker-compose.yml` uses env var substitution with defaults; `docker-compose-autoheal.yml` hardcodes values and uses a non-external volume.
+- [x] **Stale `QUOTA` env var in `docker-compose-autoheal.yml`** — ~~References a `QUOTA` variable that no longer exists in the codebase.~~ File removed.
+- [x] **Inconsistency between compose files** — ~~`docker-compose.yml` uses env var substitution with defaults; `docker-compose-autoheal.yml` hardcodes values and uses a non-external volume.~~ Removed `docker-compose-autoheal.yml`.
 - [ ] **`backup-check.sh` depends on `curl` but `curl` is purged from the image** — The script is copied into the backup volume but will fail if run inside the container since `curl` is removed during build.
