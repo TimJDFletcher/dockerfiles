@@ -1,10 +1,13 @@
-FROM python:3
+ARG PYTHON_VERSION="3.13.12-slim"
+ARG GAM_VERSION="7.34.6"
 
-RUN pip install gam7
+FROM python:${PYTHON_VERSION}
 
-ADD entrypoint /entrypoint
+ARG GAM_VERSION
 
-RUN chmod 0755 /entrypoint
+RUN pip install --no-cache-dir gam7==${GAM_VERSION}
+
+COPY --chmod=0755 entrypoint /entrypoint
 
 ENTRYPOINT ["/entrypoint"]
 

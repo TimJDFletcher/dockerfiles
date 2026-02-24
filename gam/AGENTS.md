@@ -8,44 +8,75 @@ Provide a Docker container packaging [GAM](https://github.com/GAM-team/GAM) (Goo
 
 ## 2. Core Components
 
-*   **Base Image:** `python:3`
-*   **Package:** `gam7` installed via pip
-*   **CLI Command:** `gam`
-*   **Docker Hub:** `timjdfletcher/gam`
+| Component | Value |
+|-----------|-------|
+| Base Image | `python:3.13.12-slim` |
+| Package | `gam7==7.34.6` |
+| CLI Command | `gam` |
+| Docker Hub | `timjdfletcher/gam` |
 
-## 3. File Structure
+## 3. Build Args
 
-| File         | Purpose                                                                 |
-|--------------|-------------------------------------------------------------------------|
-| `Dockerfile` | Installs `gam7` via pip on `python:3`, sets up entrypoint               |
-| `entrypoint` | Routes CLI flags to `gam`, or `exec`s arbitrary commands                |
-| `run`        | Build/clean/release helper script using Docker buildx                   |
-| `README.md`  | User-facing documentation with usage and authentication guidance        |
+| ARG | Default | Purpose |
+|-----|---------|---------|
+| `PYTHON_VERSION` | `3.13.12-slim` | Python base image tag |
+| `GAM_VERSION` | `7.34.6` | gam7 pip package version |
 
-## 4. Entrypoint Behaviour
+## 4. File Structure
+
+| File | Purpose |
+|------|---------|
+| `Dockerfile` | Installs pinned `gam7` via pip on slim Python image |
+| `entrypoint` | Routes CLI flags to `gam`, or `exec`s arbitrary commands |
+| `run` | Build/test/clean/release helper script |
+| `goss/tests/` | goss test definitions |
+| `README.md` | User-facing documentation |
+
+## 5. Entrypoint Behaviour
 
 The entrypoint script checks the first argument:
-*   If empty or starts with `-`: passes all arguments to `gam`
-*   Otherwise: `exec`s the arguments directly (allows running arbitrary commands like `bash`)
+- If it's a valid command: `exec`s the arguments directly (allows running `bash`, etc.)
+- Otherwise: passes all arguments to `gam`
 
 The default `CMD` is `--help`, so running the container with no arguments prints GAM help.
 
-## 5. Developer Workflow (`./run` script)
+## 6. Developer Workflow (`./run`)
 
-*   **`./run build`**: Builds a local image tagged `timjdfletcher/gam:tmp` using buildx.
-*   **`./run clean`**: Removes local images and buildx cache.
-*   **`./run release`**: Checks out the latest `gam-*` git tag, builds multi-arch images (`linux/amd64`, `linux/arm64`), and pushes both the versioned tag and `latest` to Docker Hub.
+| Command | Description |
+|---------|-------------|
+| `build` | Build local image `timjdfletcher/gam:tmp` |
+| `test` | Build and run goss tests |
+| `clean` | Remove local images and buildx cache |
+| `start` | Run with `~/.gam` bind-mounted |
+| `release` | Test, build multi-arch, push to Docker Hub |
 
-## 6. Tagging & Release Process
+## 7. Testing
 
-Tags follow the `gam-v<version>` convention (e.g. `gam-v0.1`). The `./run release` command:
-1.  Finds the latest `gam-*` tag via `git tag | grep ^gam | sort -n | tail -n 1`
-2.  Checks out that tag (detached HEAD)
-3.  Builds and pushes multi-platform images to Docker Hub
+Uses the shared `goss-bin` Docker volume pattern. Tests validate:
+- `/entrypoint` exists with correct permissions
+- `gam version` outputs expected version
+- `gam --help` works
+
+## 8. Tagging & Release Process
+
+Tags follow the `gam-v<version>` convention (e.g. `gam-v0.2`). The `./run release` command:
+1. Runs tests
+2. Finds the latest `gam-*` tag
+3. Checks out that tag (detached HEAD)
+4. Builds and pushes multi-platform images to Docker Hub
 
 After release, switch back to `main` with `git checkout main`.
 
-## 7. Authentication to Google Workspace
+## 9. Dependency Updates
+
+| Dependency | Check URL |
+|------------|-----------|
+| Python base | https://hub.docker.com/_/python/tags?name=3.13 |
+| gam7 | https://pypi.org/project/gam7/ |
+
+Update `PYTHON_VERSION` and `GAM_VERSION` ARGs in Dockerfile, update tests, run `./run test`.
+
+## 10. Authentication to Google Workspace
 
 GAM requires OAuth2 credentials to interact with Google Workspace APIs. These are never baked into the image.
 
@@ -69,7 +100,7 @@ Three approaches, in order of simplicity:
 2.  **Mount individual files read-only with tmpfs:** Use `--tmpfs /root/.gam:size=1m` plus `:ro` bind mounts for each credential file. Prevents cached tokens persisting on disk.
 3.  **GAMCFGDIR environment variable:** `-e GAMCFGDIR=/gam-config -v /path/to/config:/gam-config:ro` for flexible config location.
 
-## 8. Upstream Details
+## 11. Upstream Details
 
 *   **Repository:** https://github.com/GAM-team/GAM
 *   **PyPI Package:** `gam7`

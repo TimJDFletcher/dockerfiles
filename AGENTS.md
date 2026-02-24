@@ -11,7 +11,7 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 | Project | Purpose | Status | Notes |
 |---------|---------|--------|-------|
 | `samba-timemachine` | macOS Time Machine backup server via Samba | Active | Most mature; has goss tests, AGENTS.md |
-| `gam` | Google Workspace CLI (GAM) container | Active | Has AGENTS.md |
+| `gam` | Google Workspace CLI (GAM) container | Active | Pinned versions; has goss tests |
 | `checkov` | Bridgecrew Checkov security scanner | Active | Pinned versions; has goss tests |
 | `toolbox` | Generic Debian toolbox container | Maintained | Build-arg driven; customizable tools |
 | `yajsv` | JSON schema validator (Go) | Active | Multi-stage scratch build (~5MB); has tests |
@@ -46,7 +46,7 @@ Example workflow:
 4. Run the test — it should pass
 5. Commit
 
-Seven projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `checkov`, `offlineimap`, `postfix`, and `tcpdump`.
+Eight projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `checkov`, `offlineimap`, `postfix`, `tcpdump`, and `gam`.
 
 **samba-timemachine** tests three phases:
 1. **Build-time tests**: Validate image structure

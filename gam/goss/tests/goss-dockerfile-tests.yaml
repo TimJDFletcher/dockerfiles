@@ -1,0 +1,23 @@
+# GAM build-time tests
+# Tests pinned versions and Dockerfile conventions
+
+file:
+  /entrypoint:
+    exists: true
+    mode: "0755"
+    filetype: file
+
+command:
+  # Version must match pinned version (7.34.6 displays as 7.34.06)
+  gam version:
+    exit-status: 0
+    stdout:
+      - "GAM 7.34"
+    timeout: 30000
+
+  # Help output works
+  gam --help:
+    exit-status: 0
+    stdout:
+      - "GAM"
+    timeout: 10000

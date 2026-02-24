@@ -1,21 +1,72 @@
 #!/bin/bash
 set -eu -o pipefail
+
 CONTAINER_NAME=gam
 IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
 IMAGE_TAG=tmp
 PLATFORMS="linux/amd64,linux/arm64"
+GOSS_VERSION="v0.4.9"
 
-build () {
+log() {
+  echo "==> $*"
+}
+
+_buildx_setup() {
+  docker buildx use builder || docker buildx create --name builder
+  docker buildx inspect --bootstrap
+}
+
+_ensure_goss_volume() {
+  if ! docker volume inspect goss-bin >/dev/null 2>&1; then
+    log "Creating goss-bin volume..."
+    docker volume create goss-bin
+
+    log "Setting volume permissions for curl user (101:102)..."
+    docker run --rm -v goss-bin:/target alpine:latest chown 101:102 /target
+  fi
+
+  if ! docker run --rm -v goss-bin:/goss-bin:ro alpine:latest test -f /goss-bin/goss; then
+    log "Downloading goss ${GOSS_VERSION}..."
+    docker run --rm \
+      -v goss-bin:/target \
+      --entrypoint sh \
+      curlimages/curl:latest \
+      -c "curl -fsSL https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}/goss-linux-amd64 -o /target/goss && chmod 755 /target/goss"
+  fi
+}
+
+build() {
   _buildx_setup
   docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --file Dockerfile .
   docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
 }
 
-clean () {
+clean() {
   docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" || true
   docker image rm "${IMAGE_NAME}:latest" || true
   docker buildx prune --force
   docker buildx rm builder || true
+}
+
+test() {
+  build
+  _ensure_goss_volume
+
+  log "Running direct artifact tests..."
+  docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" version 2>/dev/null | grep -q "GAM 7.34" || {
+    echo "FAIL: gam version check failed"
+    exit 1
+  }
+  log "Direct tests passed"
+
+  log "Running goss validation tests..."
+  docker run --rm \
+    -v goss-bin:/goss-bin:ro \
+    -v "$(pwd)/goss/tests:/goss:ro" \
+    "${IMAGE_NAME}:${IMAGE_TAG}" \
+    /goss-bin/goss --gossfile /goss/goss-dockerfile-tests.yaml validate
+
+  log "All tests passed!"
 }
 
 start () {
@@ -25,9 +76,16 @@ start () {
 }
 
 usage() {
-  echo "./run build - Build a local image called ${IMAGE_NAME}:${IMAGE_TAG}"
-  echo "./run start - Run the latest image with ~/.gam bind-mounted for config"
-  echo "./run release - Tests and then releases to dockerhub a multiarch version of the latest tag"
+  cat <<EOF
+Usage: ./run [COMMAND]
+
+Commands:
+  build    Build a local image tagged ${IMAGE_NAME}:${IMAGE_TAG}
+  test     Build and run goss tests
+  clean    Remove local images and buildx cache
+  start    Run the latest image with ~/.gam bind-mounted
+  release  Test, build multi-arch, and push to Docker Hub
+EOF
 }
 
 find_release(){
@@ -52,9 +110,10 @@ CMD=${1:-}
 
 shift || true
 case ${CMD} in
-    build) build ;;
-    clean) clean ;;
-    start) start "$@" ;;
-    release) find_release && clean && release ;;
-    *) usage ;;
+  build)   build ;;
+  test)    test ;;
+  clean)   clean ;;
+  start)   start "$@" ;;
+  release) test && find_release && release ;;
+  *)       usage ;;
 esac
