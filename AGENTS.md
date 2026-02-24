@@ -71,19 +71,18 @@ Seven projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `che
 All test suites use a shared `goss-bin` Docker volume containing a pinned goss binary downloaded from GitHub. This removes dependencies on pre-built images and ensures version consistency.
 
 ```bash
-# The _ensure_goss_volume() function in each run script:
-# 1. Creates goss-bin volume if missing
-# 2. Downloads pinned goss version from GitHub (idempotent)
-# 3. Mounts volume read-only into test containers
+# The _ensure_goss_volume() function downloads goss using curlimages/curl:
+docker run --rm -v goss-bin:/target --user root --entrypoint sh \
+  curlimages/curl:latest -c 'curl -fsSL <url> -o /target/goss && chmod 755 /target/goss'
 
-# For containers with a shell (checkov, ssh-audit):
+# For containers with a shell (checkov, ssh-audit, offlineimap, postfix, tcpdump):
 docker run --rm -v goss-bin:/goss-bin:ro ... /goss-bin/goss validate
 
 # For scratch containers (yajsv):
 docker run --rm -v goss-bin:/goss-bin:ro debian:trixie-slim /goss-bin/goss validate
 ```
 
-The volume persists across test runs. Each project pins `GOSS_VERSION` (currently `v0.4.9`).
+The volume persists across test runs. Each project pins `GOSS_VERSION` (currently `v0.4.9`). The `--user root` flag is required because `curlimages/curl` runs as non-root by default.
 
 When adding tests to other projects, follow these patterns.
 

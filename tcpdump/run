@@ -20,11 +20,12 @@ _ensure_goss_volume() {
   log "Ensuring goss ${GOSS_VERSION} in volume..."
   docker run --rm \
     -v goss-bin:/target \
-    alpine:latest sh -c "
+    --user root \
+    --entrypoint sh \
+    curlimages/curl:latest -c "
       if [ -f /target/goss ] && /target/goss --version 2>&1 | grep -q '${GOSS_VERSION}'; then
         echo 'goss ${GOSS_VERSION} already installed'
       else
-        apk add --no-cache curl >/dev/null
         ARCH=\$(uname -m)
         case \$ARCH in
           x86_64)  GOSS_ARCH=amd64 ;;
