@@ -1,20 +1,27 @@
 [Unit]
-Description=Timemachine in Docker
+Description=Time Machine backup server (Docker)
+Documentation=https://github.com/TimJDFletcher/dockerfiles/tree/main/samba-timemachine
 After=docker.service
 Requires=docker.service
 
 [Service]
 Type=simple
 Restart=always
+RestartSec=10
+TimeoutStartSec=300
 WorkingDirectory=/home/timemachine
 User=timemachine
 Group=docker
-ExecStartPre=/usr/bin/docker compose pull
-ExecStart=/usr/bin/docker compose up
-ExecStop=/usr/bin/docker compose stop
 
-[Install]
-WantedBy=multi-user.target
+# Pull latest image (- prefix makes failure non-fatal)
+ExecStartPre=-/usr/bin/docker compose pull
+
+ExecStart=/usr/bin/docker compose up --remove-orphans
+ExecStop=/usr/bin/docker compose stop
+ExecStopPost=/usr/bin/docker compose down --remove-orphans
+
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target

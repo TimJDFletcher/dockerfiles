@@ -20,7 +20,7 @@
 ## Ease of Use
 
 - [ ] **External volume requires manual pre-creation** — `docker-compose.yml` declares the backups volume as `external: true`, meaning users must run `docker volume create samba-timemachine_backups` before `docker compose up`. Remove `external: true` for the dev compose file or document the requirement prominently.
-- [ ] **Duplicate `[Install]` section in `systemd-unit.service`** — The file has two identical `[Install]` blocks.
+- [x] **Duplicate `[Install]` section in `systemd-unit.service`** — ~~The file has two identical `[Install]` blocks.~~ Fixed and improved: added RestartSec, TimeoutStartSec, non-fatal pull, journal logging, cleanup on stop.
 - [x] **Stale `QUOTA` env var in `docker-compose-autoheal.yml`** — ~~References a `QUOTA` variable that no longer exists in the codebase.~~ Removed.
 - [ ] **Inconsistency between compose files** — `docker-compose.yml` uses env var substitution with defaults; `docker-compose-autoheal.yml` hardcodes values and uses a non-external volume.
 - [ ] **`backup-check.sh` depends on `curl` but `curl` is purged from the image** — The script is copied into the backup volume but will fail if run inside the container since `curl` is removed during build.
