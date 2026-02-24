@@ -1,46 +1,130 @@
 #!/bin/bash
 set -eu -o pipefail
-IMAGE_NAME=offlineimap
-PLATFORMS="linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7"
 
-build () {
-    docker build -t "${IMAGE_NAME}":tmp -f Dockerfile .
+CONTAINER_NAME=offlineimap
+IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
+IMAGE_TAG=tmp
+PLATFORMS="linux/amd64,linux/arm64"
+SUPERCRONIC_VERSION="v0.2.43"
+GOSS_VERSION="v0.4.9"
+
+log() {
+  echo "==> $*"
 }
 
-_test() {
-    bundle install --path vendor/bundle
-    bundle exec rspec --format documentation
+_ensure_goss_volume() {
+  if ! docker volume inspect goss-bin >/dev/null 2>&1; then
+    log "Creating goss-bin volume..."
+    docker volume create goss-bin
+  fi
+  
+  log "Ensuring goss ${GOSS_VERSION} in volume..."
+  docker run --rm \
+    -v goss-bin:/target \
+    alpine:latest sh -c "
+      if [ -f /target/goss ] && /target/goss --version 2>&1 | grep -q '${GOSS_VERSION}'; then
+        echo 'goss ${GOSS_VERSION} already installed'
+      else
+        apk add --no-cache curl >/dev/null
+        ARCH=\$(uname -m)
+        case \$ARCH in
+          x86_64)  GOSS_ARCH=amd64 ;;
+          aarch64) GOSS_ARCH=arm64 ;;
+          *)       echo \"Unsupported arch: \$ARCH\"; exit 1 ;;
+        esac
+        curl -fsSL \"https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}/goss-linux-\${GOSS_ARCH}\" -o /target/goss
+        chmod 755 /target/goss
+        echo 'goss ${GOSS_VERSION} installed'
+      fi
+    "
 }
 
-buildx() {
-  export DOCKER_CLI_EXPERIMENTAL=enabled
-  docker buildx use testbuilder || docker buildx create --name testbuilder
+_buildx_setup() {
+  docker buildx use builder 2>/dev/null || docker buildx create --name builder --use
   docker buildx inspect --bootstrap
+}
+
+build() {
+  log "Building ${IMAGE_NAME}:${IMAGE_TAG}"
+  _buildx_setup
+  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" .
+  docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
+}
+
+test() {
+  build
+  _ensure_goss_volume
+
+  log "Testing container artifact..."
+
+  log "Test: supercronic version is ${SUPERCRONIC_VERSION}"
+  local actual_version
+  actual_version=$(docker run --rm --entrypoint supercronic "${IMAGE_NAME}:${IMAGE_TAG}" --version 2>&1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
+  if [ "${actual_version}" != "${SUPERCRONIC_VERSION}" ]; then
+    echo "  FAIL: expected ${SUPERCRONIC_VERSION}, got ${actual_version}"
+    exit 1
+  fi
+  echo "  PASS"
+
+  log "Test: offlineimap runs"
+  docker run --rm --entrypoint offlineimap "${IMAGE_NAME}:${IMAGE_TAG}" --version | grep -qE '^[0-9]+\.[0-9]+'
+  echo "  PASS"
+
+  log "Running goss tests inside container..."
+  docker run --rm \
+    -v goss-bin:/goss-bin:ro \
+    -v "$(pwd)/goss/tests:/goss:ro" \
+    --entrypoint "" \
+    "${IMAGE_NAME}:${IMAGE_TAG}" \
+    /goss-bin/goss --gossfile /goss/goss-dockerfile-tests.yaml validate
+
+  log "All tests passed!"
+}
+
+clean() {
+  log "Cleaning up..."
+  docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest" 2>/dev/null || true
+  docker buildx prune --force --filter "until=24h"
+}
+
+release() {
+  test
+
+  if ! CURRENT_TAG=$(git describe --tags --exact-match 2>/dev/null); then
+    log "Error: Current commit is not tagged."
+    exit 1
+  fi
+
+  log "Releasing ${CURRENT_TAG}"
+  _buildx_setup
   docker buildx build \
     --platform "${PLATFORMS}" \
-    -t timjdfletcher/"${IMAGE_NAME}":latest .
-}
+    --tag "${IMAGE_NAME}:${CURRENT_TAG}" \
+    --tag "${IMAGE_NAME}:latest" \
+    --push .
 
-push() {
-  export DOCKER_CLI_EXPERIMENTAL=enabled
-  docker buildx use testbuilder || docker buildx create --name testbuilder
-  docker buildx inspect --bootstrap
-  docker buildx build \
-    --platform "${PLATFORMS}" \
-    -t timjdfletcher/"${IMAGE_NAME}":latest --push .
+  log "Release complete."
 }
 
 usage() {
-  echo "./run test|build|push"
+  cat <<EOF
+Usage: ./run [COMMAND]
+
+Commands:
+  build    Build local image (${IMAGE_NAME}:${IMAGE_TAG})
+  test     Build and run goss tests
+  clean    Remove images and prune builder
+  release  Test, build multi-arch, and push to Docker Hub
+EOF
 }
 
 CMD=${1:-}
-
 shift || true
+
 case ${CMD} in
-    build) build ;;
-    buildx) buildx ;;
-    push) push ;;
-    test) build _test ;;
-    *) usage ;;
+  build)   build ;;
+  test)    test ;;
+  clean)   clean ;;
+  release) release ;;
+  *)       usage ;;
 esac

@@ -15,16 +15,13 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 | `checkov` | Bridgecrew Checkov security scanner | Active | Pinned versions; has goss tests |
 | `toolbox` | Generic Debian toolbox container | Maintained | Build-arg driven; customizable tools |
 | `yajsv` | JSON schema validator (Go) | Active | Multi-stage scratch build (~5MB); has tests |
-| `offlineimap` | Email sync with supercronic | Stale | Pinned to bullseye-20220125; needs upgrade |
-| `postfix` | SMTP relay | Stale | Pinned to bullseye-20200224; needs upgrade |
+| `offlineimap` | Email sync with supercronic | Active | Debian trixie; has goss tests |
+| `postfix` | SMTP relay | Active | Debian trixie; has goss tests |
 | `tcpdump` | Network debugging | Minimal | One-liner; has AGENTS.md with test proposal |
 | `ssh-audit` | SSH security auditing | Active | Full test suite with hardened/weak sshd; has AGENTS.md, README |
 | `media` | Media server stack | Reference | Compose-only; third-party images |
 
 ## Known Issues & Tech Debt
-
-### Medium Priority
-- **Stale base images**: `offlineimap` and `postfix` use Debian bullseye from 2020-2022; should upgrade to bookworm or trixie
 
 ### Low Priority
 - Missing `./run` script: `media` (uses docker compose directly)
@@ -50,7 +47,7 @@ Example workflow:
 4. Run the test — it should pass
 5. Commit
 
-Four projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, and `checkov`.
+Six projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `checkov`, `offlineimap`, and `postfix`.
 
 **samba-timemachine** tests three phases:
 1. **Build-time tests**: Validate image structure

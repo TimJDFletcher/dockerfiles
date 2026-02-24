@@ -1,49 +1,57 @@
 # postfix Agent Documentation
 
-Container for [Postfix](http://www.postfix.org/) SMTP relay server.
+Docker container for [Postfix](http://www.postfix.org/), a mail transfer agent (MTA).
 
 ## Core Components
 
 | Component | Value |
 |-----------|-------|
-| Base Image | `debian:bullseye-20200224-slim` (STALE) |
+| Base Image | `debian:trixie-20260223-slim` |
 | Packages | `postfix`, `iproute2` |
 
-## Environment Variables
+## Build Args
 
-| Variable | Value | Purpose |
-|----------|-------|---------|
-| `POSTFIX_VERSION` | `3.5.0-1` | Pinned postfix version |
+| Arg | Default | Description |
+|-----|---------|-------------|
+| `DEBIAN_VERSION` | `trixie-20260223-slim` | Debian base image tag |
 
 ## Developer Workflow (`./run`)
 
 | Command | Description |
 |---------|-------------|
-| `build` | Build local image |
-| `test` | Build and run rspec tests |
-| `push` | Build, test, tag with git SHA, push to Docker Hub |
-| `release` | Checkout latest tag and multi-arch push |
+| `build` | Build local image tagged `timjdfletcher/postfix:tmp` |
+| `test` | Build and run goss tests |
+| `clean` | Remove images and prune builder |
+| `release` | Test, build multi-arch, and push to Docker Hub |
+
+## Testing
+
+Tests use the shared `goss-bin` Docker volume. Validates:
+- postfix and iproute2 packages installed
+- postfix binaries exist (`/usr/sbin/postfix`, `/usr/lib/postfix/sbin/master`)
+- entrypoint exists with correct permissions
+- postconf command works
 
 ## Usage
 
-Configure via environment variables or mount config files:
-
 ```bash
+# Basic relay
 docker run -d \
   -p 25:25 \
   -v /path/to/main.cf:/etc/postfix/main.cf:ro \
   timjdfletcher/postfix
+
+# With custom config directory
+docker run -d \
+  -p 25:25 \
+  -v /path/to/postfix-config:/etc/postfix:ro \
+  timjdfletcher/postfix
 ```
-
-## Known Issues
-
-- **Very stale base image** — Uses Debian bullseye from February 2020; should upgrade to trixie
-- **Dockerfile style** — Uses `ADD` instead of `COPY`
-- **Ruby tests** — Uses rspec with bundler
 
 ## Updating Dependencies
 
 | Dependency | Where to check |
 |------------|----------------|
 | Debian base | https://hub.docker.com/_/debian |
-| postfix | `apt-cache policy postfix` in target Debian version |
+
+After updating, run `./run test` to validate.

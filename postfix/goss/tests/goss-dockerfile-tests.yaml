@@ -1,0 +1,23 @@
+# postfix build-time tests
+
+file:
+  /entrypoint:
+    exists: true
+    mode: "0755"
+  /usr/sbin/postfix:
+    exists: true
+  /usr/lib/postfix/sbin/master:
+    exists: true
+
+package:
+  postfix:
+    installed: true
+  iproute2:
+    installed: true
+
+command:
+  postconf -d mail_version:
+    exit-status: 0
+    stdout:
+      - "mail_version"
+    timeout: 5000

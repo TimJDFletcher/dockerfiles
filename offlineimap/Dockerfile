@@ -1,32 +1,34 @@
-FROM debian:bullseye-20220125-slim
+ARG DEBIAN_VERSION="trixie-20260223-slim"
+ARG SUPERCRONIC_VERSION="v0.2.43"
+
+FROM debian:${DEBIAN_VERSION}
 
 ARG TARGETPLATFORM
-
-ENV OFFLINEIMAP_VERSION="7.3.3+dfsg1-1+0.0~git20210225.1e7ef9e+dfsg-4" \
-    CURL_VERSION="7.74.0-1.3+deb11u1" \
-    CA_CERTIFICATES_VERSION="20210119" \
-    PROCPS_VERSION="2:3.3.17-5"
-
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
-COPY supercronic-install.sh /usr/local/bin/supercronic-install.sh
-RUN chmod 0755 /usr/local/bin/supercronic-install.sh
+ARG SUPERCRONIC_VERSION
 
 RUN apt-get update \
  && apt-get --no-install-recommends --yes install \
-    offlineimap="${OFFLINEIMAP_VERSION}" \
-    ca-certificates="${CA_CERTIFICATES_VERSION}" \
-    curl="${CURL_VERSION}" \
-    procps=${PROCPS_VERSION} \
+    offlineimap \
+    ca-certificates \
+    curl \
+    procps \
  && useradd --home-dir /email --no-create-home offlineimap \
- && rm -rf /var/cache/apt
+ && rm -rf /var/lib/apt/lists/*
 
-RUN /usr/local/bin/supercronic-install.sh
+RUN set -eux; \
+    ARCH=$(uname -m); \
+    case "${ARCH}" in \
+      x86_64)  SUPERCRONIC_ARCH="amd64" ;; \
+      aarch64) SUPERCRONIC_ARCH="arm64" ;; \
+      armv7l)  SUPERCRONIC_ARCH="arm" ;; \
+      *)       echo "Unsupported arch: ${ARCH}"; exit 1 ;; \
+    esac; \
+    curl -fsSL "https://github.com/aptible/supercronic/releases/download/${SUPERCRONIC_VERSION}/supercronic-linux-${SUPERCRONIC_ARCH}" \
+      -o /usr/local/bin/supercronic; \
+    chmod 755 /usr/local/bin/supercronic
 
-COPY crontab /etc/crontab
-COPY entrypoint /entrypoint
-
-RUN chmod 0755 /entrypoint
+COPY --chmod=0644 crontab /etc/crontab
+COPY --chmod=0755 entrypoint /entrypoint
 
 USER offlineimap
 

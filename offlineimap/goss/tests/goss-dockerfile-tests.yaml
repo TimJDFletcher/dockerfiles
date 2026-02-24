@@ -1,0 +1,31 @@
+# offlineimap build-time tests
+
+file:
+  /usr/bin/offlineimap:
+    exists: true
+  /usr/local/bin/supercronic:
+    exists: true
+    mode: "0755"
+  /entrypoint:
+    exists: true
+    mode: "0755"
+  /etc/crontab:
+    exists: true
+
+user:
+  offlineimap:
+    exists: true
+    home: /email
+
+command:
+  offlineimap --version:
+    exit-status: 0
+    stdout:
+      - "/^[0-9]+\\.[0-9]+/"
+    timeout: 5000
+
+  supercronic --version:
+    exit-status: 0
+    stdout:
+      - "v0.2.43"
+    timeout: 5000
