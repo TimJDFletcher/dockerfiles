@@ -17,7 +17,7 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 | `yajsv` | JSON schema validator (Go) | Active | Multi-stage scratch build (~5MB); has tests |
 | `offlineimap` | Email sync with supercronic | Active | Debian trixie; has goss tests |
 | `postfix` | SMTP relay | Active | Debian trixie; has goss tests |
-| `tcpdump` | Network debugging | Minimal | One-liner; has AGENTS.md with test proposal |
+| `tcpdump` | Network debugging | Active | Debian trixie; has goss + integration tests |
 | `ssh-audit` | SSH security auditing | Active | Full test suite with hardened/weak sshd; has AGENTS.md, README |
 | `media` | Media server stack | Reference | Compose-only; third-party images |
 
@@ -47,7 +47,7 @@ Example workflow:
 4. Run the test — it should pass
 5. Commit
 
-Six projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `checkov`, `offlineimap`, and `postfix`.
+Seven projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `checkov`, `offlineimap`, `postfix`, and `tcpdump`.
 
 **samba-timemachine** tests three phases:
 1. **Build-time tests**: Validate image structure

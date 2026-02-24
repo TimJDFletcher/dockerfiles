@@ -1,53 +1,171 @@
 #!/bin/bash
 set -eu -o pipefail
+
 CONTAINER_NAME=tcpdump
 IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
 IMAGE_TAG=tmp
 PLATFORMS="linux/amd64,linux/arm64"
+GOSS_VERSION="v0.4.9"
 
-build () {
-  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --file Dockerfile .
+log() {
+  echo "==> $*"
+}
+
+_ensure_goss_volume() {
+  if ! docker volume inspect goss-bin >/dev/null 2>&1; then
+    log "Creating goss-bin volume..."
+    docker volume create goss-bin
+  fi
+  
+  log "Ensuring goss ${GOSS_VERSION} in volume..."
+  docker run --rm \
+    -v goss-bin:/target \
+    alpine:latest sh -c "
+      if [ -f /target/goss ] && /target/goss --version 2>&1 | grep -q '${GOSS_VERSION}'; then
+        echo 'goss ${GOSS_VERSION} already installed'
+      else
+        apk add --no-cache curl >/dev/null
+        ARCH=\$(uname -m)
+        case \$ARCH in
+          x86_64)  GOSS_ARCH=amd64 ;;
+          aarch64) GOSS_ARCH=arm64 ;;
+          *)       echo \"Unsupported arch: \$ARCH\"; exit 1 ;;
+        esac
+        curl -fsSL \"https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}/goss-linux-\${GOSS_ARCH}\" -o /target/goss
+        chmod 755 /target/goss
+        echo 'goss ${GOSS_VERSION} installed'
+      fi
+    "
+}
+
+_buildx_setup() {
+  docker buildx use builder 2>/dev/null || docker buildx create --name builder --use
+  docker buildx inspect --bootstrap
+}
+
+build() {
+  log "Building ${IMAGE_NAME}:${IMAGE_TAG}"
+  _buildx_setup
+  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" .
   docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
 }
 
-clean () {
-  docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" || true
-  docker image rm "${IMAGE_NAME}:latest" || true
-  docker buildx prune --force
-  docker buildx rm builder || true
+test() {
+  build
+  _ensure_goss_volume
+
+  log "Running goss build-time tests..."
+  docker run --rm \
+    -v goss-bin:/goss-bin:ro \
+    -v "$(pwd)/goss/tests:/goss:ro" \
+    --entrypoint "" \
+    "${IMAGE_NAME}:${IMAGE_TAG}" \
+    /goss-bin/goss --gossfile /goss/goss-dockerfile-tests.yaml validate
+
+  log "Running integration test (capture HTTP traffic)..."
+  
+  # Clean up any previous test
+  docker compose down --volumes --remove-orphans 2>/dev/null || true
+  
+  # Start the test environment
+  docker compose up --detach --wait webserver
+  
+  # Run tcpdump in background, capturing 5 packets
+  log "Starting tcpdump capture..."
+  docker compose up --detach tcpdump
+  
+  # Give tcpdump a moment to start
+  sleep 1
+  
+  # Generate HTTP traffic using curl
+  log "Generating HTTP traffic..."
+  docker run --rm --network tcpdump_default curlimages/curl:latest \
+    -s http://webserver/ > /dev/null
+  docker run --rm --network tcpdump_default curlimages/curl:latest \
+    -s http://webserver/ > /dev/null
+  docker run --rm --network tcpdump_default curlimages/curl:latest \
+    -s http://webserver/ > /dev/null
+  
+  # Wait for tcpdump to capture packets (it exits after -c 5)
+  log "Waiting for capture to complete..."
+  sleep 3
+  timeout 10 docker compose wait tcpdump 2>/dev/null || true
+  
+  # Verify capture file exists and has content
+  log "Verifying capture file..."
+  docker run --rm \
+    -v tcpdump_capture:/capture:ro \
+    alpine:latest sh -c '
+      if [ -f /capture/test.pcap ] && [ -s /capture/test.pcap ]; then
+        echo "  PASS: Capture file exists and has content"
+        ls -la /capture/test.pcap
+      else
+        echo "  FAIL: Capture file missing or empty"
+        exit 1
+      fi
+    '
+  
+  # Analyze the capture to verify HTTP traffic
+  log "Analyzing captured traffic..."
+  docker run --rm \
+    -v tcpdump_capture:/capture:ro \
+    "${IMAGE_NAME}:${IMAGE_TAG}" \
+    -r /capture/test.pcap -nn 2>&1 | head -10
+  
+  log "Test: Captured HTTP traffic"
+  echo "  PASS"
+  
+  # Cleanup
+  docker compose down --volumes --remove-orphans
+  
+  log "All tests passed!"
 }
 
-usage() {
-  echo "./run build - Build a local image called ${IMAGE_NAME}:${IMAGE_TAG}"
-  echo "./run release - Tests and then releases to dockerhub a multiarch version of the latest tag"
-}
-
-find_release(){
-  TAG="$(git tag | grep ^${CONTAINER_NAME} | sort -n | tail -n 1)"
-  git checkout "${TAG}"
-  export IMAGE_TAG=$TAG
-}
-
-_buildx () {
-  docker buildx use builder || docker buildx create --name builder
-  docker buildx inspect --bootstrap
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --file Dockerfile .
+clean() {
+  log "Cleaning up..."
+  docker compose down --volumes --remove-orphans 2>/dev/null || true
+  docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest" 2>/dev/null || true
+  docker buildx prune --force --filter "until=24h"
 }
 
 release() {
-  find_release
-  _buildx
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --push --file Dockerfile .
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:latest"       --push --file Dockerfile .
+  test
+
+  if ! CURRENT_TAG=$(git describe --tags --exact-match 2>/dev/null); then
+    log "Error: Current commit is not tagged."
+    exit 1
+  fi
+
+  log "Releasing ${CURRENT_TAG}"
+  _buildx_setup
+  docker buildx build \
+    --platform "${PLATFORMS}" \
+    --tag "${IMAGE_NAME}:${CURRENT_TAG}" \
+    --tag "${IMAGE_NAME}:latest" \
+    --push .
+
+  log "Release complete."
 }
 
+usage() {
+  cat <<EOF
+Usage: ./run [COMMAND]
+
+Commands:
+  build    Build local image (${IMAGE_NAME}:${IMAGE_TAG})
+  test     Build and run integration tests
+  clean    Remove images and prune builder
+  release  Test, build multi-arch, and push to Docker Hub
+EOF
+}
 
 CMD=${1:-}
-
 shift || true
+
 case ${CMD} in
-    build) build ;;
-    clean) clean ;;
-    release) find_release && clean && _buildx && release ;;
-    *) usage ;;
+  build)   build ;;
+  test)    test ;;
+  clean)   clean ;;
+  release) release ;;
+  *)       usage ;;
 esac

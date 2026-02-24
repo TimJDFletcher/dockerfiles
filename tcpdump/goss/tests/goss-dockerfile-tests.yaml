@@ -1,0 +1,18 @@
+# tcpdump build-time tests
+
+file:
+  /usr/bin/tcpdump:
+    exists: true
+    mode: "0755"
+
+package:
+  tcpdump:
+    installed: true
+
+command:
+  tcpdump --version:
+    exit-status: 0
+    stdout:
+      - "tcpdump version"
+      - "libpcap"
+    timeout: 5000

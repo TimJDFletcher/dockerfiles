@@ -1,0 +1,29 @@
+services:
+  # Simple webserver for traffic generation
+  webserver:
+    image: nginx:alpine
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  # tcpdump sharing webserver's network namespace to capture its traffic
+  tcpdump:
+    image: timjdfletcher/tcpdump:tmp
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      webserver:
+        condition: service_healthy
+    network_mode: "service:webserver"
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    command: ["-i", "eth0", "-c", "5", "-w", "/capture/test.pcap", "tcp", "port", "80"]
+    volumes:
+      - capture:/capture
+
+volumes:
+  capture:
