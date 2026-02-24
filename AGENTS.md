@@ -19,7 +19,6 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 | `postfix` | SMTP relay | Stale | Pinned to bullseye-20200224; needs upgrade |
 | `tcpdump` | Network debugging | Minimal | One-liner; has AGENTS.md with test proposal |
 | `ssh-audit` | SSH security auditing | Active | Full test suite with hardened/weak sshd; has AGENTS.md, README |
-| `goss` | Goss testing framework | Optional | Standalone image; tests use goss-bin volume instead |
 | `media` | Media server stack | Reference | Compose-only; third-party images |
 
 ## Known Issues & Tech Debt
