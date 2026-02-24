@@ -15,12 +15,12 @@
 ## Speed
 
 - [ ] **`.dockerignore` is empty** — The entire build context (including `AGENTS.md`, `README.md`, `run`, `docker-compose*.yml`, `.git/`, `docs/`) is sent to the Docker daemon on every build. Populate `.dockerignore` to exclude unnecessary files.
-- [ ] **Goss copy invalidates apt layer cache** — `COPY goss/ /goss` happens before `RUN apt-get install`, so any change to a goss test file busts the entire package install cache. Consider splitting: copy only `goss/goss-installer` first for the install step, then copy test files in a later layer.
+- [x] **Goss copy invalidates apt layer cache** — ~~`COPY goss/ /goss` happens before `RUN apt-get install`, so any change to a goss test file busts the entire package install cache.~~ Fixed: copy `goss-installer` first, then `goss/tests/` after apt install.
 
 ## Ease of Use
 
 - [ ] **External volume requires manual pre-creation** — `docker-compose.yml` declares the backups volume as `external: true`, meaning users must run `docker volume create samba-timemachine_backups` before `docker compose up`. Remove `external: true` for the dev compose file or document the requirement prominently.
 - [ ] **Duplicate `[Install]` section in `systemd-unit.service`** — The file has two identical `[Install]` blocks.
-- [ ] **Stale `QUOTA` env var in `docker-compose-autoheal.yml`** — References a `QUOTA` variable that no longer exists in the codebase.
+- [x] **Stale `QUOTA` env var in `docker-compose-autoheal.yml`** — ~~References a `QUOTA` variable that no longer exists in the codebase.~~ Removed.
 - [ ] **Inconsistency between compose files** — `docker-compose.yml` uses env var substitution with defaults; `docker-compose-autoheal.yml` hardcodes values and uses a non-external volume.
 - [ ] **`backup-check.sh` depends on `curl` but `curl` is purged from the image** — The script is copied into the backup volume but will fail if run inside the container since `curl` is removed during build.

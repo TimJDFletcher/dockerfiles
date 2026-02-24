@@ -19,7 +19,6 @@ services:
       PASS: password
       PGID: "999"
       PUID: "999"
-      QUOTA: "1024"
       USER: tim
     healthcheck:
       test:

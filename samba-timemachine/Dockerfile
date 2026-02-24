@@ -21,7 +21,8 @@ ENV USER="timemachine" \
 VOLUME ${BACKUPDIR}
 
 # Install Dependencies & Samba
-COPY goss/ ${GOSS_DST}
+# Copy only goss-installer first to avoid busting apt cache when tests change
+COPY goss/goss-installer ${GOSS_DST}/goss-installer
 RUN echo 'deb http://deb.debian.org/debian trixie-backports main' > /etc/apt/sources.list.d/backports.list && \
     apt-get update && \
     # Install runtime dependencies and Samba
@@ -40,6 +41,9 @@ RUN echo 'deb http://deb.debian.org/debian trixie-backports main' > /etc/apt/sou
     apt-get purge --yes curl ca-certificates && \
     apt-get autoremove --yes && \
     rm -rf /var/lib/apt/lists/* /etc/samba/smb.conf
+
+# Copy goss tests (changes here won't bust the apt cache above)
+COPY goss/tests/ ${GOSS_DST}/tests/
 
 # Configuration & Scripts
 RUN mkdir /templates
