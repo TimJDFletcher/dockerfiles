@@ -21,3 +21,22 @@ command:
     stdout:
       - "GAM"
     timeout: 10000
+
+  # Verify exact pip package version
+  pip show gam7:
+    exit-status: 0
+    stdout:
+      - "Version: 7.34.6"
+    timeout: 5000
+
+  # Test entrypoint exec path (arbitrary commands work)
+  python --version:
+    exit-status: 0
+    stdout:
+      - "Python 3.13"
+    timeout: 5000
+
+  # Network connectivity to Google APIs
+  gam checkconnection:
+    exit-status: 0
+    timeout: 60000
