@@ -19,12 +19,11 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 | `postfix` | SMTP relay | Active | Debian trixie; has goss tests |
 | `tcpdump` | Network debugging | Active | Debian trixie; has goss + integration tests |
 | `ssh-audit` | SSH security auditing | Active | Full test suite with hardened/weak sshd; has AGENTS.md, README |
-| `media` | Media server stack | Reference | Compose-only; third-party images |
+| `media` | Media server stack | Reference | Compose-only; third-party images; has ./run |
 
 ## Known Issues & Tech Debt
 
-### Low Priority
-- Missing `./run` script: `media` (uses docker compose directly)
+No outstanding issues.
 
 ## Conventions (Quick Reference)
 

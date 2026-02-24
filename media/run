@@ -1,0 +1,68 @@
+#!/bin/bash
+set -eu -o pipefail
+
+log() {
+  echo "==> $*"
+}
+
+up() {
+  log "Starting media stack..."
+  docker compose up -d
+}
+
+down() {
+  log "Stopping media stack..."
+  docker compose down
+}
+
+logs() {
+  docker compose logs -f "$@"
+}
+
+status() {
+  docker compose ps
+}
+
+pull() {
+  log "Pulling latest images..."
+  docker compose pull
+}
+
+restart() {
+  log "Restarting media stack..."
+  docker compose restart "$@"
+}
+
+clean() {
+  log "Stopping and removing volumes..."
+  docker compose down -v
+}
+
+usage() {
+  cat <<EOF
+Usage: ./run [COMMAND]
+
+Commands:
+  up        Start all services in background
+  down      Stop all services
+  logs      Follow logs (optionally specify service)
+  status    Show running services
+  pull      Pull latest images
+  restart   Restart services (optionally specify service)
+  clean     Stop and remove volumes
+EOF
+}
+
+CMD=${1:-}
+shift || true
+
+case ${CMD} in
+  up)      up ;;
+  down)    down ;;
+  logs)    logs "$@" ;;
+  status)  status ;;
+  pull)    pull ;;
+  restart) restart "$@" ;;
+  clean)   clean ;;
+  *)       usage ;;
+esac

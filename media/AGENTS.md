@@ -30,16 +30,31 @@ All services expect data at `/media/`:
 - `/media/sickrage/config`
 - `/media/movies`, `/media/tv`
 
+## Developer Workflow (`./run`)
+
+| Command | Description |
+|---------|-------------|
+| `up` | Start all services in background |
+| `down` | Stop all services |
+| `logs` | Follow logs (optionally specify service) |
+| `status` | Show running services |
+| `pull` | Pull latest images |
+| `restart` | Restart services (optionally specify service) |
+| `clean` | Stop and remove volumes |
+
 ## Usage
 
 ```bash
 cd media
-docker compose up -d
+./run up        # Start stack
+./run logs      # Follow all logs
+./run logs transmission  # Follow specific service
+./run status    # Check what's running
+./run down      # Stop everything
 ```
 
 ## Notes
 
 - All services use `PUID=109` and `PGID=109` — adjust for your system
 - Timezone set to `Europe/Berlin`
-- No `./run` script — use `docker compose` directly
 - No custom images to build or maintain
