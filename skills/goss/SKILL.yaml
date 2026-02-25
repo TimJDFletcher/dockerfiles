@@ -19,6 +19,7 @@ capabilities:
   - Integration testing with docker-compose
   - Build-time and runtime validation
   - TDD workflow support
+  - Multi-architecture support (amd64, arm64, arm)
 
 requirements:
   - docker

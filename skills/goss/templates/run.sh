@@ -14,7 +14,24 @@ log() {
   echo "==> $*"
 }
 
+_get_goss_arch() {
+  # Detect architecture for goss binary download
+  local arch
+  arch=$(uname -m)
+  case "${arch}" in
+    x86_64)  echo "amd64" ;;
+    aarch64) echo "arm64" ;;
+    arm64)   echo "arm64" ;;
+    armv7l)  echo "arm" ;;
+    armv6l)  echo "arm" ;;
+    *)       echo "amd64" ;;  # Default fallback
+  esac
+}
+
 _ensure_goss_volume() {
+  local goss_arch
+  goss_arch=$(_get_goss_arch)
+
   # Create volume if it doesn't exist
   if ! docker volume inspect goss-bin >/dev/null 2>&1; then
     log "Creating goss-bin volume..."
@@ -27,12 +44,12 @@ _ensure_goss_volume() {
 
   # Download goss binary if not present
   if ! docker run --rm -v goss-bin:/goss-bin:ro alpine:latest test -f /goss-bin/goss; then
-    log "Downloading goss ${GOSS_VERSION}..."
+    log "Downloading goss ${GOSS_VERSION} (${goss_arch})..."
     docker run --rm \
       -v goss-bin:/target \
       --entrypoint sh \
       curlimages/curl:latest \
-      -c "curl -fsSL https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}/goss-linux-amd64 -o /target/goss && chmod 755 /target/goss"
+      -c "curl -fsSL https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}/goss-linux-${goss_arch} -o /target/goss && chmod 755 /target/goss"
   fi
 }
 
