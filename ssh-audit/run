@@ -12,40 +12,10 @@ IMAGE_TAG="${IMAGE_TAG:-tmp}"
 PLATFORMS="linux/amd64,linux/arm64"
 CONTAINER_NAME="ssh-audit"
 SSH_AUDIT_VERSION="3.3.0"
-GOSS_VERSION="v0.4.9"
+CST_IMAGE="gcr.io/gcp-runtimes/container-structure-test:latest"
 
 log() {
   echo "==> $1"
-}
-
-_ensure_goss_volume() {
-  if ! docker volume inspect goss-bin >/dev/null 2>&1; then
-    log "Creating goss-bin volume..."
-    docker volume create goss-bin
-    # Set permissions for curlimages/curl user (uid 101, gid 102)
-    docker run --rm -v goss-bin:/target alpine:latest chown 101:102 /target
-  fi
-  
-  # Download pinned goss version to volume (idempotent)
-  log "Ensuring goss ${GOSS_VERSION} in volume..."
-  docker run --rm \
-    -v goss-bin:/target \
-    --entrypoint sh \
-    curlimages/curl:latest -c "
-      if [ -f /target/goss ] && /target/goss --version 2>&1 | grep -q '${GOSS_VERSION}'; then
-        echo 'goss ${GOSS_VERSION} already installed'
-      else
-        ARCH=\$(uname -m)
-        case \$ARCH in
-          x86_64)  GOSS_ARCH=amd64 ;;
-          aarch64) GOSS_ARCH=arm64 ;;
-          *)       echo \"Unsupported arch: \$ARCH\"; exit 1 ;;
-        esac
-        curl -fsSL \"https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}/goss-linux-\${GOSS_ARCH}\" -o /target/goss
-        chmod 755 /target/goss
-        echo 'goss ${GOSS_VERSION} installed'
-      fi
-    "
 }
 
 build() {
@@ -62,7 +32,6 @@ clean() {
 }
 
 _up() {
-  _ensure_goss_volume
   build
   log "Starting test environment..."
   docker compose up --remove-orphans --detach
@@ -91,28 +60,17 @@ wait_for_sshd() {
 _test() {
   log "--- Running ssh-audit Tests ---"
   
-  _ensure_goss_volume
   build
   
-  # Phase 1: Build-time tests (validate image structure)
-  log "Running build-time tests..."
+  # Phase 1: Build-time tests using Container Structure Test
+  log "Running build-time tests with container-structure-test..."
   
-  log "Test: ssh-audit version is ${SSH_AUDIT_VERSION}"
-  local actual_version
-  actual_version=$(docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" --help 2>&1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-  if [ "${actual_version}" != "v${SSH_AUDIT_VERSION}" ]; then
-    echo "  FAIL: expected v${SSH_AUDIT_VERSION}, got ${actual_version}"
-    exit 1
-  fi
-  echo "  PASS"
-  
-  log "Running goss build-time tests..."
   docker run --rm \
-    -v goss-bin:/goss-bin:ro \
-    -v "$(pwd)/goss/tests:/goss:ro" \
-    --entrypoint "" \
-    "${IMAGE_NAME}:${IMAGE_TAG}" \
-    /goss-bin/goss --gossfile /goss/goss-dockerfile-tests.yaml validate
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v "$(pwd)/container-structure-test:/tests:ro" \
+    "${CST_IMAGE}" test \
+    --image "${IMAGE_NAME}:${IMAGE_TAG}" \
+    --config /tests/dockerfile-tests.yaml
   
   # Phase 2: Integration tests (requires docker-compose sshd containers)
   log "Starting test sshd containers..."
@@ -120,8 +78,38 @@ _test() {
   wait_for_sshd
 
   log "Running integration tests..."
-  docker compose exec "${CONTAINER_NAME}" \
-    /goss-bin/goss --gossfile /goss/tests/goss-integration-tests.yaml validate
+  
+  # Test hardened sshd - should pass with exit code 0
+  log "Test: Hardened sshd passes audit..."
+  local hardened_exit_code=0
+  docker compose exec -T "${CONTAINER_NAME}" ssh-audit -p 2222 test-sshd >/dev/null 2>&1 || hardened_exit_code=$?
+  if [ "${hardened_exit_code}" -ne 0 ]; then
+    log "FAIL: Hardened sshd audit failed with exit code ${hardened_exit_code}"
+    docker compose exec -T "${CONTAINER_NAME}" ssh-audit -p 2222 test-sshd 2>&1 | tail -20
+    exit 1
+  fi
+  log "  PASS: Hardened sshd passes audit (exit code 0)"
+  
+  # Test weak sshd - should fail with exit code >= 2
+  log "Test: Weak sshd fails audit..."
+  local weak_exit_code=0
+  docker compose exec -T "${CONTAINER_NAME}" ssh-audit -p 2222 weak-sshd >/dev/null 2>&1 || weak_exit_code=$?
+  if [ "${weak_exit_code}" -lt 2 ]; then
+    log "FAIL: Weak sshd should fail audit (exit code ${weak_exit_code})"
+    exit 1
+  fi
+  log "  PASS: Weak sshd correctly fails audit (exit code ${weak_exit_code})"
+  
+  # Test JSON output (ignore exit code, just check output format)
+  log "Test: JSON output works..."
+  local json_output
+  json_output=$(docker compose exec -T "${CONTAINER_NAME}" ssh-audit -p 2222 --json test-sshd 2>/dev/null || true)
+  if ! echo "${json_output}" | grep -q '"banner":'; then
+    log "FAIL: JSON output missing expected fields"
+    echo "Output was: ${json_output}"
+    exit 1
+  fi
+  log "  PASS: JSON output works"
 
   log "--- All Tests Passed ---"
   _down
@@ -159,7 +147,7 @@ Usage: ./run [COMMAND]
 
 Commands:
   build    Build local image (${IMAGE_NAME}:${IMAGE_TAG})
-  test     Run goss build-time and integration tests
+  test     Run container-structure-test and integration tests
   clean    Remove images and prune builder
   release  Test, build multi-arch, and push to Docker Hub
 EOF

@@ -1,0 +1,18 @@
+schemaVersion: 2.0.0
+
+fileExistenceTests:
+  - name: 'ssh-audit binary exists'
+    path: '/usr/local/bin/ssh-audit'
+    shouldExist: true
+
+commandTests:
+  - name: 'ssh-audit version'
+    command: 'ssh-audit'
+    args: ['--help']
+    expectedOutput: ['v3.3.0', 'usage:']
+    exitCode: 0
+
+  - name: 'ssh-audit can run'
+    command: 'ssh-audit'
+    args: ['--help']
+    exitCode: 0
