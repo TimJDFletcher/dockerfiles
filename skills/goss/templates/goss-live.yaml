@@ -1,0 +1,68 @@
+# Live Integration Tests
+# Full end-to-end validation run via `docker compose exec`.
+# These can be slower and more thorough than healthcheck tests.
+
+file:
+  # Data directory setup correctly
+  {{.Env.DATA_DIR}}:
+    exists: true
+    mode: "0755"
+    owner: {{.Env.APP_USER}}
+    group: {{.Env.APP_USER}}
+    filetype: directory
+
+  # Config rendered correctly
+  /etc/myservice/config:
+    exists: true
+    mode: "0644"
+    contents:
+      - "port = {{.Env.PORT}}"
+      - "user = {{.Env.APP_USER}}"
+
+  # PID 1 is our process
+  /proc/1/cmdline:
+    exists: true
+    contents:
+      - myservice
+      - --foreground
+
+port:
+  tcp:{{.Env.PORT}}:
+    listening: true
+    ip:
+      - 0.0.0.0
+
+process:
+  myservice:
+    running: true
+
+user:
+  {{.Env.APP_USER}}:
+    exists: true
+    uid: {{.Env.PUID}}
+    gid: {{.Env.PGID}}
+    home: {{.Env.DATA_DIR}}
+
+group:
+  {{.Env.APP_USER}}:
+    exists: true
+    gid: {{.Env.PGID}}
+
+mount:
+  {{.Env.DATA_DIR}}:
+    exists: true
+
+command:
+  # Config validation
+  config_check:
+    exec: "myservice --check-config"
+    exit-status: 0
+    timeout: 10000
+
+  # Integration test: full workflow
+  integration_test:
+    exec: "myservice test-connection --user {{.Env.APP_USER}}"
+    exit-status: 0
+    stdout:
+      - "Connection successful"
+    timeout: 30000

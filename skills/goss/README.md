@@ -222,6 +222,293 @@ test() {
 }
 ```
 
+## Pattern 4: Embedded Goss for Services (Build-time + Healthcheck + Live Tests)
+
+For long-running services, embed goss in the image and use it for:
+1. **Build-time validation** — Run during `docker build`
+2. **Docker HEALTHCHECK** — Continuous runtime validation
+3. **Live integration tests** — Full service validation via `docker compose exec`
+
+This pattern is used in `samba-timemachine` and is ideal for services that need ongoing health monitoring.
+
+### Dockerfile Structure
+
+```dockerfile
+ARG GOSS_VERSION="v0.4.9"
+ARG GOSS_DST="/goss"
+
+# Copy goss installer first (cache-friendly)
+COPY goss/goss-installer ${GOSS_DST}/goss-installer
+
+RUN apt-get update && apt-get install -y curl ca-certificates myservice && \
+    # Install goss binary
+    sh ${GOSS_DST}/goss-installer && \
+    # Cleanup
+    apt-get purge -y curl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy tests after apt install (changes don't bust cache)
+COPY goss/tests/ ${GOSS_DST}/tests/
+
+COPY entrypoint /entrypoint
+
+# Build-time validation
+RUN ${GOSS_DST}/goss --gossfile ${GOSS_DST}/tests/goss-dockerfile-tests.yaml validate
+
+# Runtime healthcheck
+HEALTHCHECK --interval=1m --timeout=10s \
+  CMD ${GOSS_DST}/goss --gossfile ${GOSS_DST}/tests/goss-healthcheck-tests.yaml validate || exit 1
+
+ENTRYPOINT ["/entrypoint"]
+```
+
+### goss-installer Script
+
+Create `goss/goss-installer`:
+
+```bash
+#!/bin/sh
+set -eu
+
+GOSS_VER="${GOSS_VER:-v0.4.9}"
+GOSS_DST="${GOSS_DST:-/goss}"
+
+ARCH=$(uname -m)
+case "${ARCH}" in
+  x86_64)  GOSS_ARCH="amd64" ;;
+  aarch64) GOSS_ARCH="arm64" ;;
+  armv7l)  GOSS_ARCH="arm" ;;
+  *)       GOSS_ARCH="amd64" ;;
+esac
+
+curl -fsSL "https://github.com/goss-org/goss/releases/download/${GOSS_VER}/goss-linux-${GOSS_ARCH}" \
+  -o "${GOSS_DST}/goss"
+chmod 755 "${GOSS_DST}/goss"
+```
+
+### Test File Types
+
+| File | Purpose | When Run |
+|------|---------|----------|
+| `goss-dockerfile-tests.yaml` | Validate image structure | Build time (`RUN goss validate`) |
+| `goss-healthcheck-tests.yaml` | Validate running service | Docker HEALTHCHECK (continuous) |
+| `goss-live-tests.yaml` | Full integration tests | `docker compose exec` (manual/CI) |
+
+### Build-time Tests (goss-dockerfile-tests.yaml)
+
+Validate image structure before the entrypoint runs:
+
+```yaml
+file:
+  /entrypoint:
+    exists: true
+    mode: "0755"
+
+  # Config should NOT exist yet (created by entrypoint)
+  /etc/myservice/config:
+    exists: false
+
+package:
+  myservice:
+    installed: true
+  # Build tools should be purged
+  curl:
+    installed: false
+
+command:
+  myservice --version:
+    exit-status: 0
+    stdout:
+      - "1.0.0"
+```
+
+### Healthcheck Tests (goss-healthcheck-tests.yaml)
+
+Validate the running service (used by Docker HEALTHCHECK):
+
+```yaml
+# Use template variables from environment
+file:
+  {{.Env.DATA_DIR}}:
+    exists: true
+    mode: "0755"
+
+  /etc/myservice/config:
+    exists: true
+    contents:
+      - "listen_port = {{.Env.PORT}}"
+
+port:
+  tcp:{{.Env.PORT}}:
+    listening: true
+    ip:
+      - 0.0.0.0
+
+process:
+  myservice:
+    running: true
+
+mount:
+  {{.Env.DATA_DIR}}:
+    exists: true
+    usage:
+      lt: 95  # Fail if disk >95% full
+
+command:
+  # Service-specific health check
+  myservice_health_check:
+    exec: "curl -sf http://localhost:{{.Env.PORT}}/health"
+    exit-status: 0
+    timeout: 5000
+```
+
+### Live Integration Tests (goss-live-tests.yaml)
+
+Full end-to-end validation run manually or in CI:
+
+```yaml
+# Everything from healthcheck, plus...
+
+user:
+  {{.Env.APP_USER}}:
+    exists: true
+    uid: {{.Env.PUID}}
+    gid: {{.Env.PGID}}
+
+group:
+  {{.Env.APP_USER}}:
+    exists: true
+    gid: {{.Env.PGID}}
+
+command:
+  # Integration test: full workflow
+  integration_test:
+    exec: "myservice test-connection --user {{.Env.APP_USER}}"
+    exit-status: 0
+    stdout:
+      - "Connection successful"
+    timeout: 30000
+```
+
+### Test Runner Script
+
+```bash
+GOSS_DST="/goss"
+CONTAINER_NAME="myservice"
+
+wait_for_health() {
+  log "Waiting for container to become healthy..."
+  for _ in {1..30}; do
+    if docker compose ps --format json | grep -q '"Health":"healthy"'; then
+      log "Container is healthy!"
+      return 0
+    fi
+    sleep 1
+  done
+  log "Timeout waiting for container health."
+  return 1
+}
+
+test() {
+  build
+  
+  log "Starting service..."
+  docker compose up --detach --remove-orphans
+  
+  wait_for_health
+  
+  log "Running live integration tests..."
+  docker compose exec "${CONTAINER_NAME}" \
+    ${GOSS_DST}/goss --gossfile ${GOSS_DST}/tests/goss-live-tests.yaml validate
+  
+  log "All tests passed!"
+  docker compose down
+}
+```
+
+### Multi-Phase Testing
+
+Test different configurations by varying environment variables:
+
+```bash
+test() {
+  build
+  
+  # Phase 1: Default configuration
+  log "Phase 1: Testing default config..."
+  export APP_MODE="default"
+  docker compose up -d
+  wait_for_health
+  docker compose exec myservice /goss/goss --gossfile /goss/tests/goss-live-tests.yaml validate
+  docker compose down
+  
+  # Phase 2: Alternative configuration
+  log "Phase 2: Testing strict mode..."
+  export APP_MODE="strict"
+  docker compose up -d
+  wait_for_health
+  docker compose exec -e EXPECTED_BEHAVIOR="strict" myservice \
+    /goss/goss --gossfile /goss/tests/goss-mode-tests.yaml validate
+  docker compose down
+  
+  log "All phases passed!"
+}
+```
+
+## Pattern 5: Build-time Tests with Volume (No Embedded Goss)
+
+For images where you don't want goss embedded, but still want build-time validation.
+
+### Approach
+
+1. Build the image
+2. Run a test container with goss mounted
+3. Execute tests against the built artifacts
+
+```bash
+test() {
+  build
+  _ensure_goss_volume
+
+  log "Running build-time validation..."
+  docker run --rm \
+    -v goss-bin:/goss-bin:ro \
+    -v "$(pwd)/goss/tests:/goss:ro" \
+    "${IMAGE_NAME}:${IMAGE_TAG}" \
+    /goss-bin/goss --gossfile /goss/goss-dockerfile-tests.yaml validate
+
+  log "Starting service for integration tests..."
+  docker compose up -d --wait
+
+  log "Running integration tests..."
+  docker compose exec -T "${CONTAINER_NAME}" \
+    /goss-bin/goss --gossfile /goss/tests/goss-live-tests.yaml validate
+
+  docker compose down
+  log "All tests passed!"
+}
+```
+
+### docker-compose.yml with goss volume
+
+```yaml
+services:
+  myservice:
+    image: myimage:tmp
+    build:
+      context: .
+    volumes:
+      - goss-bin:/goss-bin:ro
+      - ./goss/tests:/goss/tests:ro
+    environment:
+      - APP_USER=testuser
+      - PORT=8080
+
+volumes:
+  goss-bin:
+    external: true
+```
+
 ## Test File Organization
 
 ```

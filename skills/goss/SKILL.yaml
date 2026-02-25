@@ -1,6 +1,6 @@
 name: goss-container-testing
-version: "1.0.0"
-description: Test Docker containers using goss with a shared binary volume
+version: "1.1.0"
+description: Test Docker containers using goss - shared volume or embedded patterns
 
 keywords:
   - docker
@@ -9,6 +9,7 @@ keywords:
   - containers
   - tdd
   - validation
+  - healthcheck
 
 author: Tim Fletcher
 license: MIT
@@ -17,23 +18,53 @@ capabilities:
   - Test containers with shells (debian, alpine, python, etc.)
   - Test containers without shells (scratch, distroless)
   - Integration testing with docker-compose
-  - Build-time and runtime validation
+  - Build-time validation (embedded or volume)
+  - Docker HEALTHCHECK integration
+  - Live integration tests via docker compose exec
+  - Multi-phase testing with environment variables
   - TDD workflow support
   - Multi-architecture support (amd64, arm64, arm)
+
+patterns:
+  volume:
+    description: Shared goss-bin volume, no goss in image
+    use_when:
+      - CLI tools and utilities
+      - Images where goss shouldn't be embedded
+      - Scratch/distroless images
+    
+  embedded:
+    description: Goss installed in image for healthchecks
+    use_when:
+      - Long-running services
+      - Need Docker HEALTHCHECK
+      - Production monitoring required
 
 requirements:
   - docker
   - bash
-  - curl (via curlimages/curl container)
+  - curl (via curlimages/curl container or in-image)
 
 files:
-  - README.md           # Full documentation
-  - templates/run.sh    # Reusable ./run script template
-  - templates/goss.yaml # Example goss test file
+  - README.md                                # Full documentation
+  - templates/run.sh                         # Volume pattern ./run template
+  - templates/goss-dockerfile-tests.yaml     # Build-time validation template
+  - templates/goss-installer                 # Embedded pattern installer script
+  - templates/goss-healthcheck.yaml          # Healthcheck test template
+  - templates/goss-live.yaml                 # Live integration test template
 
 usage: |
-  1. Copy templates/run.sh to your project as ./run
-  2. Create goss/tests/goss-dockerfile-tests.yaml
-  3. Run ./run test
+  Volume Pattern (CLI tools):
+    1. Copy templates/run.sh to your project as ./run
+    2. Create goss/tests/goss-dockerfile-tests.yaml
+    3. Run ./run test
+
+  Embedded Pattern (Services):
+    1. Copy templates/goss-installer to goss/goss-installer
+    2. Add COPY/RUN/HEALTHCHECK to Dockerfile (see README.md Pattern 4)
+    3. Create goss/tests/goss-dockerfile-tests.yaml (build-time)
+    4. Create goss/tests/goss-healthcheck-tests.yaml (HEALTHCHECK)
+    5. Create goss/tests/goss-live-tests.yaml (integration)
+    6. Add test() function to ./run script
 
 goss_version: "v0.4.9"

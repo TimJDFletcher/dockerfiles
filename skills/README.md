@@ -6,7 +6,14 @@ Reusable patterns and techniques that can be applied to other projects.
 
 | Skill | Description |
 |-------|-------------|
-| [goss](./goss/) | Test Docker containers using goss with a shared binary volume |
+| [goss](./goss/) | Test Docker containers with goss (volume or embedded patterns) |
+
+### goss Patterns
+
+| Pattern | Use Case | HEALTHCHECK |
+|---------|----------|-------------|
+| Volume | CLI tools, scratch images | No |
+| Embedded | Services, long-running containers | Yes |
 
 ## Skill Structure
 

@@ -1,0 +1,36 @@
+# Healthcheck Tests (used by Docker HEALTHCHECK)
+# These run continuously and should be fast and non-destructive.
+# Use {{.Env.VAR}} for environment variable interpolation.
+
+file:
+  # Config exists and has expected content
+  /etc/myservice/config:
+    exists: true
+    contents:
+      - "port = {{.Env.PORT}}"
+
+port:
+  # Service is listening
+  tcp:{{.Env.PORT}}:
+    listening: true
+    ip:
+      - 0.0.0.0
+
+process:
+  # Main process is running
+  myservice:
+    running: true
+
+mount:
+  # Data volume exists and isn't full
+  {{.Env.DATA_DIR}}:
+    exists: true
+    usage:
+      lt: 95
+
+command:
+  # Quick health endpoint check
+  healthcheck:
+    exec: "curl -sf http://localhost:{{.Env.PORT}}/health"
+    exit-status: 0
+    timeout: 5000

@@ -1,0 +1,23 @@
+#!/bin/sh
+set -eu
+
+GOSS_VER="${GOSS_VER:-v0.4.9}"
+GOSS_DST="${GOSS_DST:-/goss}"
+
+ARCH=$(uname -m)
+case "${ARCH}" in
+  x86_64)  GOSS_ARCH="amd64" ;;
+  aarch64) GOSS_ARCH="arm64" ;;
+  armv7l)  GOSS_ARCH="arm" ;;
+  armv6l)  GOSS_ARCH="arm" ;;
+  *)       GOSS_ARCH="amd64" ;;
+esac
+
+echo "Installing goss ${GOSS_VER} (${GOSS_ARCH}) to ${GOSS_DST}..."
+
+curl -fsSL "https://github.com/goss-org/goss/releases/download/${GOSS_VER}/goss-linux-${GOSS_ARCH}" \
+  -o "${GOSS_DST}/goss"
+
+chmod 755 "${GOSS_DST}/goss"
+
+echo "goss installed successfully"
