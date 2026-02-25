@@ -1,0 +1,38 @@
+name: goss-container-testing
+version: "1.0.0"
+description: Test Docker containers using goss with a shared binary volume
+
+keywords:
+  - docker
+  - testing
+  - goss
+  - containers
+  - tdd
+  - validation
+
+author: Tim Fletcher
+license: MIT
+
+capabilities:
+  - Test containers with shells (debian, alpine, python, etc.)
+  - Test containers without shells (scratch, distroless)
+  - Integration testing with docker-compose
+  - Build-time and runtime validation
+  - TDD workflow support
+
+requirements:
+  - docker
+  - bash
+  - curl (via curlimages/curl container)
+
+files:
+  - README.md           # Full documentation
+  - templates/run.sh    # Reusable ./run script template
+  - templates/goss.yaml # Example goss test file
+
+usage: |
+  1. Copy templates/run.sh to your project as ./run
+  2. Create goss/tests/goss-dockerfile-tests.yaml
+  3. Run ./run test
+
+goss_version: "v0.4.9"

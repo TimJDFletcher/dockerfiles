@@ -1,0 +1,56 @@
+# Goss Container Testing - Example Test File
+# Copy to your project at goss/tests/goss-dockerfile-tests.yaml
+
+# File existence and permissions
+file:
+  /entrypoint:
+    exists: true
+    mode: "0755"
+    filetype: file
+
+  /app/config:
+    exists: true
+    # contains:
+    #   - "expected content"
+
+# Command execution tests
+command:
+  # Version check - adjust command and expected output
+  myapp --version:
+    exit-status: 0
+    stdout:
+      - "1.0.0"  # Expected version string
+    timeout: 5000
+
+  # Help output
+  myapp --help:
+    exit-status: 0
+    stdout:
+      - "Usage:"
+    timeout: 5000
+
+# Package installation (for apt/yum based images)
+# package:
+#   curl:
+#     installed: true
+#   ca-certificates:
+#     installed: true
+
+# User existence (for non-root containers)
+# user:
+#   appuser:
+#     exists: true
+#     uid: 1000
+#     home: /app
+
+# Port listening (for services)
+# port:
+#   tcp:8080:
+#     listening: true
+
+# HTTP endpoint (for web services)
+# http:
+#   http://localhost:8080/health:
+#     status: 200
+#     body:
+#       - "ok"
