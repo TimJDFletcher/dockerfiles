@@ -6,50 +6,22 @@ set -eu -o pipefail
 # === CUSTOMIZE THESE ===
 IMAGE_NAME="myorg/myimage"
 IMAGE_TAG="tmp"
+GOSS_IMAGE="timjdfletcher/goss"
 # === END CUSTOMIZE ===
-
-GOSS_VERSION="v0.4.9"
 
 log() {
   echo "==> $*"
 }
 
-_get_goss_arch() {
-  # Detect architecture for goss binary download
-  local arch
-  arch=$(uname -m)
-  case "${arch}" in
-    x86_64)  echo "amd64" ;;
-    aarch64) echo "arm64" ;;
-    arm64)   echo "arm64" ;;
-    armv7l)  echo "arm" ;;
-    armv6l)  echo "arm" ;;
-    *)       echo "amd64" ;;  # Default fallback
-  esac
-}
-
-_ensure_goss_volume() {
-  local goss_arch
-  goss_arch=$(_get_goss_arch)
-
-  # Create volume if it doesn't exist
-  if ! docker volume inspect goss-bin >/dev/null 2>&1; then
-    log "Creating goss-bin volume..."
-    docker volume create goss-bin
-
-    # Set permissions for curlimages/curl user (uid 101:102)
-    # This allows downloading without running as root
-    docker run --rm -v goss-bin:/target alpine:latest chown 101:102 /target
-  fi
-
-  # Download goss binary if not present
-  if ! docker run --rm -v goss-bin:/goss-bin:ro alpine:latest test -f /goss-bin/goss; then
-    log "Downloading goss ${GOSS_VERSION} (${goss_arch})..."
-    docker run --rm \
-      -v goss-bin:/target \
-      --entrypoint sh \
-      curlimages/curl:latest \
-      -c "curl -fsSL https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}/goss-linux-${goss_arch} -o /target/goss && chmod 755 /target/goss"
+_ensure_goss() {
+  local goss_dir="${PWD}/.goss-bin"
+  if [ ! -x "${goss_dir}/goss" ]; then
+    log "Extracting goss from ${GOSS_IMAGE}:${IMAGE_TAG}..."
+    mkdir -p "${goss_dir}"
+    docker rm goss-extract 2>/dev/null || true
+    docker create --name goss-extract "${GOSS_IMAGE}:${IMAGE_TAG}" >/dev/null
+    docker cp goss-extract:/goss "${goss_dir}/goss"
+    docker rm goss-extract >/dev/null
   fi
 }
 
@@ -60,12 +32,12 @@ build() {
 
 test() {
   build
-  _ensure_goss_volume
+  _ensure_goss
 
   log "Running goss validation tests..."
   docker run --rm \
-    -v goss-bin:/goss-bin:ro \
-    -v "$(pwd)/goss/tests:/goss:ro" \
+    -v "${PWD}/.goss-bin:/goss-bin:ro" \
+    -v "${PWD}/goss/tests:/goss:ro" \
     "${IMAGE_NAME}:${IMAGE_TAG}" \
     /goss-bin/goss --gossfile /goss/goss-dockerfile-tests.yaml validate
 
@@ -75,7 +47,7 @@ test() {
 # Alternative test function for scratch/distroless containers
 test_scratch() {
   build
-  _ensure_goss_volume
+  _ensure_goss
 
   log "Extracting binary from scratch container..."
   mkdir -p .tmp
@@ -89,9 +61,9 @@ test_scratch() {
 
   log "Running goss tests in external container..."
   docker run --rm \
-    -v goss-bin:/goss-bin:ro \
-    -v "$(pwd)/.tmp/app:/usr/local/bin/app:ro" \
-    -v "$(pwd)/goss/tests:/goss:ro" \
+    -v "${PWD}/.goss-bin:/goss-bin:ro" \
+    -v "${PWD}/.tmp/app:/usr/local/bin/app:ro" \
+    -v "${PWD}/goss/tests:/goss:ro" \
     debian:trixie-slim \
     /goss-bin/goss --gossfile /goss/goss-dockerfile-tests.yaml validate
 
@@ -102,6 +74,7 @@ clean() {
   log "Cleaning up..."
   docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" || true
   docker image rm "${IMAGE_NAME}:latest" || true
+  rm -rf .goss-bin .tmp
 }
 
 usage() {
@@ -111,7 +84,7 @@ Usage: ./run [COMMAND]
 Commands:
   build    Build the Docker image
   test     Build and run goss tests
-  clean    Remove local images
+  clean    Remove local images and extracted goss binary
 EOF
 }
 

@@ -72,13 +72,13 @@ Eight projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `che
 2. **Entrypoint tests**: Verify exec path works (e.g., `python --version`)
 3. **Network tests**: `gam checkconnection` validates connectivity to 40+ Google APIs (~25s)
 
-### Goss Distribution Patterns
+### Goss Distribution
 
-There are two patterns for distributing goss to projects:
+The `goss` project builds goss from source with patched Go dependencies to fix CVEs. All projects use this pre-built goss image.
 
-**Pattern 1: Pre-built goss image (preferred for new projects)**
+**Pattern 1: Embedded (services with healthcheck)**
 
-The `goss` project builds goss from source with patched Go dependencies to fix CVEs. Other Dockerfiles can copy the binary:
+Copy goss into the image for build-time validation and runtime healthchecks:
 
 ```dockerfile
 FROM timjdfletcher/goss:latest AS goss
@@ -88,24 +88,26 @@ COPY --from=goss /goss /goss/goss
 
 Used by: `samba-timemachine`
 
-**Pattern 2: Shared goss-bin volume (legacy)**
+**Pattern 2: External (CLI tools)**
 
-Some test suites use a shared `goss-bin` Docker volume containing a pinned goss binary downloaded from GitHub:
+Extract goss at test time and mount it:
 
 ```bash
-# Volume creation sets permissions for curlimages/curl user (uid 101):
-docker volume create goss-bin
-docker run --rm -v goss-bin:/target alpine:latest chown 101:102 /target
+_ensure_goss() {
+  local goss_dir="${PWD}/.goss-bin"
+  if [ ! -x "${goss_dir}/goss" ]; then
+    mkdir -p "${goss_dir}"
+    docker create --name goss-extract timjdfletcher/goss:tmp >/dev/null
+    docker cp goss-extract:/goss "${goss_dir}/goss"
+    docker rm goss-extract >/dev/null
+  fi
+}
 
-# Then curlimages/curl can download without root:
-docker run --rm -v goss-bin:/target --entrypoint sh curlimages/curl:latest -c \
-  'curl -fsSL <url> -o /target/goss && chmod 755 /target/goss'
-
-# For containers with a shell (checkov, ssh-audit, offlineimap, postfix, tcpdump, gam):
-docker run --rm -v goss-bin:/goss-bin:ro ... /goss-bin/goss validate
+# Mount when testing:
+docker run --rm -v "${PWD}/.goss-bin:/goss-bin:ro" ... /goss-bin/goss validate
 ```
 
-**Security note:** We avoid running as root when downloading from the internet.
+Used by: `gam`, `checkov`, `ssh-audit`, `tcpdump`, `postfix`, `offlineimap`
 
 **Scratch images (yajsv):** Don't use goss. Test the container directly by running it with different inputs and checking outputs/exit codes.
 

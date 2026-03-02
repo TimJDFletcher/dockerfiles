@@ -1,23 +1,20 @@
 #!/bin/sh
-set -eu
+# DEPRECATED: Use the pre-built goss image instead
+#
+# In your Dockerfile:
+#   FROM timjdfletcher/goss:latest AS goss
+#   FROM debian:trixie-slim
+#   COPY --from=goss /goss /goss/goss
+#
+# This approach avoids downloading at build time and ensures
+# all Go dependencies are patched for CVEs.
 
-GOSS_VER="${GOSS_VER:-v0.4.9}"
-GOSS_DST="${GOSS_DST:-/goss}"
-
-ARCH=$(uname -m)
-case "${ARCH}" in
-  x86_64)  GOSS_ARCH="amd64" ;;
-  aarch64) GOSS_ARCH="arm64" ;;
-  armv7l)  GOSS_ARCH="arm" ;;
-  armv6l)  GOSS_ARCH="arm" ;;
-  *)       GOSS_ARCH="amd64" ;;
-esac
-
-echo "Installing goss ${GOSS_VER} (${GOSS_ARCH}) to ${GOSS_DST}..."
-
-curl -fsSL "https://github.com/goss-org/goss/releases/download/${GOSS_VER}/goss-linux-${GOSS_ARCH}" \
-  -o "${GOSS_DST}/goss"
-
-chmod 755 "${GOSS_DST}/goss"
-
-echo "goss installed successfully"
+echo "ERROR: This script is deprecated."
+echo ""
+echo "Use the pre-built goss image instead:"
+echo ""
+echo "  FROM timjdfletcher/goss:latest AS goss"
+echo "  FROM debian:trixie-slim"
+echo "  COPY --from=goss /goss /goss/goss"
+echo ""
+exit 1

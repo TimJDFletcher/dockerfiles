@@ -3,9 +3,9 @@ set -eu -o pipefail
 
 CONTAINER_NAME=gam
 IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
+GOSS_IMAGE="timjdfletcher/goss"
 IMAGE_TAG=tmp
 PLATFORMS="linux/amd64,linux/arm64"
-GOSS_VERSION="v0.4.9"
 
 log() {
   echo "==> $*"
@@ -16,22 +16,15 @@ _buildx_setup() {
   docker buildx inspect --bootstrap
 }
 
-_ensure_goss_volume() {
-  if ! docker volume inspect goss-bin >/dev/null 2>&1; then
-    log "Creating goss-bin volume..."
-    docker volume create goss-bin
-
-    log "Setting volume permissions for curl user (101:102)..."
-    docker run --rm -v goss-bin:/target alpine:latest chown 101:102 /target
-  fi
-
-  if ! docker run --rm -v goss-bin:/goss-bin:ro alpine:latest test -f /goss-bin/goss; then
-    log "Downloading goss ${GOSS_VERSION}..."
-    docker run --rm \
-      -v goss-bin:/target \
-      --entrypoint sh \
-      curlimages/curl:latest \
-      -c "curl -fsSL https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}/goss-linux-amd64 -o /target/goss && chmod 755 /target/goss"
+_ensure_goss() {
+  local goss_dir="${PWD}/.goss-bin"
+  if [ ! -x "${goss_dir}/goss" ]; then
+    log "Extracting goss from ${GOSS_IMAGE}:${IMAGE_TAG}..."
+    mkdir -p "${goss_dir}"
+    docker rm goss-extract 2>/dev/null || true
+    docker create --name goss-extract "${GOSS_IMAGE}:${IMAGE_TAG}" >/dev/null
+    docker cp goss-extract:/goss "${goss_dir}/goss"
+    docker rm goss-extract >/dev/null
   fi
 }
 
@@ -50,7 +43,7 @@ clean() {
 
 test() {
   build
-  _ensure_goss_volume
+  _ensure_goss
 
   log "Running direct artifact tests..."
   docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" version 2>/dev/null | grep -q "GAM 7.34" || {
@@ -61,8 +54,8 @@ test() {
 
   log "Running goss validation tests..."
   docker run --rm \
-    -v goss-bin:/goss-bin:ro \
-    -v "$(pwd)/goss/tests:/goss:ro" \
+    -v "${PWD}/.goss-bin:/goss-bin:ro" \
+    -v "${PWD}/goss/tests:/goss:ro" \
     "${IMAGE_NAME}:${IMAGE_TAG}" \
     /goss-bin/goss --gossfile /goss/goss-dockerfile-tests.yaml validate
 

@@ -44,11 +44,7 @@ services:
       weak-sshd:
         condition: service_healthy
     volumes:
-      - goss-bin:/goss-bin:ro
+      - ./.goss-bin:/goss-bin:ro
       - ./goss/tests:/goss/tests:ro
     entrypoint: ["/bin/sh", "-c"]
     command: ["sleep infinity"]
-
-volumes:
-  goss-bin:
-    external: true
