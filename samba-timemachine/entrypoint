@@ -94,7 +94,7 @@ createUser() {
 
     log "Creating smbclient credentials file..."
     mkdir -p /run/samba
-    printf "username = %s\npassword = %s\n" "${USER}" "${PASS}" > /run/samba/credentials
+    envsubst < /templates/smbclient-credentials.tmpl > /run/samba/credentials
     chmod 600 /run/samba/credentials
 }
 
