@@ -2,6 +2,7 @@
 set -eu -o pipefail
 
 IMAGE_NAME="timjdfletcher/samba-timemachine"
+GOSS_IMAGE="timjdfletcher/goss"
 # Default to 'tmp' if not running a release
 IMAGE_TAG="${IMAGE_TAG:-tmp}"
 PLATFORMS="linux/amd64,linux/arm64"
@@ -41,7 +42,11 @@ wait_for_health() {
 
 build() {
   log "Building local image: ${IMAGE_NAME}:${IMAGE_TAG}"
-  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --file Dockerfile .
+  # Use docker build (not buildx) for local builds so it can access local goss image
+  docker build \
+    --build-arg GOSS_IMAGE="${GOSS_IMAGE}:${IMAGE_TAG}" \
+    --tag "${IMAGE_NAME}:${IMAGE_TAG}" \
+    --file Dockerfile .
   docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
 }
 
@@ -133,7 +138,6 @@ _trivy() {
   trivy image \
       --severity HIGH,CRITICAL \
       --ignore-unfixed \
-      --skip-files goss/goss \
       --exit-code 1 \
       "${IMAGE_NAME}:${IMAGE_TAG}"
 }
@@ -144,7 +148,10 @@ copyToTestHost() {
   local TEST_ARCH="amd64"
   log "Building for ${TEST_ARCH} and copying to ${TESTHOST}..."
   
-  docker buildx build --platform "linux/${TEST_ARCH}" --tag "${IMAGE_NAME}:${TEST_ARCH}" --load --file Dockerfile .
+  docker build \
+    --build-arg GOSS_IMAGE="${GOSS_IMAGE}:${IMAGE_TAG}" \
+    --tag "${IMAGE_NAME}:${TEST_ARCH}" \
+    --file Dockerfile .
   
   local size
   size=$(docker image inspect "${IMAGE_NAME}:${TEST_ARCH}" | jq -r '.[0].Size')
@@ -192,8 +199,10 @@ release() {
   
   log "Building and Pushing Multi-arch Image..."
   # Optimization: Build once, tag twice (version + latest), push immediately
+  # Uses pushed goss:latest image for multi-arch builds
   docker buildx build \
     --platform "${PLATFORMS}" \
+    --build-arg GOSS_IMAGE="${GOSS_IMAGE}:latest" \
     --tag "${IMAGE_NAME}:${CURRENT_TAG}" \
     --tag "${IMAGE_NAME}:latest" \
     --push \

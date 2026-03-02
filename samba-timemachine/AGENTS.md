@@ -7,8 +7,18 @@ Docker container running Samba configured to emulate an Apple Time Capsule for m
 * **Base Image:** `debian:trixie-slim`
 * **Core Service:** `samba` (from `trixie-backports`)
 * **Templating:** `envsubst` (from `gettext-base`) generates config files from templates
-* **Testing:** `goss` for build-time validation, runtime health checks, and live integration tests
+* **Testing:** `goss` (built from source via `../goss` project) for build-time validation, runtime health checks, and live integration tests
 * **Orchestration:** `./run` shell script and Docker Compose
+
+## Prerequisites
+
+Build the `goss` project first:
+
+```bash
+cd ../goss && ./run build
+```
+
+The samba-timemachine Dockerfile uses `COPY --from=timjdfletcher/goss:tmp` to get the goss binary.
 
 ## Environment Variables
 
@@ -65,9 +75,9 @@ Three test suites, each validating a different phase:
 
 **Entrypoint ordering: `configureSAMBA` before `createUser`.** `smbpasswd` reads `smb.conf` to locate the passdb backend. If `smb.conf` doesn't exist yet, `smbpasswd` fails with a cryptic error.
 
-**`COPY goss/` busts the apt layer cache.** It appears before `RUN apt-get install` in the Dockerfile. Any change to goss test files invalidates the package install cache. This is a trade-off: the goss-installer script must run during that `RUN` step.
+**Goss is built from source.** The `goss` project builds goss with patched Go dependencies to fix CVEs. The samba-timemachine Dockerfile uses `COPY --from=timjdfletcher/goss:tmp` to get the binary. Build the goss project first before building samba-timemachine.
 
-**`backup-check.sh` is for the host, not the container.** It requires `curl` (purged from the image at build time). The entrypoint copies it into `${BACKUPDIR}/` so it can be run from the host or a host cron job.
+**`backup-check.sh` is for the host, not the container.** It requires `curl` (not installed in the image). The entrypoint copies it into `${BACKUPDIR}/` so it can be run from the host or a host cron job.
 
 **`systemd-unit.service`** is a production deployment example for running via systemd.
 
@@ -75,15 +85,16 @@ Three test suites, each validating a different phase:
 
 ## Updating Dependencies
 
-Three pinned versions in the Dockerfile `ARG` block need periodic checking:
+Two pinned versions in the Dockerfile `ARG` block need periodic checking:
 
 | Dependency | ARG | Where to check latest |
 |---|---|---|
 | Debian base image | `DEBIAN_VERSION` | Docker Hub tags matching `trixie-*-slim` — use the API: `https://hub.docker.com/v2/repositories/library/debian/tags?name=trixie&page_size=20&ordering=last_updated` |
 | Samba | `SAMBA_VERSION` | `https://packages.debian.org/trixie-backports/samba` — the version string is the Debian package version (e.g. `2:4.23.5+dfsg-1~bpo13+1`) |
-| Goss | `GOSS_VER` | `https://github.com/goss-org/goss/releases/latest` |
 
 The Samba version must match what's available in `trixie-backports`. If the version is bumped and the old version is removed from the repo, the build will fail. The `smbclient` package is pinned to the same version as `samba` — always update both together.
+
+**Goss updates:** See the `../goss/AGENTS.md` for updating goss. Goss is built from source with patched dependencies in a separate project.
 
 After updating, run `./run test` to validate the build and all integration tests still pass.
 

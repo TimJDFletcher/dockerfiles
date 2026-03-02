@@ -1,0 +1,110 @@
+#!/bin/bash
+set -eu -o pipefail
+
+CONTAINER_NAME=goss
+IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
+IMAGE_TAG=tmp
+PLATFORMS="linux/amd64,linux/arm64"
+GOSS_VERSION="v0.4.9"
+
+log() {
+  echo "==> $*"
+}
+
+_buildx_setup() {
+  docker buildx use builder 2>/dev/null || docker buildx create --name builder --use
+  docker buildx inspect --bootstrap
+}
+
+build() {
+  log "Building ${IMAGE_NAME}:${IMAGE_TAG}"
+  _buildx_setup
+  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" \
+    --build-arg GOSS_VERSION="${GOSS_VERSION}" .
+  docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
+}
+
+test() {
+  build
+
+  log "Testing goss binary..."
+  
+  log "Test: goss version"
+  local actual_version
+  actual_version=$(docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" --version 2>&1)
+  echo "  Version: ${actual_version}"
+  if echo "${actual_version}" | grep -q "${GOSS_VERSION}"; then
+    echo "  PASS"
+  else
+    echo "  FAIL: expected ${GOSS_VERSION} in version output"
+    exit 1
+  fi
+
+  log "Test: goss help"
+  local help_output
+  help_output=$(docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" --help 2>&1 || true)
+  if echo "${help_output}" | grep -q "validate"; then
+    echo "  PASS"
+  else
+    echo "  FAIL: help output missing expected content"
+    echo "  Output: ${help_output}"
+    exit 1
+  fi
+
+  log "Running trivy scan..."
+  trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 "${IMAGE_NAME}:${IMAGE_TAG}"
+
+  log "All tests passed!"
+}
+
+clean() {
+  log "Cleaning up..."
+  docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest" 2>/dev/null || true
+  docker buildx prune --force --filter "until=24h"
+}
+
+release() {
+  test
+
+  if ! CURRENT_TAG=$(git describe --tags --exact-match 2>/dev/null); then
+    log "Error: Current commit is not tagged."
+    exit 1
+  fi
+
+  log "Releasing ${CURRENT_TAG}"
+  _buildx_setup
+  docker buildx build \
+    --platform "${PLATFORMS}" \
+    --build-arg GOSS_VERSION="${GOSS_VERSION}" \
+    --tag "${IMAGE_NAME}:${CURRENT_TAG}" \
+    --tag "${IMAGE_NAME}:latest" \
+    --push .
+
+  log "Release complete."
+}
+
+usage() {
+  cat <<EOF
+Usage: ./run [COMMAND]
+
+Commands:
+  build    Build local image (${IMAGE_NAME}:${IMAGE_TAG})
+  test     Build, test, and run trivy scan
+  clean    Remove images and prune builder
+  release  Test, build multi-arch, and push to Docker Hub
+
+This image is designed to be used as a source for other Dockerfiles:
+  COPY --from=timjdfletcher/goss:latest /goss /path/to/goss
+EOF
+}
+
+CMD=${1:-}
+shift || true
+
+case ${CMD} in
+  build)   build ;;
+  test)    test ;;
+  clean)   clean ;;
+  release) release ;;
+  *)       usage ;;
+esac

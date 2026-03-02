@@ -1,9 +1,15 @@
+# Pre-built goss image with patched Go dependencies
+# Build first: cd ../goss && ./run build
+ARG GOSS_IMAGE="timjdfletcher/goss:latest"
 ARG DEBIAN_VERSION="trixie-20260223-slim"
+
+FROM ${GOSS_IMAGE} AS goss
+
 FROM debian:${DEBIAN_VERSION}
 
 # Arguments
 ARG SAMBA_VERSION="2:4.23.5+dfsg-1~bpo13+1"
-ARG GOSS_VER="v0.4.9"
+ARG GOSS_VER="v0.4.9-patched"
 ARG GOSS_DST="/goss"
 ARG BACKUPDIR="/backups"
 ARG DOCS="docs/Container.md"
@@ -15,30 +21,26 @@ ENV USER="timemachine" \
     PGID="999" \
     LOG_LEVEL="1" \
     FORCE_PERMISSIONS_RESET="false" \
-    BACKUPDIR=${BACKUPDIR}
+    BACKUPDIR=${BACKUPDIR} \
+    GOSS_VER=${GOSS_VER} \
+    GOSS_DST=${GOSS_DST}
 
 # Setup Volume
 VOLUME ${BACKUPDIR}
 
+# Copy goss binary from pre-built image (no curl needed!)
+COPY --from=goss /goss ${GOSS_DST}/goss
+
 # Install Dependencies & Samba
-# Copy only goss-installer first to avoid busting apt cache when tests change
-COPY goss/goss-installer ${GOSS_DST}/goss-installer
 RUN echo 'deb http://deb.debian.org/debian trixie-backports main' > /etc/apt/sources.list.d/backports.list && \
     apt-get update && \
-    # Install runtime dependencies and Samba
     apt-get --no-install-recommends --yes install \
-        curl \
-        ca-certificates \
         gettext-base \
     && \
     apt-get --no-install-recommends --yes install -t trixie-backports \
         samba="${SAMBA_VERSION}" \
         smbclient="${SAMBA_VERSION}" \
     && \
-    # Install Goss (requires curl/ca-certificates)
-    sh ${GOSS_DST}/goss-installer && \
-    # Cleanup
-    apt-get purge --yes curl ca-certificates && \
     apt-get autoremove --yes && \
     rm -rf /var/lib/apt/lists/* /etc/samba/smb.conf
 

@@ -10,7 +10,8 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 
 | Project | Purpose | Status | Notes |
 |---------|---------|--------|-------|
-| `samba-timemachine` | macOS Time Machine backup server via Samba | Active | Most mature; has goss tests, AGENTS.md |
+| `goss` | Goss binary built from source | Active | Scratch image; patches CVEs in Go deps; used by other projects |
+| `samba-timemachine` | macOS Time Machine backup server via Samba | Active | Most mature; has goss tests, AGENTS.md; depends on `goss` |
 | `gam` | Google Workspace CLI (GAM) container | Active | Pinned versions; has goss tests |
 | `checkov` | Bridgecrew Checkov security scanner | Active | Pinned versions; has goss tests |
 | `toolbox` | Generic Debian toolbox container | Maintained | Debian trixie; build-arg driven tools |
@@ -71,9 +72,25 @@ Eight projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `che
 2. **Entrypoint tests**: Verify exec path works (e.g., `python --version`)
 3. **Network tests**: `gam checkconnection` validates connectivity to 40+ Google APIs (~25s)
 
-### Shared goss-bin Volume
+### Goss Distribution Patterns
 
-Most test suites use a shared `goss-bin` Docker volume containing a pinned goss binary downloaded from GitHub. This removes dependencies on pre-built images and ensures version consistency.
+There are two patterns for distributing goss to projects:
+
+**Pattern 1: Pre-built goss image (preferred for new projects)**
+
+The `goss` project builds goss from source with patched Go dependencies to fix CVEs. Other Dockerfiles can copy the binary:
+
+```dockerfile
+FROM timjdfletcher/goss:latest AS goss
+FROM debian:trixie-slim
+COPY --from=goss /goss /goss/goss
+```
+
+Used by: `samba-timemachine`
+
+**Pattern 2: Shared goss-bin volume (legacy)**
+
+Some test suites use a shared `goss-bin` Docker volume containing a pinned goss binary downloaded from GitHub:
 
 ```bash
 # Volume creation sets permissions for curlimages/curl user (uid 101):
@@ -88,13 +105,9 @@ docker run --rm -v goss-bin:/target --entrypoint sh curlimages/curl:latest -c \
 docker run --rm -v goss-bin:/goss-bin:ro ... /goss-bin/goss validate
 ```
 
-The volume persists across test runs. Each project pins `GOSS_VERSION` (currently `v0.4.9`).
+**Security note:** We avoid running as root when downloading from the internet.
 
-**Security note:** We avoid running as root when downloading from the internet. The volume permissions are set once (using alpine as root) so that subsequent curl downloads run as non-root user (uid 101).
-
-**Scratch images (yajsv):** Don't use goss. Test the container directly by running it with different inputs and checking outputs/exit codes. This is simpler and validates actual container behavior.
-
-When adding tests to other projects, follow these patterns.
+**Scratch images (yajsv):** Don't use goss. Test the container directly by running it with different inputs and checking outputs/exit codes.
 
 ## Security Scanning
 
