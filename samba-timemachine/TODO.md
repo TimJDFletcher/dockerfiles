@@ -9,18 +9,21 @@
 - [ ] **Password visible via `docker inspect`** — The `PASS` environment variable is readable by anyone with access to `docker inspect`. Support reading the password from a file (e.g. `/run/secrets/samba_password`) as a Docker secrets alternative.
 - [ ] **Password exposed in healthcheck commands** — The goss healthcheck runs `smbclient -U user%password` which is visible in `/proc/*/cmdline` and `docker inspect`. Use an `smbclient` credentials file (`-A /tmp/.smbcredentials`) instead.
 - [ ] **Default password baked into image layers** — `ENV PASS="password"` in the Dockerfile embeds a trivially guessable default into every layer. Consider removing the default to force users to set one, or generating a random default at container start.
-- [ ] **No checksum verification for goss binary** — `goss/goss-installer` downloads the goss binary over HTTPS but does not verify a SHA256 checksum. Adding verification would guard against supply-chain attacks.
 - [ ] **No capability dropping in compose files** — The container runs with full default Linux capabilities. Add `cap_drop: [ALL]` and add back only what Samba needs.
 
 ## Speed
 
-- [ ] **`.dockerignore` is empty** — The entire build context (including `AGENTS.md`, `README.md`, `run`, `docker-compose*.yml`, `.git/`, `docs/`) is sent to the Docker daemon on every build. Populate `.dockerignore` to exclude unnecessary files.
-- [x] **Goss copy invalidates apt layer cache** — ~~`COPY goss/ /goss` happens before `RUN apt-get install`, so any change to a goss test file busts the entire package install cache.~~ Fixed: copy `goss-installer` first, then `goss/tests/` after apt install.
+- [ ] **`.dockerignore` is empty** — The entire build context (including `AGENTS.md`, `TODO.md`, `run`, `docker-compose*.yml`, `.git/`) is sent to the Docker daemon on every build. Populate `.dockerignore` to exclude unnecessary files.
 
 ## Ease of Use
 
 - [ ] **External volume requires manual pre-creation** — `docker-compose.yml` declares the backups volume as `external: true`, meaning users must run `docker volume create samba-timemachine_backups` before `docker compose up`. Remove `external: true` for the dev compose file or document the requirement prominently.
-- [x] **Duplicate `[Install]` section in `systemd-unit.service`** — ~~The file has two identical `[Install]` blocks.~~ Fixed and improved: added RestartSec, TimeoutStartSec, non-fatal pull, journal logging, cleanup on stop.
-- [x] **Stale `QUOTA` env var in `docker-compose-autoheal.yml`** — ~~References a `QUOTA` variable that no longer exists in the codebase.~~ File removed.
-- [x] **Inconsistency between compose files** — ~~`docker-compose.yml` uses env var substitution with defaults; `docker-compose-autoheal.yml` hardcodes values and uses a non-external volume.~~ Removed `docker-compose-autoheal.yml`.
-- [ ] **`backup-check.sh` depends on `curl` but `curl` is purged from the image** — The script is copied into the backup volume but will fail if run inside the container since `curl` is removed during build.
+- [ ] **`backup-check.sh` depends on `curl` but `curl` is purged from the image** — The script is copied into the backup volume but will fail if run inside the container since `curl` is removed during build. Document that this script is meant to be run from the host.
+
+## Completed
+
+- [x] **No checksum verification for goss binary** — Fixed: goss is now built from source via the `../goss` project with patched Go dependencies.
+- [x] **Goss copy invalidates apt layer cache** — Fixed: goss binary is copied from pre-built image, tests are copied after apt install.
+- [x] **Duplicate `[Install]` section in `systemd-unit.service`** — Fixed and improved: added RestartSec, TimeoutStartSec, non-fatal pull, journal logging, cleanup on stop.
+- [x] **Stale `QUOTA` env var in `docker-compose-autoheal.yml`** — Fixed: file removed.
+- [x] **Inconsistency between compose files** — Fixed: removed `docker-compose-autoheal.yml`.
