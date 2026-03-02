@@ -9,11 +9,21 @@ IMAGE_TAG="tmp"
 GOSS_IMAGE="timjdfletcher/goss"
 # === END CUSTOMIZE ===
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 log() {
   echo "==> $*"
 }
 
+_ensure_goss_image() {
+  if ! docker image inspect "${GOSS_IMAGE}:${IMAGE_TAG}" >/dev/null 2>&1; then
+    log "Goss image not found, building..."
+    (cd "${SCRIPT_DIR}/../goss" && ./run build)
+  fi
+}
+
 _ensure_goss() {
+  _ensure_goss_image
   local goss_dir="${PWD}/.goss-bin"
   if [ ! -x "${goss_dir}/goss" ]; then
     log "Extracting goss from ${GOSS_IMAGE}:${IMAGE_TAG}..."

@@ -9,11 +9,19 @@ PLATFORMS="linux/amd64,linux/arm64"
 TESTHOST="carbon"
 GOSS_DST="/goss"
 CONTAINER_NAME="samba-timemachine"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # --- Helper Functions ---
 
 log() {
   echo "[$(date +'%H:%M:%S')] $1"
+}
+
+_ensure_goss_image() {
+  if ! docker image inspect "${GOSS_IMAGE}:${IMAGE_TAG}" >/dev/null 2>&1; then
+    log "Goss image not found, building..."
+    (cd "${SCRIPT_DIR}/../goss" && ./run build)
+  fi
 }
 
 # Determine date command for macOS (BSD) vs Linux (GNU) compatibility
@@ -41,6 +49,7 @@ wait_for_health() {
 # --- Core Tasks ---
 
 build() {
+  _ensure_goss_image
   log "Building local image: ${IMAGE_NAME}:${IMAGE_TAG}"
   # Use docker build (not buildx) for local builds so it can access local goss image
   docker build \
