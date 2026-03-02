@@ -70,6 +70,31 @@ clean() {
   container image rm "${IMAGE_NAME}:latest" 2>/dev/null || true
 }
 
+to-docker() {
+  log "Exporting ${IMAGE_NAME}:${IMAGE_TAG} to Docker..."
+  
+  if ! container image inspect "${IMAGE_NAME}:${IMAGE_TAG}" >/dev/null 2>&1; then
+    log "Image not found, building first..."
+    build
+  fi
+  
+  local tmpfile
+  tmpfile=$(mktemp -t spf-flattener.XXXXXX.tar)
+  
+  log "Saving image to OCI archive..."
+  container image save "${IMAGE_NAME}:${IMAGE_TAG}" -o "${tmpfile}"
+  
+  log "Loading into Docker..."
+  docker load -i "${tmpfile}"
+  
+  rm -f "${tmpfile}"
+  
+  log "Done. Image available in Docker as ${IMAGE_NAME}:${IMAGE_TAG}"
+  log ""
+  log "Note: DNS-based SPF lookups will NOT work in Docker/colima."
+  log "      Use Apple container CLI for actual SPF flattening."
+}
+
 release() {
   test
 
@@ -106,10 +131,11 @@ usage() {
 Usage: ./run [COMMAND]
 
 Commands:
-  build    Build local image (${IMAGE_NAME}:${IMAGE_TAG})
-  test     Build and run validation tests (including DNS tests)
-  clean    Remove images
-  release  Test, build multi-arch (push manually)
+  build      Build local image (${IMAGE_NAME}:${IMAGE_TAG})
+  test       Build and run validation tests (including DNS tests)
+  clean      Remove images
+  release    Test, build multi-arch (push manually)
+  to-docker  Export image to Docker/colima registry
 
 Note: Uses Apple's native container CLI for proper DNS resolution.
 EOF
@@ -119,9 +145,10 @@ CMD=${1:-}
 shift || true
 
 case ${CMD} in
-  build)   build ;;
-  test)    test ;;
-  clean)   clean ;;
-  release) release ;;
-  *)       usage ;;
+  build)     build ;;
+  test)      test ;;
+  clean)     clean ;;
+  release)   release ;;
+  to-docker) to-docker ;;
+  *)         usage ;;
 esac
