@@ -1,0 +1,122 @@
+#!/bin/bash
+set -eu -o pipefail
+
+CONTAINER_NAME=spf-flattener
+IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
+IMAGE_TAG=tmp
+PLATFORMS="linux/amd64,linux/arm64"
+SPF_FLATTENER_VERSION="main"
+
+log() {
+  echo "==> $*"
+}
+
+_buildx_setup() {
+  docker buildx use builder 2>/dev/null || docker buildx create --name builder --use
+  docker buildx inspect --bootstrap
+}
+
+build() {
+  log "Building ${IMAGE_NAME}:${IMAGE_TAG}"
+  _buildx_setup
+  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" .
+  docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
+}
+
+test() {
+  build
+
+  log "Testing container image..."
+
+  # Test help output
+  log "Test: help flag works"
+  local help_output
+  help_output=$(docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" --help 2>&1 || true)
+  if echo "${help_output}" | grep -q "domain"; then
+    echo "  PASS"
+  else
+    echo "  FAIL: help output missing expected content"
+    echo "  Output: ${help_output}"
+    exit 1
+  fi
+
+  # Test all expected flags are present
+  log "Test: all flags documented"
+  for flag in domain initialSPF dryrun warn url authEmail authKey; do
+    if echo "${help_output}" | grep -q "${flag}"; then
+      echo "  PASS: --${flag}"
+    else
+      echo "  FAIL: missing --${flag} flag"
+      exit 1
+    fi
+  done
+
+  log "All tests passed!"
+  log ""
+  log "Note: DNS-based tests require working TXT record lookups."
+  log "To test manually: docker run --rm ${IMAGE_NAME}:${IMAGE_TAG} --domain example.com"
+}
+
+clean() {
+  log "Cleaning up..."
+  docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest" 2>/dev/null || true
+  docker buildx prune --force --filter "until=24h"
+}
+
+trivy() {
+  build
+  log "Running Trivy security scan..."
+  docker run --rm \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    aquasec/trivy:latest image \
+    --severity HIGH,CRITICAL \
+    --ignore-unfixed \
+    --exit-code 1 \
+    "${IMAGE_NAME}:${IMAGE_TAG}"
+}
+
+release() {
+  test
+  trivy
+
+  if ! CURRENT_TAG=$(git describe --tags --exact-match 2>/dev/null); then
+    log "Error: Current commit is not tagged."
+    log "Tag with: git tag ${CONTAINER_NAME}-v<VERSION>"
+    exit 1
+  fi
+
+  log "Releasing ${CURRENT_TAG}"
+  _buildx_setup
+  docker buildx build \
+    --platform "${PLATFORMS}" \
+    --tag "${IMAGE_NAME}:${CURRENT_TAG#${CONTAINER_NAME}-}" \
+    --tag "${IMAGE_NAME}:latest" \
+    --push .
+
+  log "Release complete: ${IMAGE_NAME}:${CURRENT_TAG#${CONTAINER_NAME}-}"
+}
+
+usage() {
+  cat <<EOF
+Usage: ./run [COMMAND]
+
+Commands:
+  build    Build local image (${IMAGE_NAME}:${IMAGE_TAG})
+  test     Build and run validation tests
+  trivy    Build and run Trivy security scan
+  clean    Remove images and prune builder
+  release  Test, scan, build multi-arch, and push to Docker Hub
+EOF
+}
+
+CMD=${1:-}
+shift || true
+
+case ${CMD} in
+  build)   build ;;
+  test)    test ;;
+  trivy)   trivy ;;
+  clean)   clean ;;
+  release) release ;;
+  *)       usage ;;
+esac
