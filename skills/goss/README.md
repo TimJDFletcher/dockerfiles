@@ -8,7 +8,16 @@ This skill provides a consistent approach to testing Docker containers:
 - **Pre-built goss image** with patched Go dependencies (no CVEs)
 - **Works with any container** including minimal/scratch images
 - **Fast iteration** with cached binary extraction
-- **Two patterns**: embedded (in image) or external (mounted at test time)
+- **Multiple patterns**: embedded, external mount, or GitHub download
+
+### Pattern Summary
+
+| Pattern | Use Case | Goss Source |
+|---------|----------|-------------|
+| 1. Embedded | Services with healthcheck | `COPY --from=goss` in Dockerfile |
+| 2. External | CLI tools in this monorepo | Extract from `timjdfletcher/goss` image |
+| 3. Compose | Integration tests | Mount `.goss-bin/` in compose |
+| 4. GitHub | Standalone/external projects | Download from GitHub releases |
 
 ## Architecture
 
@@ -212,6 +221,115 @@ test() {
   log "All tests passed!"
 }
 ```
+
+## Pattern 4: Download from GitHub Releases (Standalone)
+
+For projects outside this monorepo or when the `timjdfletcher/goss` image is unavailable, download goss directly from GitHub releases.
+
+### Shared Volume Pattern
+
+Uses a Docker volume to cache the goss binary across test runs:
+
+```bash
+GOSS_VERSION="v0.4.9"
+
+_get_goss_arch() {
+  local arch
+  arch=$(uname -m)
+  case "${arch}" in
+    x86_64)  echo "amd64" ;;
+    aarch64) echo "arm64" ;;
+    arm64)   echo "arm64" ;;
+    armv7l)  echo "arm" ;;
+    armv6l)  echo "arm" ;;
+    *)       echo "amd64" ;;
+  esac
+}
+
+_ensure_goss_volume() {
+  local goss_arch
+  goss_arch=$(_get_goss_arch)
+
+  # Create volume if missing
+  if ! docker volume inspect goss-bin >/dev/null 2>&1; then
+    log "Creating goss-bin volume..."
+    docker volume create goss-bin
+
+    # Set permissions for curlimages/curl user (uid 101:102)
+    # This allows downloading without running as root
+    docker run --rm -v goss-bin:/target alpine:latest chown 101:102 /target
+  fi
+
+  # Download goss if missing or wrong version
+  log "Ensuring goss ${GOSS_VERSION} in volume..."
+  docker run --rm \
+    -v goss-bin:/target \
+    --entrypoint sh \
+    curlimages/curl:latest -c "
+      if [ -f /target/goss ] && /target/goss --version 2>&1 | grep -q '${GOSS_VERSION}'; then
+        echo 'goss ${GOSS_VERSION} already installed'
+      else
+        curl -fsSL \"https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}/goss-linux-${goss_arch}\" \
+          -o /target/goss
+        chmod 755 /target/goss
+        echo 'goss ${GOSS_VERSION} installed'
+      fi
+    "
+}
+```
+
+### Test Function
+
+```bash
+test() {
+  build
+  _ensure_goss_volume
+
+  log "Running goss tests..."
+  docker run --rm \
+    -v goss-bin:/goss-bin:ro \
+    -v "${PWD}/goss/tests:/goss:ro" \
+    "${IMAGE_NAME}:${IMAGE_TAG}" \
+    /goss-bin/goss --gossfile /goss/goss-dockerfile-tests.yaml validate
+
+  log "All tests passed!"
+}
+```
+
+### Docker Compose with External Volume
+
+```yaml
+services:
+  myservice:
+    image: myimage:tmp
+    volumes:
+      - goss-bin:/goss-bin:ro
+      - ./goss/tests:/goss/tests:ro
+
+volumes:
+  goss-bin:
+    external: true
+```
+
+### Security Note
+
+This pattern downloads from the internet during test runs. To avoid running curl as root:
+1. Volume permissions are set once using `alpine` as root
+2. Subsequent downloads use `curlimages/curl` which runs as non-root (uid 101)
+
+### When to Use This Pattern
+
+- Projects outside this monorepo
+- CI systems without access to `timjdfletcher/goss` image
+- Quick prototyping without building custom goss image
+
+### Limitations
+
+- Pre-built goss releases may contain vulnerable Go dependencies
+- Network dependency during test runs
+- Slower first run (download ~15MB binary)
+
+For production use in this monorepo, prefer Patterns 1-3 which use the CVE-patched `timjdfletcher/goss` image.
 
 ## Test File Organization
 

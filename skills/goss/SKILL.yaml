@@ -1,6 +1,6 @@
 name: goss-container-testing
-version: "1.1.0"
-description: Test Docker containers using goss - shared volume or embedded patterns
+version: "2.0.0"
+description: Test Docker containers using goss - multiple patterns for different use cases
 
 keywords:
   - docker
@@ -26,45 +26,59 @@ capabilities:
   - Multi-architecture support (amd64, arm64, arm)
 
 patterns:
-  volume:
-    description: Shared goss-bin volume, no goss in image
-    use_when:
-      - CLI tools and utilities
-      - Images where goss shouldn't be embedded
-      - Scratch/distroless images
-    
   embedded:
-    description: Goss installed in image for healthchecks
+    description: Copy goss from pre-built image into Dockerfile
     use_when:
       - Long-running services
       - Need Docker HEALTHCHECK
       - Production monitoring required
+    template: See README.md Pattern 1
+    
+  external:
+    description: Extract goss from image at test time (monorepo)
+    use_when:
+      - CLI tools and utilities in this monorepo
+      - Images where goss shouldn't be embedded
+    template: templates/run.sh
+    
+  github:
+    description: Download goss from GitHub releases (standalone)
+    use_when:
+      - Projects outside this monorepo
+      - CI without access to timjdfletcher/goss image
+      - Quick prototyping
+    template: templates/run-github.sh
 
 requirements:
   - docker
   - bash
-  - curl (via curlimages/curl container or in-image)
 
 files:
   - README.md                                # Full documentation
-  - templates/run.sh                         # Volume pattern ./run template
+  - templates/run.sh                         # External pattern (uses goss image)
+  - templates/run-github.sh                  # GitHub download pattern (standalone)
   - templates/goss-dockerfile-tests.yaml     # Build-time validation template
-  - templates/goss-installer                 # Embedded pattern installer script
+  - templates/goss-installer                 # Deprecated - use COPY --from pattern
   - templates/goss-healthcheck.yaml          # Healthcheck test template
   - templates/goss-live.yaml                 # Live integration test template
 
 usage: |
-  Volume Pattern (CLI tools):
-    1. Copy templates/run.sh to your project as ./run
+  External Pattern (CLI tools in monorepo):
+    1. Build goss image first: cd ../goss && ./run build
+    2. Copy templates/run.sh to your project as ./run
+    3. Create goss/tests/goss-dockerfile-tests.yaml
+    4. Run ./run test
+
+  GitHub Pattern (Standalone projects):
+    1. Copy templates/run-github.sh to your project as ./run
     2. Create goss/tests/goss-dockerfile-tests.yaml
     3. Run ./run test
 
   Embedded Pattern (Services):
-    1. Copy templates/goss-installer to goss/goss-installer
-    2. Add COPY/RUN/HEALTHCHECK to Dockerfile (see README.md Pattern 4)
-    3. Create goss/tests/goss-dockerfile-tests.yaml (build-time)
-    4. Create goss/tests/goss-healthcheck-tests.yaml (HEALTHCHECK)
-    5. Create goss/tests/goss-live-tests.yaml (integration)
-    6. Add test() function to ./run script
+    1. Add FROM timjdfletcher/goss:latest AS goss to Dockerfile
+    2. Add COPY --from=goss /goss /goss/goss
+    3. Add HEALTHCHECK using goss (see README.md Pattern 1)
+    4. Create goss/tests/ with build-time, healthcheck, and live tests
 
 goss_version: "v0.4.9"
+goss_image: "timjdfletcher/goss:latest"
