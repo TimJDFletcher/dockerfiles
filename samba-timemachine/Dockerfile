@@ -1,4 +1,4 @@
-ARG DEBIAN_VERSION="trixie-20260202-slim"
+ARG DEBIAN_VERSION="trixie-20260223-slim"
 FROM debian:${DEBIAN_VERSION}
 
 # Arguments
