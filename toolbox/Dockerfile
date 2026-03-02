@@ -1,4 +1,6 @@
-FROM debian:stable-slim
+ARG DEBIAN_VERSION="bookworm-20260223-slim"
+FROM debian:${DEBIAN_VERSION}
+
 ARG TOOLS
 
 RUN apt-get update && \
