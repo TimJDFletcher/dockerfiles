@@ -2,7 +2,7 @@
 
 ## Bugs
 
-- [ ] **Port mapping mismatch in compose file** — `docker-compose.yml` maps `target: 445` but Samba listens on port `10445` inside the container (`smb ports = 10445` in `samba.conf.tmpl`). `target` should be `10445`. The goss tests don't catch this because they run inside the container via `docker compose exec` and connect to `127.0.0.1:10445` directly, bypassing Docker's port mapping.
+None currently tracked.
 
 ## Security
 
@@ -27,3 +27,4 @@
 - [x] **Duplicate `[Install]` section in `systemd-unit.service`** — Fixed and improved: added RestartSec, TimeoutStartSec, non-fatal pull, journal logging, cleanup on stop.
 - [x] **Stale `QUOTA` env var in `docker-compose-autoheal.yml`** — Fixed: file removed.
 - [x] **Inconsistency between compose files** — Fixed: removed `docker-compose-autoheal.yml`.
+- [x] **Port mapping mismatch in compose file** — Fixed: `target` is now `10445` (container), `published` is now `445` (host).
