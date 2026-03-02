@@ -57,9 +57,10 @@ Eight projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `che
 1. **Build-time tests**: Validate binary install and version
 2. **Integration tests**: Audit a hardened sshd (must pass with exit 0) and a weak sshd (must fail with exit >= 2)
 
-**yajsv** extracts binary and runs goss externally (scratch image has no shell):
-1. **Positive tests**: Valid JSON files pass schema validation
-2. **Negative tests**: Invalid files (missing fields, wrong types, extra properties) are rejected
+**yajsv** tests the container image directly (no goss needed for scratch images):
+1. **Version test**: Default CMD returns correct version
+2. **Positive tests**: Valid JSON files pass schema validation
+3. **Negative tests**: Invalid files (missing fields, wrong types, extra properties) are rejected with correct error messages
 
 **checkov** mounts goss into the Python container:
 1. **Direct artifact tests**: Version and help output
@@ -72,7 +73,7 @@ Eight projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `che
 
 ### Shared goss-bin Volume
 
-All test suites use a shared `goss-bin` Docker volume containing a pinned goss binary downloaded from GitHub. This removes dependencies on pre-built images and ensures version consistency.
+Most test suites use a shared `goss-bin` Docker volume containing a pinned goss binary downloaded from GitHub. This removes dependencies on pre-built images and ensures version consistency.
 
 ```bash
 # Volume creation sets permissions for curlimages/curl user (uid 101):
@@ -85,14 +86,13 @@ docker run --rm -v goss-bin:/target --entrypoint sh curlimages/curl:latest -c \
 
 # For containers with a shell (checkov, ssh-audit, offlineimap, postfix, tcpdump, gam):
 docker run --rm -v goss-bin:/goss-bin:ro ... /goss-bin/goss validate
-
-# For scratch containers (yajsv):
-docker run --rm -v goss-bin:/goss-bin:ro debian:trixie-slim /goss-bin/goss validate
 ```
 
 The volume persists across test runs. Each project pins `GOSS_VERSION` (currently `v0.4.9`).
 
 **Security note:** We avoid running as root when downloading from the internet. The volume permissions are set once (using alpine as root) so that subsequent curl downloads run as non-root user (uid 101).
+
+**Scratch images (yajsv):** Don't use goss. Test the container directly by running it with different inputs and checking outputs/exit codes. This is simpler and validates actual container behavior.
 
 When adding tests to other projects, follow these patterns.
 
@@ -132,14 +132,35 @@ Some checkov findings are acceptable for this repo:
 
 ## macOS Native Containers
 
-The macOS native `container` CLI (Homebrew) works for building and running images. Tested on macOS 26.3.
+The macOS native `container` CLI (Homebrew) works for building, running, and testing images. Tested on macOS 26.3.
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Build | ✓ | Pass `--build-arg` for ARG before FROM |
 | Multi-arch | ✓ | `--platform linux/arm64 --platform linux/amd64` |
 | Run/exec/volumes/ports | ✓ | Same flags as Docker |
+| Goss testing | ✓ | Mount goss-bin volume, use `--entrypoint /goss-bin/goss` |
 | container-compose | ✗ | v0.9.0 has limited compose file support |
+
+### Testing with Native Containers
+
+All 8 projects with tests were validated using native containers:
+
+| Project | Tests | Notes |
+|---------|-------|-------|
+| samba-timemachine | 70 pass | Healthcheck + live tests |
+| yajsv | 7 pass | Direct container tests (no goss needed) |
+| gam | 12 pass | Includes network connectivity tests |
+| checkov | 7 pass | |
+| ssh-audit | 4 pass | Build-time only (integration needs compose) |
+| tcpdump | 5 pass | |
+| postfix | 8 pass | |
+| offlineimap | 12 pass | |
+
+**Key differences from Docker:**
+- `--entrypoint ""` doesn't work; use `--entrypoint /path/to/binary` instead
+- Shared volumes work the same way
+- No `docker cp` equivalent; for scratch images, test the container directly
 
 See `samba-timemachine/AGENTS.md` for detailed findings.
 

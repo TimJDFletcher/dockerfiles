@@ -4,47 +4,15 @@ CONTAINER_NAME=yajsv
 IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
 IMAGE_TAG=tmp
 PLATFORMS="linux/amd64,linux/arm64"
-TOOL="yajsv"
 YAJSV_VERSION="v1.4.1"
-GOSS_VERSION="v0.4.9"
 
 log() {
   echo "==> $*"
 }
 
-_ensure_goss_volume() {
-  if ! docker volume inspect goss-bin >/dev/null 2>&1; then
-    log "Creating goss-bin volume..."
-    docker volume create goss-bin
-    # Set permissions for curlimages/curl user (uid 101, gid 102)
-    docker run --rm -v goss-bin:/target alpine:latest chown 101:102 /target
-  fi
-  
-  # Download pinned goss version to volume (idempotent)
-  log "Ensuring goss ${GOSS_VERSION} in volume..."
-  docker run --rm \
-    -v goss-bin:/target \
-    --entrypoint sh \
-    curlimages/curl:latest -c "
-      if [ -f /target/goss ] && /target/goss --version 2>&1 | grep -q '${GOSS_VERSION}'; then
-        echo 'goss ${GOSS_VERSION} already installed'
-      else
-        ARCH=\$(uname -m)
-        case \$ARCH in
-          x86_64)  GOSS_ARCH=amd64 ;;
-          aarch64) GOSS_ARCH=arm64 ;;
-          *)       echo \"Unsupported arch: \$ARCH\"; exit 1 ;;
-        esac
-        curl -fsSL \"https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}/goss-linux-\${GOSS_ARCH}\" -o /target/goss
-        chmod 755 /target/goss
-        echo 'goss ${GOSS_VERSION} installed'
-      fi
-    "
-}
-
 build() {
   _buildx_setup
-  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --build-arg TOOL="${TOOL}" --file Dockerfile .
+  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --file Dockerfile .
   docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
 }
 
@@ -64,9 +32,8 @@ usage() {
 
 test() {
   build
-  _ensure_goss_volume
 
-  log "Testing container artifact directly..."
+  log "Testing container image directly..."
   
   # Test default CMD shows correct pinned version
   log "Test: version is ${YAJSV_VERSION}"
@@ -78,7 +45,7 @@ test() {
   fi
   echo "  PASS"
 
-  # Test valid file passes
+  # Test valid JSON files pass
   log "Test: valid JSON passes validation"
   docker run --rm \
     -v "$(pwd)/test-data:/data:ro" \
@@ -86,37 +53,57 @@ test() {
     -s /data/schema.json /data/valid.json | grep -q "pass"
   echo "  PASS"
 
-  # Test invalid file fails with exit code 1
-  log "Test: invalid JSON fails with exit 1"
-  if docker run --rm \
+  log "Test: valid JSON with only required fields passes"
+  docker run --rm \
     -v "$(pwd)/test-data:/data:ro" \
     "${IMAGE_NAME}:${IMAGE_TAG}" \
-    -s /data/schema.json /data/invalid-missing-required.json 2>&1; then
-    echo "  FAIL: expected non-zero exit"
-    exit 1
-  else
+    -s /data/schema.json /data/valid2.json | grep -q "pass"
+  echo "  PASS"
+
+  log "Test: multiple valid files pass"
+  docker run --rm \
+    -v "$(pwd)/test-data:/data:ro" \
+    "${IMAGE_NAME}:${IMAGE_TAG}" \
+    -s /data/schema.json /data/valid.json /data/valid2.json | grep -c "pass" | grep -q "2"
+  echo "  PASS"
+
+  # Test invalid JSON files fail with correct error messages
+  log "Test: missing required field fails"
+  local output
+  output=$(docker run --rm \
+    -v "$(pwd)/test-data:/data:ro" \
+    "${IMAGE_NAME}:${IMAGE_TAG}" \
+    -s /data/schema.json /data/invalid-missing-required.json 2>&1 || true)
+  if echo "$output" | grep -q "age is required"; then
     echo "  PASS"
+  else
+    echo "  FAIL: expected 'age is required' error, got: $output"
+    exit 1
   fi
 
-  log "Running extended goss validation tests..."
-  mkdir -p .tmp
-  trap "rm -rf .tmp" EXIT
-
-  # Extract yajsv binary (scratch image has no shell)
-  local tmp_container
-  tmp_container=$(docker create "${IMAGE_NAME}:${IMAGE_TAG}")
-  docker cp "${tmp_container}:/yajsv" ".tmp/yajsv"
-  docker rm "${tmp_container}" >/dev/null
-  chmod 755 ".tmp/yajsv"
-
-  # Run goss from volume in a debian container (yajsv needs glibc)
-  docker run --rm \
-    -v goss-bin:/goss-bin:ro \
-    -v "$(pwd)/.tmp/yajsv:/usr/local/bin/yajsv:ro" \
-    -v "$(pwd)/goss/tests:/goss:ro" \
+  log "Test: wrong type fails"
+  output=$(docker run --rm \
     -v "$(pwd)/test-data:/data:ro" \
-    debian:trixie-slim \
-    /goss-bin/goss --gossfile /goss/goss-validation-tests.yaml validate
+    "${IMAGE_NAME}:${IMAGE_TAG}" \
+    -s /data/schema.json /data/invalid-wrong-type.json 2>&1 || true)
+  if echo "$output" | grep -q "Invalid type"; then
+    echo "  PASS"
+  else
+    echo "  FAIL: expected 'Invalid type' error, got: $output"
+    exit 1
+  fi
+
+  log "Test: extra property fails"
+  output=$(docker run --rm \
+    -v "$(pwd)/test-data:/data:ro" \
+    "${IMAGE_NAME}:${IMAGE_TAG}" \
+    -s /data/schema.json /data/invalid-extra-property.json 2>&1 || true)
+  if echo "$output" | grep -q "Additional property"; then
+    echo "  PASS"
+  else
+    echo "  FAIL: expected 'Additional property' error, got: $output"
+    exit 1
+  fi
 
   log "All tests passed!"
 }
@@ -135,8 +122,8 @@ _buildx_setup () {
 release() {
   find_release
   _buildx_setup
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --build-arg TOOLS="${TOOL}" --push --file Dockerfile .
-  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:latest"       --build-arg TOOLS="${TOOL}" --push --file Dockerfile .
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --push --file Dockerfile .
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:latest"       --push --file Dockerfile .
 }
 
 CMD=${1:-}
