@@ -1,6 +1,8 @@
 # SPF-Flattener Agent Documentation
 
-Docker container for [spf-flattener](https://github.com/letsencrypt/spf-flattener), a tool that flattens SPF records to avoid the 10 DNS lookup limit.
+Container for [spf-flattener](https://github.com/letsencrypt/spf-flattener), a tool that flattens SPF records to avoid the 10 DNS lookup limit.
+
+**Note**: This project uses Apple's native `container` CLI instead of Docker due to colima DNS issues (see Known Issues below).
 
 ## Purpose
 
@@ -10,13 +12,13 @@ SPF records can include other domains (via `include:` mechanism), but DNS resolv
 
 ```bash
 # Dry run (default) - just output the flattened record
-docker run --rm timjdfletcher/spf-flattener --domain example.com
+container run --rm timjdfletcher/spf-flattener --domain example.com
 
-# Verbose output
-docker run --rm timjdfletcher/spf-flattener --domain example.com --verbose
+# Debug output
+container run --rm timjdfletcher/spf-flattener --domain example.com --logLevel=debug
 
 # With initial SPF to compare
-docker run --rm timjdfletcher/spf-flattener --domain example.com \
+container run --rm timjdfletcher/spf-flattener --domain example.com \
   --initialSPF "v=spf1 include:_spf.google.com ~all"
 ```
 
@@ -44,19 +46,21 @@ docker run --rm timjdfletcher/spf-flattener --domain example.com \
 
 ## Developer Workflow
 
+Uses Apple's native `container` CLI for all operations.
+
 | Command | Description |
 |---------|-------------|
 | `./run build` | Build local image |
-| `./run test` | Build and run tests against real domains |
-| `./run trivy` | Build and run Trivy security scan |
+| `./run test` | Build and run tests (including real DNS tests) |
 | `./run clean` | Remove images |
-| `./run release` | Test + scan + multi-arch push to Docker Hub |
+| `./run release` | Test + multi-arch build (push manually) |
 
 ## Notes
 
-- The container uses Alpine with CA certificates for HTTPS/DNS-over-HTTPS
-- Tests verify help output and flag parsing (DNS tests skipped due to colima bug)
+- Uses Apple's native `container` CLI for proper DNS resolution
+- Tests include real SPF flattening against gmail.com
 - Built with `golang:alpine` for musl compatibility
+- Alpine base image with CA certificates
 
 ## Known Issues
 
