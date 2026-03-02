@@ -90,14 +90,23 @@ Used by: `samba-timemachine`
 
 **Pattern 2: External (CLI tools)**
 
-Extract goss at test time and mount it:
+Extract goss at test time and mount it. The `_ensure_goss_image()` function auto-builds the goss image if missing:
 
 ```bash
+_ensure_goss_image() {
+  if ! docker image inspect "${GOSS_IMAGE}:${IMAGE_TAG}" >/dev/null 2>&1; then
+    log "Goss image not found, building..."
+    (cd "${SCRIPT_DIR}/../goss" && ./run build)
+  fi
+}
+
 _ensure_goss() {
+  _ensure_goss_image
   local goss_dir="${PWD}/.goss-bin"
   if [ ! -x "${goss_dir}/goss" ]; then
     mkdir -p "${goss_dir}"
-    docker create --name goss-extract timjdfletcher/goss:tmp >/dev/null
+    docker rm goss-extract 2>/dev/null || true
+    docker create --name goss-extract "${GOSS_IMAGE}:${IMAGE_TAG}" >/dev/null
     docker cp goss-extract:/goss "${goss_dir}/goss"
     docker rm goss-extract >/dev/null
   fi

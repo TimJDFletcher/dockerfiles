@@ -12,7 +12,9 @@ Docker container running Samba configured to emulate an Apple Time Capsule for m
 
 ## Prerequisites
 
-Build the `goss` project first:
+The `goss` image is built automatically if missing. When you run `./run build` or `./run test`, the script checks for `timjdfletcher/goss:tmp` and builds it from `../goss` if needed.
+
+To build manually:
 
 ```bash
 cd ../goss && ./run build
@@ -39,7 +41,7 @@ Order is critical — `configureSAMBA` must run before `createUser` (see Pitfall
 1. **`checkBackupDir`** — Verifies `${BACKUPDIR}` exists and warns if not a mountpoint.
 2. **`cleanupLegacyFiles`** — Removes obsolete `.com.apple.TimeMachine.quota.plist`.
 3. **`configureSAMBA`** — Generates `/etc/samba/smb.conf` from template via `envsubst`.
-4. **`createUser`** — Creates group/user with `PGID`/`PUID`, sets Samba password via `smbpasswd`.
+4. **`createUser`** — Creates group/user with `PGID`/`PUID`, sets Samba password via `smbpasswd`, generates `/run/samba/credentials` for smbclient.
 5. **`configureBackupDir`** — Sets ownership, creates Apple metadata files, copies `backup-check.sh`.
 6. **`startSMB`** — Runs `smbd` in the foreground as PID 1.
 
@@ -82,6 +84,8 @@ Three test suites, each validating a different phase:
 **`systemd-unit.service`** is a production deployment example for running via systemd.
 
 **`USER` env var collides with the standard shell variable.** The `./run test` command exports `USER=testuser` in a subshell to avoid clobbering the parent shell's login user.
+
+**Credentials file for smbclient.** The entrypoint generates `/run/samba/credentials` (mode 600) so goss tests can authenticate without exposing the password in `/proc/cmdline`. Tests use `smbclient -A /run/samba/credentials` instead of `-U user%pass`.
 
 ## Updating Dependencies
 
