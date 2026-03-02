@@ -36,9 +36,31 @@ And copy the example [service file](avahi.service) to `/etc/avahi/services/timem
 
 # Autostart with SystemD
 
-There is an [example](./systemd-unit.service) of a systemd unit file that auto starts the docker compose stack.
+Use the setup script to create a system user and install the systemd service:
 
-To enable the systemd unit, copy the file to `/etc/systemd/system/timemachine.service` and then run `systemd enable timemachine`
+```bash
+sudo ./scripts/setup-system.sh --backup-dir /mnt/backups
+```
+
+The script:
+- Creates a `timemachine` system user (in the docker group)
+- Sets up the backup directory with correct permissions
+- Installs the docker-compose stack to `/opt/samba-timemachine`
+- Creates and enables the systemd unit
+
+Options:
+- `--uid UID` — UID for timemachine user (default: 999)
+- `--gid GID` — GID for timemachine group (default: 999)
+- `--backup-dir DIR` — Backup storage directory (default: /data/timemachine)
+- `--install-dir DIR` — Installation directory (default: /opt/samba-timemachine)
+
+After setup, edit `/opt/samba-timemachine/.env` to set your password, then start the service:
+
+```bash
+systemctl start timemachine
+```
+
+For manual installation, see the [example unit file](./systemd-unit.service).
 
 # Settings
 
