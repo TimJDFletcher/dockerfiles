@@ -13,7 +13,7 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 | `samba-timemachine` | macOS Time Machine backup server via Samba | Active | Most mature; has goss tests, AGENTS.md |
 | `gam` | Google Workspace CLI (GAM) container | Active | Pinned versions; has goss tests |
 | `checkov` | Bridgecrew Checkov security scanner | Active | Pinned versions; has goss tests |
-| `toolbox` | Generic Debian toolbox container | Maintained | Build-arg driven; customizable tools |
+| `toolbox` | Generic Debian toolbox container | Maintained | Debian trixie; build-arg driven tools |
 | `yajsv` | JSON schema validator (Go) | Active | Multi-stage scratch build (~5MB); has tests |
 | `offlineimap` | Email sync with supercronic | Active | Debian trixie; has goss tests |
 | `postfix` | SMTP relay | Active | Debian trixie; has goss tests |
@@ -31,7 +31,7 @@ See `.cursorrules` for full details. Key points:
 
 - **`./run` script**: Standard interface (`build`, `clean`, `release`)
 - **Tags**: `<project>-v<MAJOR>.<MINOR>.<PATCH>`
-- **Base images**: Pin versions via `ARG` (e.g., `ARG DEBIAN_VERSION="trixie-20260202-slim"`)
+- **Base images**: Pin versions via `ARG` (e.g., `ARG DEBIAN_VERSION="trixie-20260223-slim"`)
 - **Builds**: Purge build deps in same `RUN` layer, use `--no-install-recommends`
 - **Multi-arch**: Release builds target `linux/amd64,linux/arm64`
 
@@ -129,6 +129,19 @@ Some checkov findings are acceptable for this repo:
 2. Update `ARG` in Dockerfile
 3. Run `./run test` if available, otherwise `./run build`
 4. Tag and release: `git tag <project>-v<VERSION> && ./run release`
+
+## macOS Native Containers
+
+The macOS native `container` CLI (Homebrew) works for building and running images. Tested on macOS 26.3.
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Build | ✓ | Pass `--build-arg` for ARG before FROM |
+| Multi-arch | ✓ | `--platform linux/arm64 --platform linux/amd64` |
+| Run/exec/volumes/ports | ✓ | Same flags as Docker |
+| container-compose | ✗ | v0.9.0 has limited compose file support |
+
+See `samba-timemachine/AGENTS.md` for detailed findings.
 
 ## Working With This Repo
 
