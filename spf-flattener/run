@@ -53,8 +53,10 @@ test() {
 
   log "All tests passed!"
   log ""
-  log "Note: DNS-based tests require working TXT record lookups."
-  log "To test manually: docker run --rm ${IMAGE_NAME}:${IMAGE_TAG} --domain example.com"
+  log "Note: DNS-based tests skipped due to colima TXT record bug."
+  log "      See AGENTS.md for details."
+  log "To test manually on a non-colima system:"
+  log "  docker run --rm ${IMAGE_NAME}:${IMAGE_TAG} --domain gmail.com"
 }
 
 clean() {

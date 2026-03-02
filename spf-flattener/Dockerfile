@@ -4,15 +4,16 @@
 ARG GO_VERSION="1.24"
 ARG SPF_FLATTENER_VERSION="main"
 
-FROM golang:${GO_VERSION} AS builder
+FROM golang:${GO_VERSION}-alpine AS builder
 
 ARG SPF_FLATTENER_VERSION
 
 WORKDIR /build
 
-RUN git clone --depth 1 --branch ${SPF_FLATTENER_VERSION} \
+RUN apk add --no-cache git && \
+    git clone --depth 1 --branch ${SPF_FLATTENER_VERSION} \
         https://github.com/letsencrypt/spf-flattener.git . && \
-    CGO_ENABLED=0 go build \
+    go build \
         -ldflags "-s -w" \
         -o /spf-flatten \
         ./cmd/spf-flatten

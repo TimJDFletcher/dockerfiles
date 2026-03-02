@@ -54,6 +54,28 @@ docker run --rm timjdfletcher/spf-flattener --domain example.com \
 
 ## Notes
 
-- The container includes CA certificates for HTTPS/DNS-over-HTTPS
-- Tests run against real domains (google.com, letsencrypt.org) in dryrun mode
-- The binary is statically compiled and runs in a scratch container
+- The container uses Alpine with CA certificates for HTTPS/DNS-over-HTTPS
+- Tests verify help output and flag parsing (DNS tests skipped due to colima bug)
+- Built with `golang:alpine` for musl compatibility
+
+## Known Issues
+
+### Colima DNS Bug
+
+When running in Docker with colima on macOS, DNS TXT record lookups fail because colima's DNS resolver incorrectly concatenates multiple TXT records into a single string. For example, a domain with 3 separate TXT records:
+
+```
+"v=spf1 redirect=_spf.google.com"
+"globalsign-smime-dv=CDYX+..."
+"yahoo-verification-key=..."
+```
+
+Gets returned as one concatenated record:
+
+```
+"v=spf1 redirect=_spf.google.comglobalsign-smime-dv=CDYX+...yahoo-verification-key=..."
+```
+
+This causes the tool to parse malformed domain names from the SPF record.
+
+**Workaround**: Run the container on a system with proper DNS resolution (Linux, Docker Desktop, or non-colima environments). The container and tool work correctly when DNS returns records properly.
