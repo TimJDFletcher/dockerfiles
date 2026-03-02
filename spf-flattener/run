@@ -54,9 +54,8 @@ test() {
   log "All tests passed!"
   log ""
   log "Note: DNS-based tests skipped due to colima TXT record bug."
+  log "      Apple's native container CLI works correctly."
   log "      See AGENTS.md for details."
-  log "To test manually on a non-colima system:"
-  log "  docker run --rm ${IMAGE_NAME}:${IMAGE_TAG} --domain gmail.com"
 }
 
 clean() {

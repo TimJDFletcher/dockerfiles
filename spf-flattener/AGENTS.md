@@ -78,4 +78,9 @@ Gets returned as one concatenated record:
 
 This causes the tool to parse malformed domain names from the SPF record.
 
-**Workaround**: Run the container on a system with proper DNS resolution (Linux, Docker Desktop, or non-colima environments). The container and tool work correctly when DNS returns records properly.
+**Workarounds**:
+- Use Apple's native `container` CLI instead of Docker with colima
+- Run on Linux or Docker Desktop
+- Any non-colima environment with proper DNS resolution
+
+The container and tool work correctly when DNS returns records properly.
