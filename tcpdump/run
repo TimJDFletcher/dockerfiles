@@ -58,31 +58,32 @@ test() {
 
   log "Running integration test (capture HTTP traffic)..."
   
+  # Generate a unique marker for this test run
+  local test_marker="tcpdump-test-$(date +%s)"
+  
   # Clean up any previous test
   docker compose down --volumes --remove-orphans 2>/dev/null || true
   
   # Start the test environment
   docker compose up --detach --wait webserver
   
-  # Run tcpdump in background, capturing 5 packets
+  # Run tcpdump in background, capturing packets
   log "Starting tcpdump capture..."
   docker compose up --detach tcpdump
   
   # Give tcpdump a moment to start
   sleep 1
   
-  # Generate HTTP traffic using curl
-  log "Generating HTTP traffic..."
+  # Generate HTTP traffic with unique marker URL
+  log "Generating HTTP traffic (marker: ${test_marker})..."
   docker run --rm --network tcpdump_default curlimages/curl:latest \
-    -s http://webserver/ > /dev/null
+    -s "http://webserver/${test_marker}" > /dev/null || true
   docker run --rm --network tcpdump_default curlimages/curl:latest \
-    -s http://webserver/ > /dev/null
-  docker run --rm --network tcpdump_default curlimages/curl:latest \
-    -s http://webserver/ > /dev/null
+    -s "http://webserver/${test_marker}" > /dev/null || true
   
   # Wait for tcpdump to capture packets (it exits after -c 5)
   log "Waiting for capture to complete..."
-  sleep 3
+  sleep 2
   timeout 10 docker compose wait tcpdump 2>/dev/null || true
   
   # Verify capture file exists and has content
@@ -99,15 +100,22 @@ test() {
       fi
     '
   
-  # Analyze the capture to verify HTTP traffic
-  log "Analyzing captured traffic..."
-  docker run --rm \
+  # Validate captured traffic contains our unique marker
+  log "Validating HTTP request captured (searching for marker)..."
+  if docker run --rm \
     -v tcpdump_capture:/capture:ro \
     "${IMAGE_NAME}:${IMAGE_TAG}" \
-    -r /capture/test.pcap -nn 2>&1 | head -10
-  
-  log "Test: Captured HTTP traffic"
-  echo "  PASS"
+    -r /capture/test.pcap -A 2>&1 | grep -q "${test_marker}"; then
+    echo "  PASS: Found test marker in captured traffic"
+  else
+    echo "  FAIL: Test marker '${test_marker}' not found in capture"
+    log "Captured traffic:"
+    docker run --rm \
+      -v tcpdump_capture:/capture:ro \
+      "${IMAGE_NAME}:${IMAGE_TAG}" \
+      -r /capture/test.pcap -A 2>&1 | head -30
+    exit 1
+  fi
   
   # Cleanup
   docker compose down --volumes --remove-orphans
