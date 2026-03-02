@@ -19,6 +19,11 @@ None currently tracked.
 - [ ] **External volume requires manual pre-creation** — `docker-compose.yml` declares the backups volume as `external: true`, meaning users must run `docker volume create samba-timemachine_backups` before `docker compose up`. Remove `external: true` for the dev compose file or document the requirement prominently.
 - [ ] **`backup-check.sh` depends on `curl` but `curl` is purged from the image** — The script is copied into the backup volume but will fail if run inside the container since `curl` is removed during build. Document that this script is meant to be run from the host.
 
+## Future Enhancements
+
+- [ ] **Rootless operation** — Run the container without root privileges. Challenges include backup directory ownership (init container?), UID/GID mapping, and setting smbpasswd without root. One approach: bake a fixed UID/GID user at build time.
+- [ ] **Configurable listen port** — Make the SMB port configurable via environment variable. Requires templating the port in `smb.conf.tmpl` and goss tests.
+
 ## Completed
 
 - [x] **No checksum verification for goss binary** — Fixed: goss is now built from source via the `../goss` project with patched Go dependencies.
