@@ -91,6 +91,11 @@ createUser() {
     # NOW SAFE: smb.conf exists, so smbpasswd knows where the database is
     printf "%s\n%s\n" "${PASS}" "${PASS}" | smbpasswd -a -s "${USER}"
     echo "${USER} = ${USER}" > /etc/samba/users.map
+
+    log "Creating smbclient credentials file..."
+    mkdir -p /run/samba
+    printf "username = %s\npassword = %s\n" "${USER}" "${PASS}" > /run/samba/credentials
+    chmod 600 /run/samba/credentials
 }
 
 startSMB() {

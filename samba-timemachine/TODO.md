@@ -7,7 +7,6 @@ None currently tracked.
 ## Security
 
 - [ ] **Password visible via `docker inspect`** — The `PASS` environment variable is readable by anyone with access to `docker inspect`. Support reading the password from a file (e.g. `/run/secrets/samba_password`) as a Docker secrets alternative.
-- [ ] **Password exposed in healthcheck commands** — The goss healthcheck runs `smbclient -U user%password` which is visible in `/proc/*/cmdline` and `docker inspect`. Use an `smbclient` credentials file (`-A /tmp/.smbcredentials`) instead.
 - [ ] **Default password baked into image layers** — `ENV PASS="password"` in the Dockerfile embeds a trivially guessable default into every layer. Consider removing the default to force users to set one, or generating a random default at container start.
 - [ ] **No capability dropping in compose files** — The container runs with full default Linux capabilities. Add `cap_drop: [ALL]` and add back only what Samba needs.
 
@@ -28,3 +27,4 @@ None currently tracked.
 - [x] **Stale `QUOTA` env var in `docker-compose-autoheal.yml`** — Fixed: file removed.
 - [x] **Inconsistency between compose files** — Fixed: removed `docker-compose-autoheal.yml`.
 - [x] **Port mapping mismatch in compose file** — Fixed: `target` is now `10445` (container), `published` is now `445` (host).
+- [x] **Password exposed in healthcheck commands** — Fixed: entrypoint creates `/run/samba/credentials` file, goss tests use `-A` flag instead of `-U user%pass`.

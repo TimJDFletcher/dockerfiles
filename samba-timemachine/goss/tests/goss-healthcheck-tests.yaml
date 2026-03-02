@@ -56,8 +56,9 @@ command:
   # This is the single most important test.
   # It logs in as the actual user via SMB, creates a directory, checks it, and deletes it.
   # This proves: Auth works, Network works, and Permissions work.
+  # Uses credentials file (-A) to avoid exposing password in /proc/cmdline
   smb_integration_test:
-    exec: "/usr/bin/smbclient //127.0.0.1/Data -U {{.Env.USER}}%{{.Env.PASS}} -I 127.0.0.1 -p 10445 -c 'mkdir .healthcheck; ls; rmdir .healthcheck'"
+    exec: "/usr/bin/smbclient //127.0.0.1/Data -A /run/samba/credentials -I 127.0.0.1 -p 10445 -c 'mkdir .healthcheck; ls; rmdir .healthcheck'"
     exit-status: 0
     stdout:
     - ".healthcheck"

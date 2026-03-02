@@ -60,8 +60,9 @@ command:
     - "Loaded services file OK."
 
   # 2. SMB Integration Test
+  # Uses credentials file (-A) to avoid exposing password in /proc/cmdline
   smb_integration_test:
-    exec: "/usr/bin/smbclient //127.0.0.1/Data -U {{.Env.USER}}%{{.Env.PASS}} -I 127.0.0.1 -p 10445 -c 'mkdir smb_write_test; ls; rmdir smb_write_test'"
+    exec: "/usr/bin/smbclient //127.0.0.1/Data -A /run/samba/credentials -I 127.0.0.1 -p 10445 -c 'mkdir smb_write_test; ls; rmdir smb_write_test'"
     exit-status: 0
     stdout:
     - "smb_write_test"
