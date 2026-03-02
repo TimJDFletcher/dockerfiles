@@ -26,5 +26,5 @@ None currently tracked.
 - [x] **Duplicate `[Install]` section in `systemd-unit.service`** — Fixed and improved: added RestartSec, TimeoutStartSec, non-fatal pull, journal logging, cleanup on stop.
 - [x] **Stale `QUOTA` env var in `docker-compose-autoheal.yml`** — Fixed: file removed.
 - [x] **Inconsistency between compose files** — Fixed: removed `docker-compose-autoheal.yml`.
-- [x] **Port mapping mismatch in compose file** — Fixed: `target` is now `10445` (container), `published` is now `445` (host).
+- [x] **Port mapping mismatch in compose file** — Fixed: both `target` and `published` are now `10445` to allow running alongside existing Samba servers.
 - [x] **Password exposed in healthcheck commands** — Fixed: entrypoint creates `/run/samba/credentials` file, goss tests use `-A` flag instead of `-U user%pass`.

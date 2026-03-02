@@ -71,7 +71,7 @@ Three test suites, each validating a different phase:
 
 ## Pitfalls & Gotchas
 
-**Samba listens on port `10445` inside the container** (`smb ports = 10445` in `samba.conf.tmpl`). The compose file `ports.target` is the container-side port and must match. `ports.published` is the host-side port. All goss tests run inside the container via `docker compose exec` and connect to `127.0.0.1:10445` directly, so they **do not validate Docker port mapping**.
+**Samba listens on port `10445`** (`smb ports = 10445` in `samba.conf.tmpl`). This non-standard port allows the container to run alongside an existing Samba server on port 445. The compose file maps `10445:10445`. Goss tests run inside the container and connect to `127.0.0.1:10445` directly.
 
 **Entrypoint ordering: `configureSAMBA` before `createUser`.** `smbpasswd` reads `smb.conf` to locate the passdb backend. If `smb.conf` doesn't exist yet, `smbpasswd` fails with a cryptic error.
 
