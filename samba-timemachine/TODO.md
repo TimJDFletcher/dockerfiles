@@ -8,7 +8,6 @@ None currently tracked.
 
 - [ ] **Password visible via `docker inspect`** — The `PASS` environment variable is readable by anyone with access to `docker inspect`. Support reading the password from a file (e.g. `/run/secrets/samba_password`) as a Docker secrets alternative.
 - [ ] **Default password baked into image layers** — `ENV PASS="password"` in the Dockerfile embeds a trivially guessable default into every layer. Consider removing the default to force users to set one, or generating a random default at container start.
-- [ ] **No capability dropping in compose files** — The container runs with full default Linux capabilities. Add `cap_drop: [ALL]` and add back only what Samba needs.
 
 ## Speed
 
@@ -33,3 +32,4 @@ None currently tracked.
 - [x] **Inconsistency between compose files** — Fixed: removed `docker-compose-autoheal.yml`.
 - [x] **Port mapping mismatch in compose file** — Fixed: both `target` and `published` are now `10445` to allow running alongside existing Samba servers.
 - [x] **Password exposed in healthcheck commands** — Fixed: entrypoint creates `/run/samba/credentials` file, goss tests use `-A` flag instead of `-U user%pass`.
+- [x] **No capability dropping in compose files** — Fixed: `cap_drop: ALL` with only CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID added back. Drops 9 default capabilities.

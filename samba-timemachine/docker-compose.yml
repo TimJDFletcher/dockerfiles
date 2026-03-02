@@ -2,6 +2,14 @@ name: samba-timemachine
 services:
   samba-timemachine:
     container_name: samba-timemachine
+    cap_drop:
+    - ALL
+    cap_add:
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+    - SETGID
+    - SETUID
     environment:
       PUID: "${PUID:-999}"
       PGID: "${PGID:-999}"
