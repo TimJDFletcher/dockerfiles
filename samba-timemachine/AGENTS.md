@@ -86,3 +86,46 @@ Three pinned versions in the Dockerfile `ARG` block need periodic checking:
 The Samba version must match what's available in `trixie-backports`. If the version is bumped and the old version is removed from the repo, the build will fail. The `smbclient` package is pinned to the same version as `samba` — always update both together.
 
 After updating, run `./run test` to validate the build and all integration tests still pass.
+
+## macOS Native Containers
+
+Tested with macOS 26.3 and the `container` CLI (via Homebrew). The native container system works well for building and running this image.
+
+### What Works
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Build image | ✓ | Requires `--build-arg DEBIAN_VERSION=...` (ARG before FROM not auto-expanded) |
+| Multi-arch builds | ✓ | `--platform linux/arm64 --platform linux/amd64` |
+| Run container | ✓ | Full support for `-e`, `-p`, `-v` flags |
+| Volume mounts | ✓ | Named volumes work correctly |
+| Port mapping | ✓ | |
+| Exec into container | ✓ | |
+| Healthcheck tests | ✓ | All 27 tests pass |
+| Live integration tests | ✓ | All 43 tests pass |
+
+### What Doesn't Work
+
+**`container-compose` (v0.9.0)** is not ready for this project:
+- Fails to parse docker-compose.yml extended volume syntax
+- Tries to pull images from registry even when they exist locally
+- Limited compose file compatibility
+
+### Example Commands
+
+```bash
+# Build (must pass DEBIAN_VERSION explicitly)
+container build -t timjdfletcher/samba-timemachine:test \
+  --build-arg DEBIAN_VERSION=trixie-20260223-slim .
+
+# Run
+container run -d --name samba-tm \
+  -e PUID=1000 -e PGID=1000 \
+  -e USER=timemachine -e PASS=secret \
+  -p 10445:10445 \
+  -v backups:/backups \
+  timjdfletcher/samba-timemachine:test
+
+# Test
+container exec samba-tm /goss/goss --gossfile /goss/tests/goss-healthcheck-tests.yaml validate
+```
