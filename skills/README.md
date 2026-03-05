@@ -2,11 +2,17 @@
 
 Reusable patterns and techniques that can be applied to other projects.
 
-## Available Skills
+## Local Skills
 
 | Skill | Description |
 |-------|-------------|
 | [goss](./goss/) | Test Docker containers with goss (volume or embedded patterns) |
+
+## External Skills
+
+| Skill | Source | Description |
+|-------|--------|-------------|
+| [TDD](https://github.com/mattpocock/skills/tree/main/tdd) | mattpocock/skills | Red-green-refactor workflow for test-driven development |
 
 ### goss Patterns
 

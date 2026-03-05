@@ -39,14 +39,30 @@ See `.cursorrules` for full details. Key points:
 
 ## Testing Philosophy
 
-**Use Test-Driven Development (TDD)**: Write tests first, verify they fail, then implement the fix.
+**Use Test-Driven Development (TDD)** with the red-green-refactor loop. See the [TDD skill](https://github.com/mattpocock/skills/tree/main/tdd) for detailed guidance.
 
-Example workflow:
-1. Write a test that checks for the expected behavior (e.g., version string)
-2. Run the test — it should fail
-3. Update the code to make the test pass
-4. Run the test — it should pass
-5. Commit
+### Core Principles
+
+1. **Test behavior, not implementation** — Tests verify what users care about (can I connect? can I backup?) not internal function calls
+2. **Use public interfaces** — Test through CLI/API, not internal methods
+3. **One test at a time** — RED→GREEN for each behavior, never write all tests first (horizontal slicing anti-pattern)
+4. **Never refactor while RED** — Get to GREEN first, then refactor
+
+### Workflow
+
+```
+RED:   Write test for first behavior → test fails
+GREEN: Write minimal code to pass → test passes
+REFACTOR: Clean up (tests still pass)
+REPEAT: Next behavior
+```
+
+### Test Quality Checklist
+
+- [ ] Test describes behavior, not implementation
+- [ ] Test uses public interface only
+- [ ] Test would survive internal refactor
+- [ ] Code is minimal for this test
 
 Eight projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `checkov`, `offlineimap`, `postfix`, `tcpdump`, and `gam`.
 

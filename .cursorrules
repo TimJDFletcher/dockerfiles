@@ -51,15 +51,48 @@ Keep AGENTS.md concise — use tables over prose, avoid repeating what the code 
 
 ### Test-Driven Development (TDD)
 
-Use TDD when adding or modifying functionality:
+Use TDD when adding or modifying functionality. Follow the **red-green-refactor** loop:
 
-1. **Write the test first** — Add a test that checks for the expected behavior
-2. **Run the test** — Verify it fails (proves the test is valid)
-3. **Implement the change** — Update code to make the test pass
-4. **Run the test** — Verify it passes
-5. **Commit** — Include both test and implementation
+**Tracer Bullet First**: Start with ONE test that proves the path works end-to-end.
+
+```
+RED:   Write test for first behavior → test fails
+GREEN: Write minimal code to pass → test passes
+```
+
+Then repeat for each additional behavior. One test at a time, one implementation at a time.
+
+**Anti-Pattern: Horizontal Slicing**
+
+DO NOT write all tests first, then all implementation. This produces bad tests that verify imagined behavior rather than actual behavior.
+
+```
+WRONG (horizontal):
+  RED:   test1, test2, test3, test4, test5
+  GREEN: impl1, impl2, impl3, impl4, impl5
+
+RIGHT (vertical):
+  RED→GREEN: test1→impl1
+  RED→GREEN: test2→impl2
+  ...
+```
+
+**Refactoring Rules**
+
+- Never refactor while RED — get to GREEN first
+- Run tests after each refactor step
+- If tests break during refactor but behavior hasn't changed, the test was testing implementation, not behavior
+
+**Test Quality Checklist**
+
+- [ ] Test describes behavior, not implementation
+- [ ] Test uses public interface only (CLI, API, not internal functions)
+- [ ] Test would survive internal refactor
+- [ ] Code is minimal for this test
 
 Example: To pin a dependency version, first add a test that checks for that version, verify it fails, then update the Dockerfile.
+
+See the [TDD skill](https://github.com/mattpocock/skills/tree/main/tdd) for detailed guidance.
 
 ## Working in This Repo
 
