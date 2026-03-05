@@ -100,3 +100,34 @@ See the [TDD skill](https://github.com/mattpocock/skills/tree/main/tdd) for deta
 - Run `./run test` (if it exists) before committing changes that affect the Dockerfile, entrypoint, or config templates.
 - After updating dependency versions, run the full test suite to validate.
 - Do not push to remote without being asked — the user will push when ready.
+
+## Preflight Checks
+
+Run these checks at the start of a session to catch issues early:
+
+### GPG Signing
+
+Before committing, verify GPG is working:
+
+```bash
+echo "test" | gpg --clearsign >/dev/null && echo "GPG OK" || echo "GPG BROKEN"
+```
+
+If GPG hangs or fails, see Troubleshooting below.
+
+## Troubleshooting
+
+### GPG Stale Lock
+
+**Symptom**: `git commit` hangs with:
+```
+gpg: Note: database_open 134217901 waiting for lock (held by XXXX) ...
+gpg: keydb_search failed: Operation timed out
+```
+
+**Cause**: Stale lock files from crashed/killed GPG processes.
+
+**Fix**:
+```bash
+rm ~/.gnupg/public-keys.d/.#lk* ~/.gnupg/public-keys.d/pubring.db.lock
+```
