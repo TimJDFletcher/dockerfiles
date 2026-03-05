@@ -39,7 +39,7 @@ See `.cursorrules` for full details. Key points:
 
 ## Testing Philosophy
 
-**Use Test-Driven Development (TDD)** with the red-green-refactor loop. See the [TDD skill](https://github.com/mattpocock/skills/tree/main/tdd) for detailed guidance.
+**Use Test-Driven Development (TDD)** with the red-green-refactor loop. See the [TDD skill](https://github.com/mattpocock/skills/tree/b2039ab896a01ebcc539704f69974f7bcdfb1226/tdd) for detailed guidance.
 
 ### Core Principles
 

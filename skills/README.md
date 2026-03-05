@@ -12,7 +12,7 @@ Reusable patterns and techniques that can be applied to other projects.
 
 | Skill | Source | Description |
 |-------|--------|-------------|
-| [TDD](https://github.com/mattpocock/skills/tree/main/tdd) | mattpocock/skills | Red-green-refactor workflow for test-driven development |
+| [TDD](https://github.com/mattpocock/skills/tree/b2039ab896a01ebcc539704f69974f7bcdfb1226/tdd) | mattpocock/skills @ `b2039ab` | Red-green-refactor workflow for test-driven development |
 
 ### goss Patterns
 
