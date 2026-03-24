@@ -1,14 +1,14 @@
 # Pre-built goss image with patched Go dependencies
 # Build first: cd ../goss && ./run build
 ARG GOSS_IMAGE="timjdfletcher/goss:latest"
-ARG DEBIAN_VERSION="trixie-20260223-slim"
+ARG DEBIAN_VERSION="trixie-20260316-slim"
 
 FROM ${GOSS_IMAGE} AS goss
 
 FROM debian:${DEBIAN_VERSION}
 
 # Arguments
-ARG SAMBA_VERSION="2:4.23.5+dfsg-1~bpo13+1"
+ARG SAMBA_VERSION="2:4.23.6+dfsg-2~bpo13+1"
 ARG GOSS_VER="v0.4.9-patched"
 ARG GOSS_DST="/goss"
 ARG BACKUPDIR="/backups"
