@@ -2,7 +2,17 @@
 
 Container for [spf-flattener](https://github.com/letsencrypt/spf-flattener), a tool that flattens SPF records to avoid the 10 DNS lookup limit.
 
-**Note**: This project uses Apple's native `container` CLI instead of Docker due to colima DNS issues (see Known Issues below).
+**Note**: This project uses **Apple Container** (Apple’s native **`container`** CLI), not Docker, for build, test, and normal runs—primarily because Colima’s DNS mishandles multi-record TXT lookups (see Known Issues below).
+
+### Apple Container service
+
+If `container build` / `container run` fails with XPC errors, *connection invalid*, or prompts to start the system service, start Apple Container first:
+
+```bash
+container system start
+```
+
+Wait until the service is ready, then use `./run build`, `./run test`, etc. as usual.
 
 ## Purpose
 
@@ -41,12 +51,12 @@ container run --rm timjdfletcher/spf-flattener --domain example.com \
 
 | ARG | Default | Description |
 |-----|---------|-------------|
-| `GO_VERSION` | `1.24` | Go version for compilation |
+| `GO_VERSION` | `1.26` | Go version for compilation |
 | `SPF_FLATTENER_VERSION` | `main` | Git branch/tag to build from |
 
 ## Developer Workflow
 
-Uses Apple's native `container` CLI for all operations.
+Uses Apple’s **`container`** CLI (Apple Container) for all operations in this directory—not `docker` / Colima for the default workflow.
 
 | Command | Description |
 |---------|-------------|
@@ -57,7 +67,7 @@ Uses Apple's native `container` CLI for all operations.
 
 ## Notes
 
-- Uses Apple's native `container` CLI for proper DNS resolution
+- Uses Apple **`container`** (Apple Container) for proper DNS resolution in tests
 - Tests include real SPF flattening against gmail.com
 - Built with `golang:alpine` for musl compatibility
 - Alpine base image with CA certificates
@@ -83,7 +93,7 @@ Gets returned as one concatenated record:
 This causes the tool to parse malformed domain names from the SPF record.
 
 **Workarounds**:
-- Use Apple's native `container` CLI instead of Docker with colima
+- Use Apple **`container`** (`container system start`, then `container run` / `./run test`) instead of Docker with Colima for this project
 - Run on Linux or Docker Desktop
 - Any non-colima environment with proper DNS resolution
 

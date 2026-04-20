@@ -27,7 +27,7 @@ To release:
 
 ### Dockerfiles
 
-- Base images use pinned versions via `ARG` (e.g., `ARG DEBIAN_VERSION="trixie-20260223-slim"`).
+- Base images use pinned versions via `ARG` (e.g., `ARG DEBIAN_VERSION="trixie-20260406-slim"`).
 - Build-time dependencies are installed then purged in the same `RUN` layer.
 - Use `--no-install-recommends` for `apt-get install`.
 - Prefer `COPY --chmod=` over separate `chmod` commands.

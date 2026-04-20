@@ -33,7 +33,7 @@ See `.cursorrules` for full details. Key points:
 
 - **`./run` script**: Standard interface (`build`, `clean`, `release`)
 - **Tags**: `<project>-v<MAJOR>.<MINOR>.<PATCH>`
-- **Base images**: Pin versions via `ARG` (e.g., `ARG DEBIAN_VERSION="trixie-20260223-slim"`)
+- **Base images**: Pin versions via `ARG` (e.g., `ARG DEBIAN_VERSION="trixie-20260406-slim"`)
 - **Builds**: Purge build deps in same `RUN` layer, use `--no-install-recommends`
 - **Multi-arch**: Release builds target `linux/amd64,linux/arm64`
 

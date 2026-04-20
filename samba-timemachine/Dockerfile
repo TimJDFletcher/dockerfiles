@@ -1,7 +1,7 @@
 # Pre-built goss image with patched Go dependencies
 # Build first: cd ../goss && ./run build
 ARG GOSS_IMAGE="timjdfletcher/goss:latest"
-ARG DEBIAN_VERSION="trixie-20260316-slim"
+ARG DEBIAN_VERSION="trixie-20260406-slim"
 
 FROM ${GOSS_IMAGE} AS goss
 

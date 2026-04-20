@@ -10,8 +10,8 @@ Provide a Docker container packaging [GAM](https://github.com/GAM-team/GAM) (Goo
 
 | Component | Value |
 |-----------|-------|
-| Base Image | `python:3.13.12-slim` |
-| Package | `gam7==7.34.6` |
+| Base Image | `python:3.13.13-slim` |
+| Package | `gam7==7.41.0` |
 | CLI Command | `gam` |
 | Docker Hub | `timjdfletcher/gam` |
 
@@ -19,8 +19,8 @@ Provide a Docker container packaging [GAM](https://github.com/GAM-team/GAM) (Goo
 
 | ARG | Default | Purpose |
 |-----|---------|---------|
-| `PYTHON_VERSION` | `3.13.12-slim` | Python base image tag |
-| `GAM_VERSION` | `7.34.6` | gam7 pip package version |
+| `PYTHON_VERSION` | `3.13.13-slim` | Python base image tag |
+| `GAM_VERSION` | `7.41.0` | gam7 pip package version |
 
 ## 4. File Structure
 
@@ -57,7 +57,7 @@ Uses the shared `goss-bin` Docker volume pattern. Tests validate:
 | Test | Purpose | Duration |
 |------|---------|----------|
 | `/entrypoint` file | Exists with 0755 permissions | <1s |
-| `gam version` | Shows correct version (7.34.06) | ~1s |
+| `gam version` | Shows correct version (7.41.0) | ~1s |
 | `gam --help` | Help output works | ~1s |
 | `pip show gam7` | Exact package version installed | <1s |
 | `python --version` | Entrypoint exec path works | <1s |
@@ -129,7 +129,7 @@ Three approaches, in order of simplicity:
 
 ## 12. Pitfalls & Gotchas
 
-- **Version display**: GAM displays version `7.34.6` as `7.34.06` (leading zero in patch)
+- **Version display**: Confirm `gam version` and `pip show gam7` strings when bumping `GAM_VERSION`.
 - **Warnings on stderr**: `gam version` prints RequestsDependencyWarning and config warnings to stderr before the version output — filter with `2>/dev/null` when parsing
 - **Config initialization**: GAM creates `~/.gam/` directory and config file on first run, even for `--help`
 - **Network test duration**: `gam checkconnection` takes ~25 seconds (tests 40+ Google API endpoints)

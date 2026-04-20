@@ -6,16 +6,16 @@ Docker container for [offlineimap](https://www.offlineimap.org/), an IMAP synchr
 
 | Component | Value |
 |-----------|-------|
-| Base Image | `debian:trixie-20260223-slim` |
+| Base Image | `debian:trixie-20260406-slim` |
 | Packages | `offlineimap`, `ca-certificates`, `curl`, `procps` |
-| Scheduler | `supercronic` v0.2.43 (downloaded from GitHub) |
+| Scheduler | `supercronic` v0.2.44 (downloaded from GitHub) |
 
 ## Build Args
 
 | Arg | Default | Description |
 |-----|---------|-------------|
-| `DEBIAN_VERSION` | `trixie-20260223-slim` | Debian base image tag |
-| `SUPERCRONIC_VERSION` | `v0.2.43` | Supercronic release version |
+| `DEBIAN_VERSION` | `trixie-20260406-slim` | Debian base image tag |
+| `SUPERCRONIC_VERSION` | `v0.2.44` | Supercronic release version |
 
 ## Developer Workflow (`./run`)
 

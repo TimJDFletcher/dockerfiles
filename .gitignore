@@ -1,2 +1,13 @@
 # Extracted goss binary (from timjdfletcher/goss image)
 .goss-bin/
+
+# Editor and local IDE settings (keep team-shared Cursor skills under .cursor/skills/ tracked explicitly)
+.vscode/
+.idea/
+
+# OS and backup junk
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo

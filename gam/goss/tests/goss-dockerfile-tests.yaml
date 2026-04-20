@@ -8,11 +8,11 @@ file:
     filetype: file
 
 command:
-  # Version must match pinned version (7.34.12 displays as 7.34.12)
+  # Version must match pinned version (7.41.0)
   gam version:
     exit-status: 0
     stdout:
-      - "GAM 7.34"
+      - "GAM 7.41"
     timeout: 30000
 
   # Help output works
@@ -26,7 +26,7 @@ command:
   pip show gam7:
     exit-status: 0
     stdout:
-      - "Version: 7.34.12"
+      - "Version: 7.41.0"
     timeout: 5000
 
   # Test entrypoint exec path (arbitrary commands work)

@@ -27,5 +27,5 @@ command:
   supercronic --version:
     exit-status: 0
     stdout:
-      - "v0.2.43"
+      - "v0.2.44"
     timeout: 5000

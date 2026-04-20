@@ -6,15 +6,15 @@ Docker container for [Checkov](https://www.checkov.io/), a static analysis tool 
 
 | Component | Value |
 |-----------|-------|
-| Base Image | `python:3.13.12-slim` |
-| Package | `checkov==3.2.506` via pip |
+| Base Image | `python:3.13.13-slim` |
+| Package | `checkov==3.2.523` via pip |
 
 ## Build Args
 
 | Arg | Default | Description |
 |-----|---------|-------------|
-| `PYTHON_VERSION` | `3.13.12-slim` | Python base image tag |
-| `CHECKOV_VERSION` | `3.2.506` | Checkov package version |
+| `PYTHON_VERSION` | `3.13.13-slim` | Python base image tag |
+| `CHECKOV_VERSION` | `3.2.523` | Checkov package version |
 
 ## Developer Workflow (`./run`)
 

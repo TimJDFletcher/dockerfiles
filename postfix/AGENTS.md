@@ -6,14 +6,14 @@ Docker container for [Postfix](http://www.postfix.org/), a mail transfer agent (
 
 | Component | Value |
 |-----------|-------|
-| Base Image | `debian:trixie-20260223-slim` |
+| Base Image | `debian:trixie-20260406-slim` |
 | Packages | `postfix`, `iproute2` |
 
 ## Build Args
 
 | Arg | Default | Description |
 |-----|---------|-------------|
-| `DEBIAN_VERSION` | `trixie-20260223-slim` | Debian base image tag |
+| `DEBIAN_VERSION` | `trixie-20260406-slim` | Debian base image tag |
 
 ## Developer Workflow (`./run`)
 

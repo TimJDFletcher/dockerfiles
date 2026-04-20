@@ -15,7 +15,7 @@ build() {
   log "Building ${IMAGE_NAME}:${IMAGE_TAG}"
   container build \
     --tag "${IMAGE_NAME}:${IMAGE_TAG}" \
-    --build-arg GO_VERSION=1.24 \
+    --build-arg GO_VERSION=1.26 \
     --build-arg SPF_FLATTENER_VERSION="${SPF_FLATTENER_VERSION}" \
     .
 }
@@ -116,7 +116,7 @@ release() {
   container build \
     ${platform_args} \
     --tag "${IMAGE_NAME}:${CURRENT_TAG#${CONTAINER_NAME}-}" \
-    --build-arg GO_VERSION=1.24 \
+    --build-arg GO_VERSION=1.26 \
     --build-arg SPF_FLATTENER_VERSION="${SPF_FLATTENER_VERSION}" \
     .
 

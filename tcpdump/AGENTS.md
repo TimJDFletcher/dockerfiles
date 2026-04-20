@@ -6,14 +6,14 @@ Minimal container for network packet capture using tcpdump.
 
 | Component | Value |
 |-----------|-------|
-| Base Image | `debian:trixie-20260223-slim` |
+| Base Image | `debian:trixie-20260406-slim` |
 | Package | `tcpdump` |
 
 ## Build Args
 
 | Arg | Default | Description |
 |-----|---------|-------------|
-| `DEBIAN_VERSION` | `trixie-20260223-slim` | Debian base image tag |
+| `DEBIAN_VERSION` | `trixie-20260406-slim` | Debian base image tag |
 
 ## Developer Workflow (`./run`)
 

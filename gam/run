@@ -55,7 +55,7 @@ test() {
   _ensure_goss
 
   log "Running direct artifact tests..."
-  docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" version 2>/dev/null | grep -q "GAM 7.34" || {
+  docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" version 2>/dev/null | grep -q "GAM 7.41" || {
     echo "FAIL: gam version check failed"
     exit 1
   }
