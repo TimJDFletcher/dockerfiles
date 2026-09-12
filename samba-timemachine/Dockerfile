@@ -34,8 +34,6 @@ COPY --from=goss /goss ${GOSS_DST}/goss
 # Install Dependencies & Samba
 RUN echo 'deb http://deb.debian.org/debian trixie-backports main' > /etc/apt/sources.list.d/backports.list && \
     apt-get update && \
-    apt-get --no-install-recommends --yes upgrade \
-    && \
     apt-get --no-install-recommends --yes install \
         gettext-base \
     && \
