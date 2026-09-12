@@ -1,14 +1,14 @@
 # Pre-built goss image with patched Go dependencies
 # Build first: cd ../goss && ./run build
 ARG GOSS_IMAGE="timjdfletcher/goss:latest"
-ARG DEBIAN_VERSION="trixie-20260406-slim"
+ARG DEBIAN_VERSION="trixie-20260824-slim"
 
 FROM ${GOSS_IMAGE} AS goss
 
 FROM debian:${DEBIAN_VERSION}
 
 # Arguments
-ARG SAMBA_VERSION="2:4.23.6+dfsg-2~bpo13+1"
+ARG SAMBA_VERSION="2:4.24.5+dfsg-1~bpo13+1"
 ARG GOSS_VER="v0.4.9-patched"
 ARG GOSS_DST="/goss"
 ARG BACKUPDIR="/backups"
@@ -34,6 +34,8 @@ COPY --from=goss /goss ${GOSS_DST}/goss
 # Install Dependencies & Samba
 RUN echo 'deb http://deb.debian.org/debian trixie-backports main' > /etc/apt/sources.list.d/backports.list && \
     apt-get update && \
+    apt-get --no-install-recommends --yes upgrade \
+    && \
     apt-get --no-install-recommends --yes install \
         gettext-base \
     && \
