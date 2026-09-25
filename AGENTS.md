@@ -10,8 +10,7 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 
 | Project | Purpose | Status | Notes |
 |---------|---------|--------|-------|
-| `goss` | Goss binary built from source | Active | Scratch image; patches CVEs in Go deps; used by other projects |
-| `samba-timemachine` | macOS Time Machine backup server via Samba | Active | Most mature; has goss tests, AGENTS.md; depends on `goss` |
+| `samba-timemachine` | macOS Time Machine backup server via Samba | Active | Most mature; has goss tests, AGENTS.md; embeds goss |
 | `gam` | Google Workspace CLI (GAM) container | Active | Pinned versions; has goss tests |
 | `checkov` | Bridgecrew Checkov security scanner | Active | Pinned versions; has goss tests |
 | `toolbox` | Generic Debian toolbox container | Maintained | Debian trixie; build-arg driven tools |
@@ -34,7 +33,6 @@ Open tickets live in the top-level `TODO/` directory (one Markdown file per tick
 - `05` `backup-check.sh` depends on `curl` but `curl` is purged from the image
 - `06` Rootless operation
 - `07` Configurable listen port
-- `08` Update to the latest goss release and drop the patched-build workaround
 
 Check `TODO/` for the current list rather than relying on this summary.
 
@@ -102,41 +100,41 @@ Eight projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `che
 
 ### Goss Distribution
 
-The `goss` project builds goss from source with patched Go dependencies to fix CVEs. All projects use this pre-built goss image.
+All projects use the official goss image, `ghcr.io/goss-org/goss`, pinned by tag **and** digest (the multi-arch index digest, so both amd64 and arm64 are covered). The binary lives at `/usr/bin/goss` in that image. The pin appears in `samba-timemachine/Dockerfile` and in each CLI project's `run` script.
+
+(Goss used to be built from source in a local `goss` project to patch vulnerable Go dependencies. Upstream `v0.4.10` ships current dependencies, so that project was retired.)
 
 **Pattern 1: Embedded (services with healthcheck)**
 
 Copy goss into the image for build-time validation and runtime healthchecks:
 
 ```dockerfile
-FROM timjdfletcher/goss:latest AS goss
+ARG GOSS_IMAGE="ghcr.io/goss-org/goss:v0.4.10@sha256:8d3924f722a04a660e9e6c2403be0399d737c0187fc065714d26b992286c3f0a"
+FROM ${GOSS_IMAGE} AS goss
 FROM debian:trixie-slim
-COPY --from=goss /goss /goss/goss
+COPY --from=goss /usr/bin/goss /goss/goss
 ```
 
 Used by: `samba-timemachine`
 
 **Pattern 2: External (CLI tools)**
 
-Extract goss at test time and mount it. The `_ensure_goss_image()` function auto-builds the goss image if missing:
+Extract goss at test time and mount it. `_ensure_goss()` pulls the pinned image if needed and re-extracts when the pin changes (tracked in `.goss-bin/.image`). `GOSS_IMAGE` can be overridden from the environment, e.g. to use a mirror:
 
 ```bash
-_ensure_goss_image() {
-  if ! docker image inspect "${GOSS_IMAGE}:${IMAGE_TAG}" >/dev/null 2>&1; then
-    log "Goss image not found, building..."
-    (cd "${SCRIPT_DIR}/../goss" && ./run build)
-  fi
-}
+GOSS_IMAGE="${GOSS_IMAGE:-ghcr.io/goss-org/goss:v0.4.10@sha256:8d3924f722a04a660e9e6c2403be0399d737c0187fc065714d26b992286c3f0a}"
 
 _ensure_goss() {
-  _ensure_goss_image
   local goss_dir="${PWD}/.goss-bin"
-  if [ ! -x "${goss_dir}/goss" ]; then
+  # Re-extract when the pinned image changes so a stale cached binary isn't reused
+  if [ ! -x "${goss_dir}/goss" ] || [ "$(cat "${goss_dir}/.image" 2>/dev/null)" != "${GOSS_IMAGE}" ]; then
+    log "Extracting goss from ${GOSS_IMAGE}..."
     mkdir -p "${goss_dir}"
     docker rm goss-extract 2>/dev/null || true
-    docker create --name goss-extract "${GOSS_IMAGE}:${IMAGE_TAG}" >/dev/null
-    docker cp goss-extract:/goss "${goss_dir}/goss"
+    docker create --name goss-extract "${GOSS_IMAGE}" >/dev/null
+    docker cp goss-extract:/usr/bin/goss "${goss_dir}/goss"
     docker rm goss-extract >/dev/null
+    echo "${GOSS_IMAGE}" > "${goss_dir}/.image"
   fi
 }
 
@@ -178,6 +176,7 @@ Some checkov findings are acceptable for this repo:
 ## Dependency Update Workflow
 
 1. Check upstream for new versions (see project AGENTS.md for URLs)
+   - **Goss:** check https://github.com/goss-org/goss/releases, resolve the new tag's index digest (e.g. `docker buildx imagetools inspect ghcr.io/goss-org/goss:<tag>`), then update every `GOSS_IMAGE` pin (`grep -rn ghcr.io/goss-org/goss`) and `GOSS_VER` in `samba-timemachine/Dockerfile`
 2. Update `ARG` in Dockerfile
 3. Run `./run test` if available, otherwise `./run build`
 4. Tag and release: `git tag <project>-v<VERSION> && ./run release`

@@ -1,20 +1,20 @@
 #!/bin/sh
-# DEPRECATED: Use the pre-built goss image instead
+# DEPRECATED: Use the official goss image instead
 #
 # In your Dockerfile:
-#   FROM timjdfletcher/goss:latest AS goss
+#   FROM ghcr.io/goss-org/goss:v0.4.10@sha256:8d3924f722a04a660e9e6c2403be0399d737c0187fc065714d26b992286c3f0a AS goss
 #   FROM debian:trixie-slim
-#   COPY --from=goss /goss /goss/goss
+#   COPY --from=goss /usr/bin/goss /goss/goss
 #
-# This approach avoids downloading at build time and ensures
-# all Go dependencies are patched for CVEs.
+# This approach avoids downloading at build time, and the digest pin
+# verifies the binary's integrity.
 
 echo "ERROR: This script is deprecated."
 echo ""
-echo "Use the pre-built goss image instead:"
+echo "Use the official goss image instead:"
 echo ""
-echo "  FROM timjdfletcher/goss:latest AS goss"
+echo "  FROM ghcr.io/goss-org/goss:v0.4.10@sha256:8d3924f722a04a660e9e6c2403be0399d737c0187fc065714d26b992286c3f0a AS goss"
 echo "  FROM debian:trixie-slim"
-echo "  COPY --from=goss /goss /goss/goss"
+echo "  COPY --from=goss /usr/bin/goss /goss/goss"
 echo ""
 exit 1

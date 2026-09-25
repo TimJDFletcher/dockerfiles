@@ -5,7 +5,7 @@ A reusable testing pattern for Docker containers using [goss](https://github.com
 ## Overview
 
 This skill provides a consistent approach to testing Docker containers:
-- **Pre-built goss image** with patched Go dependencies (no CVEs)
+- **Official goss image** (`ghcr.io/goss-org/goss`), pinned by tag and digest
 - **Works with any container** including minimal/scratch images
 - **Fast iteration** with cached binary extraction
 - **Multiple patterns**: embedded, external mount, or GitHub download
@@ -15,7 +15,7 @@ This skill provides a consistent approach to testing Docker containers:
 | Pattern | Use Case | Goss Source |
 |---------|----------|-------------|
 | 1. Embedded | Services with healthcheck | `COPY --from=goss` in Dockerfile |
-| 2. External | CLI tools in this monorepo | Extract from `timjdfletcher/goss` image |
+| 2. External | CLI tools in this monorepo | Extract from `ghcr.io/goss-org/goss` image |
 | 3. Compose | Integration tests | Mount `.goss-bin/` in compose |
 | 4. GitHub | Standalone/external projects | Download from GitHub releases |
 
@@ -23,9 +23,9 @@ This skill provides a consistent approach to testing Docker containers:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│              timjdfletcher/goss:tmp image                   │
-│              (built from ../goss project)                   │
-│                Contains: /goss binary                       │
+│              ghcr.io/goss-org/goss image                    │
+│              (official release, pinned by digest)           │
+│                Contains: /usr/bin/goss binary               │
 └─────────────────────────────────────────────────────────────┘
                               │
             ┌─────────────────┴─────────────────┐
@@ -34,19 +34,20 @@ This skill provides a consistent approach to testing Docker containers:
 │  Pattern 1: Embedded      │       │  Pattern 2: External      │
 │  (services with health)   │       │  (CLI tools, tests)       │
 │                           │       │                           │
-│  COPY --from=goss /goss   │       │  Extract goss to .goss-bin│
+│  COPY --from=goss         │       │  Extract goss to .goss-bin│
 │  into Dockerfile          │       │  Mount at test time       │
 └───────────────────────────┘       └───────────────────────────┘
 ```
 
 ## Prerequisites
 
-Build the goss image first:
+Docker only. The goss image is pinned by tag **and** multi-arch index digest, so every pull is integrity-checked:
 
-```bash
-cd /path/to/dockerfiles/goss
-./run build
 ```
+ghcr.io/goss-org/goss:v0.4.10@sha256:8d3924f722a04a660e9e6c2403be0399d737c0187fc065714d26b992286c3f0a
+```
+
+To bump it, find the new tag at https://github.com/goss-org/goss/releases and resolve its digest with `docker buildx imagetools inspect ghcr.io/goss-org/goss:<tag>`.
 
 ## Pattern 1: Embedded Goss (Services)
 
@@ -58,19 +59,21 @@ For long-running services that need:
 ### Dockerfile Structure
 
 ```dockerfile
-# Reference the pre-built goss image
-FROM timjdfletcher/goss:latest AS goss
+# Official goss image, pinned by digest
+ARG GOSS_IMAGE="ghcr.io/goss-org/goss:v0.4.10@sha256:8d3924f722a04a660e9e6c2403be0399d737c0187fc065714d26b992286c3f0a"
+FROM ${GOSS_IMAGE} AS goss
 
 FROM debian:trixie-slim
 
-ARG GOSS_VER="v0.4.9-patched"
+# Must match `goss --version` output (no leading "v")
+ARG GOSS_VER="0.4.10"
 ARG GOSS_DST="/goss"
 
 ENV GOSS_VER=${GOSS_VER} \
     GOSS_DST=${GOSS_DST}
 
-# Copy goss binary from pre-built image (no curl needed!)
-COPY --from=goss /goss ${GOSS_DST}/goss
+# Copy goss binary from the official image (no curl needed!)
+COPY --from=goss /usr/bin/goss ${GOSS_DST}/goss
 
 # Install your application
 RUN apt-get update && apt-get install -y myservice && \
@@ -112,17 +115,19 @@ For containers where you don't embed goss, extract it at test time.
 Add this function to your `./run` script:
 
 ```bash
-GOSS_IMAGE="timjdfletcher/goss"
-IMAGE_TAG="tmp"
+GOSS_IMAGE="${GOSS_IMAGE:-ghcr.io/goss-org/goss:v0.4.10@sha256:8d3924f722a04a660e9e6c2403be0399d737c0187fc065714d26b992286c3f0a}"
 
 _ensure_goss() {
   local goss_dir="${PWD}/.goss-bin"
-  if [ ! -x "${goss_dir}/goss" ]; then
-    log "Extracting goss from ${GOSS_IMAGE}:${IMAGE_TAG}..."
+  # Re-extract when the pinned image changes so a stale cached binary isn't reused
+  if [ ! -x "${goss_dir}/goss" ] || [ "$(cat "${goss_dir}/.image" 2>/dev/null)" != "${GOSS_IMAGE}" ]; then
+    log "Extracting goss from ${GOSS_IMAGE}..."
     mkdir -p "${goss_dir}"
-    docker create --name goss-extract "${GOSS_IMAGE}:${IMAGE_TAG}" >/dev/null
-    docker cp goss-extract:/goss "${goss_dir}/goss"
+    docker rm goss-extract 2>/dev/null || true
+    docker create --name goss-extract "${GOSS_IMAGE}" >/dev/null
+    docker cp goss-extract:/usr/bin/goss "${goss_dir}/goss"
     docker rm goss-extract >/dev/null
+    echo "${GOSS_IMAGE}" > "${goss_dir}/.image"
   fi
 }
 ```
@@ -224,25 +229,25 @@ test() {
 
 ## Pattern 4: Download from GitHub Releases (Standalone)
 
-For projects outside this monorepo or when the `timjdfletcher/goss` image is unavailable, download goss directly from GitHub releases.
+When the `ghcr.io/goss-org/goss` image can't be pulled, download goss directly from GitHub releases. Releases ship `goss_<ver>_linux_<arch>.tar.gz` archives plus a `goss_<ver>_SHA256SUMS` file; the tarball is checksum-verified before extraction.
 
 ### Shared Volume Pattern
 
 Uses a Docker volume to cache the goss binary across test runs:
 
 ```bash
-GOSS_VERSION="v0.4.9"
+GOSS_VERSION="v0.4.10"
 
 _get_goss_arch() {
   local arch
   arch=$(uname -m)
   case "${arch}" in
-    x86_64)  echo "amd64" ;;
+    x86_64)  echo "x86_64" ;;
     aarch64) echo "arm64" ;;
     arm64)   echo "arm64" ;;
-    armv7l)  echo "arm" ;;
-    armv6l)  echo "arm" ;;
-    *)       echo "amd64" ;;
+    armv7l)  echo "armv6" ;;
+    armv6l)  echo "armv6" ;;
+    *)       echo "x86_64" ;;
   esac
 }
 
@@ -260,17 +265,25 @@ _ensure_goss_volume() {
     docker run --rm -v goss-bin:/target alpine:latest chown 101:102 /target
   fi
 
-  # Download goss if missing or wrong version
+  # Download goss if missing or wrong version. Releases ship tarballs plus a
+  # SHA256SUMS file; the tarball is verified before extracting.
+  local ver="${GOSS_VERSION#v}"
+  local base="https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}"
+  local archive="goss_${ver}_linux_${goss_arch}.tar.gz"
   log "Ensuring goss ${GOSS_VERSION} in volume..."
   docker run --rm \
     -v goss-bin:/target \
     --entrypoint sh \
     curlimages/curl:latest -c "
-      if [ -f /target/goss ] && /target/goss --version 2>&1 | grep -q '${GOSS_VERSION}'; then
+      set -e
+      if [ -f /target/goss ] && /target/goss --version 2>&1 | grep -q 'version ${ver}\$'; then
         echo 'goss ${GOSS_VERSION} already installed'
       else
-        curl -fsSL \"https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}/goss-linux-${goss_arch}\" \
-          -o /target/goss
+        cd /tmp
+        curl -fsSLO \"${base}/${archive}\"
+        curl -fsSLO \"${base}/goss_${ver}_SHA256SUMS\"
+        grep ' ${archive}\$' goss_${ver}_SHA256SUMS | sha256sum -c -
+        tar -xzf ${archive} -C /target goss
         chmod 755 /target/goss
         echo 'goss ${GOSS_VERSION} installed'
       fi
@@ -320,16 +333,15 @@ This pattern downloads from the internet during test runs. To avoid running curl
 ### When to Use This Pattern
 
 - Projects outside this monorepo
-- CI systems without access to `timjdfletcher/goss` image
-- Quick prototyping without building custom goss image
+- Environments that can't pull from ghcr.io
 
 ### Limitations
 
-- Pre-built goss releases may contain vulnerable Go dependencies
+- The checksum file comes from the same release as the tarball, so it guards against corruption rather than a compromised release (the image digest pin in Patterns 1-3 is stronger)
 - Network dependency during test runs
 - Slower first run (download ~15MB binary)
 
-For production use in this monorepo, prefer Patterns 1-3 which use the CVE-patched `timjdfletcher/goss` image.
+For production use in this monorepo, prefer Patterns 1-3, which use the digest-pinned official image.
 
 ## Test File Organization
 

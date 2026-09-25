@@ -28,7 +28,7 @@ Docker container for [offlineimap](https://www.offlineimap.org/), an IMAP synchr
 
 ## Testing
 
-Tests use the shared `goss-bin` Docker volume. Validates:
+Tests use goss extracted from the pinned `ghcr.io/goss-org/goss` image into `.goss-bin/`. Validates:
 - offlineimap binary exists and runs
 - supercronic version matches
 - entrypoint and crontab files exist

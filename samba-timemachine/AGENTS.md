@@ -7,20 +7,12 @@ Docker container running Samba configured to emulate an Apple Time Capsule for m
 * **Base Image:** `debian:trixie-slim`
 * **Core Service:** `samba` (from `trixie-backports`)
 * **Templating:** `envsubst` (from `gettext-base`) generates config files from templates
-* **Testing:** `goss` (built from source via `../goss` project) for build-time validation, runtime health checks, and live integration tests
+* **Testing:** `goss` (official `ghcr.io/goss-org/goss` image, pinned by digest) for build-time validation, runtime health checks, and live integration tests
 * **Orchestration:** `./run` shell script and Docker Compose
 
 ## Prerequisites
 
-The `goss` image is built automatically if missing. When you run `./run build` or `./run test`, the script checks for `timjdfletcher/goss:tmp` and builds it from `../goss` if needed.
-
-To build manually:
-
-```bash
-cd ../goss && ./run build
-```
-
-The samba-timemachine Dockerfile uses `COPY --from=timjdfletcher/goss:tmp` to get the goss binary.
+None beyond Docker. The Dockerfile copies the goss binary from the official image (`ARG GOSS_IMAGE`, pinned to `ghcr.io/goss-org/goss:<tag>@sha256:<index digest>`), which is pulled automatically at build time.
 
 ## Environment Variables
 
@@ -77,7 +69,7 @@ Three test suites, each validating a different phase:
 
 **Entrypoint ordering: `configureSAMBA` before `createUser`.** `smbpasswd` reads `smb.conf` to locate the passdb backend. If `smb.conf` doesn't exist yet, `smbpasswd` fails with a cryptic error.
 
-**Goss is built from source.** The `goss` project builds goss with patched Go dependencies to fix CVEs. The samba-timemachine Dockerfile uses `COPY --from=timjdfletcher/goss:tmp` to get the binary. Build the goss project first before building samba-timemachine.
+**Goss comes from the official image.** The Dockerfile uses `COPY --from=goss /usr/bin/goss` with `GOSS_IMAGE` pinned by digest. `GOSS_VER` must match the version string the binary prints (`goss version 0.4.10`, no leading `v`); the build-time goss test checks it.
 
 **`backup-check.sh` is for the host, not the container.** It requires `curl` (not installed in the image). The entrypoint copies it into `${BACKUPDIR}/` so it can be run from the host or a host cron job.
 
@@ -98,7 +90,7 @@ Two pinned versions in the Dockerfile `ARG` block need periodic checking:
 
 The Samba version must match what's available in `trixie-backports`. If the version is bumped and the old version is removed from the repo, the build will fail. The `smbclient` package is pinned to the same version as `samba` — always update both together.
 
-**Goss updates:** See the `../goss/AGENTS.md` for updating goss. Goss is built from source with patched dependencies in a separate project.
+**Goss updates:** Check https://github.com/goss-org/goss/releases, resolve the new tag's multi-arch index digest (`docker buildx imagetools inspect ghcr.io/goss-org/goss:<tag>`), then update `GOSS_IMAGE` and `GOSS_VER` in the Dockerfile. The CLI projects' `run` scripts pin the same image; update them together (`grep -rn ghcr.io/goss-org/goss ..`).
 
 After updating, run `./run test` to validate the build and all integration tests still pass.
 

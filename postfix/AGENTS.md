@@ -26,7 +26,7 @@ Docker container for [Postfix](http://www.postfix.org/), a mail transfer agent (
 
 ## Testing
 
-Tests use the shared `goss-bin` Docker volume. Validates:
+Tests use goss extracted from the pinned `ghcr.io/goss-org/goss` image into `.goss-bin/`. Validates:
 - postfix and iproute2 packages installed
 - postfix binaries exist (`/usr/sbin/postfix`, `/usr/lib/postfix/sbin/master`)
 - entrypoint exists with correct permissions

@@ -6,7 +6,7 @@ description: >-
   ./run test (and ./run build where applicable) suite before considering the work
   done. Use when the user asks to upgrade all dependencies, bump images to latest,
   refresh pins, run a repo-wide dependency refresh, or validate after version bumps.
-  After `goss`, fan out parallel `./run test` / `./run build` for independent projects.
+  Fan out parallel `./run test` / `./run build` for independent projects.
 ---
 
 # Dockerfiles monorepo — full dependency upgrade
@@ -31,12 +31,13 @@ Touch every place versions are pinned or asserted:
 | Base images | Each `<project>/Dockerfile` — `ARG DEBIAN_VERSION`, `ARG PYTHON_VERSION`, `ARG GO_VERSION`, `FROM` lines |
 | Pip / GitHub releases | Same Dockerfiles; `<project>/run` when it duplicates a version for tests |
 | Goss / integration | `<project>/goss/tests/*.yaml`, `run` scripts that `grep` version strings |
+| Goss itself | `GOSS_IMAGE` pin (`ghcr.io/goss-org/goss:<tag>@sha256:<index digest>`) in `samba-timemachine/Dockerfile` and every CLI project's `run`; `GOSS_VER` in `samba-timemachine/Dockerfile` (no leading `v`) — find all with `grep -rn ghcr.io/goss-org/goss` |
 | Docs | `<project>/AGENTS.md` tables that mirror pins; root [`AGENTS.md`](../../../AGENTS.md) / [`.cursorrules`](../../../.cursorrules) only if they cite example tags |
 | Ruby tests | `postfix/Gemfile.lock`, `offlineimap/Gemfile.lock` — run `bundle update` from those directories |
 
-Projects with Dockerfiles (inventory may drift): `checkov`, `gam`, `goss`, `postfix`, `samba-timemachine`, `spf-flattener`, `ssh-audit`, `tcpdump`, `toolbox`, `offlineimap`, `yajsv`.
+Projects with Dockerfiles (inventory may drift): `checkov`, `gam`, `postfix`, `samba-timemachine`, `spf-flattener`, `ssh-audit`, `tcpdump`, `toolbox`, `offlineimap`, `yajsv`.
 
-**Build order:** build **`goss`** before **`samba-timemachine`** (timemachine copies `timjdfletcher/goss:tmp` / `latest`).
+**Goss** comes from the official `ghcr.io/goss-org/goss` image (no local build). When bumping it, resolve the new tag's multi-arch index digest with `docker buildx imagetools inspect ghcr.io/goss-org/goss:<tag>` and pin tag + digest everywhere.
 
 ## How to resolve “latest” versions
 
@@ -58,10 +59,9 @@ Projects with Dockerfiles (inventory may drift): `checkov`, `gam`, `goss`, `post
 
 ### Full matrix (run in this order)
 
-1. **`goss`** — `./run test` (other images copy or extract this binary.)
-2. **`yajsv`**, **`checkov`**, **`gam`**, **`ssh-audit`**, **`offlineimap`**, **`postfix`**, **`tcpdump`**, **`samba-timemachine`** — each: `./run test`
-3. **`toolbox`** — no `test` target; run **`./run build`**
-4. **`spf-flattener`** — `./run test` uses Apple’s **`container`** CLI (not Docker). Start the system service first: **`container system start`** (see [`spf-flattener/AGENTS.md`](../../../spf-flattener/AGENTS.md)). If the CLI or service is unavailable, state explicitly that spf-flattener was not tested and why.
+1. **`yajsv`**, **`checkov`**, **`gam`**, **`ssh-audit`**, **`offlineimap`**, **`postfix`**, **`tcpdump`**, **`samba-timemachine`** — each: `./run test`
+2. **`toolbox`** — no `test` target; run **`./run build`**
+3. **`spf-flattener`** — `./run test` uses Apple’s **`container`** CLI (not Docker). Start the system service first: **`container system start`** (see [`spf-flattener/AGENTS.md`](../../../spf-flattener/AGENTS.md)). If the CLI or service is unavailable, state explicitly that spf-flattener was not tested and why.
 
 ### Fan-out testing (parallel)
 
@@ -71,10 +71,8 @@ To save wall-clock time, **fan out** independent test jobs after dependencies ar
 
 | Wave | Projects | Notes |
 |------|-----------|--------|
-| 1 | `goss` | Must complete first; other images extract or `COPY --from` this build. |
-| 2 | `yajsv`, `checkov`, `gam`, `ssh-audit`, `offlineimap`, `postfix`, `tcpdump`, `toolbox` (`./run build` only) | No ordering among these; safe to run **in parallel**. |
-| 3 | `samba-timemachine` | Run after wave 1 (needs `timjdfletcher/goss:tmp` or equivalent). |
-| 4 | `spf-flattener` | Apple Container only; can run in parallel with wave 2–3 **if** `container system start` has been run and the host has capacity. |
+| 1 | `yajsv`, `checkov`, `gam`, `ssh-audit`, `offlineimap`, `postfix`, `tcpdump`, `samba-timemachine`, `toolbox` (`./run build` only) | No ordering among these; safe to run **in parallel**. |
+| 2 | `spf-flattener` | Apple Container only; can run in parallel with wave 1 **if** `container system start` has been run and the host has capacity. |
 
 Re-run any failed project alone (then its dependents) after fixing; optionally re-run the full matrix for confidence.
 
@@ -83,7 +81,7 @@ Example loop (Docker projects only):
 ```bash
 set -euo pipefail
 REPO="$(git rev-parse --show-toplevel)"
-for d in goss yajsv checkov gam ssh-audit offlineimap postfix tcpdump samba-timemachine; do
+for d in yajsv checkov gam ssh-audit offlineimap postfix tcpdump samba-timemachine; do
   echo "========== $d =========="
   (cd "$REPO/$d" && ./run test)
 done
@@ -93,7 +91,7 @@ done
 ### Rules
 
 - Run **`./run test`** for **every** project that defines it, not only projects whose files you edited (shared bases or goss can surface regressions elsewhere).
-- If a test fails, fix pins, goss expectations, or scripts, then **re-run the full matrix** (or at minimum the failed project and any upstream dependency such as `goss`).
+- If a test fails, fix pins, goss expectations, or scripts, then **re-run the full matrix** (or at minimum the failed project).
 - Do not **`./run release`** or push unless the user asks.
 
 ## Repo-specific gotchas

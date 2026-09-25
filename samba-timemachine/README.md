@@ -150,5 +150,5 @@ to fix them:
 
 * [Debian Trixie](https://hub.docker.com/_/debian/tags?page=1&name=trixie)
 * [SAMBA](https://packages.debian.org/trixie-backports/samba)
-* [Goss](https://github.com/goss-org/goss) — built from source with patched dependencies (see `../goss` project)
+* [Goss](https://github.com/goss-org/goss) — official `ghcr.io/goss-org/goss` image, pinned by digest
 

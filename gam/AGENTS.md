@@ -52,7 +52,7 @@ The default `CMD` is `--help`, so running the container with no arguments prints
 
 ## 7. Testing
 
-Uses the shared `goss-bin` Docker volume pattern. Tests validate:
+Uses goss extracted from the pinned `ghcr.io/goss-org/goss` image into `.goss-bin/`. Tests validate:
 
 | Test | Purpose | Duration |
 |------|---------|----------|

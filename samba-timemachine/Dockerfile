@@ -1,6 +1,5 @@
-# Pre-built goss image with patched Go dependencies
-# Build first: cd ../goss && ./run build
-ARG GOSS_IMAGE="timjdfletcher/goss:latest"
+# Official goss release image, pinned by digest (multi-arch index)
+ARG GOSS_IMAGE="ghcr.io/goss-org/goss:v0.4.10@sha256:8d3924f722a04a660e9e6c2403be0399d737c0187fc065714d26b992286c3f0a"
 ARG DEBIAN_VERSION="trixie-20260824-slim"
 
 FROM ${GOSS_IMAGE} AS goss
@@ -9,7 +8,7 @@ FROM debian:${DEBIAN_VERSION}
 
 # Arguments
 ARG SAMBA_VERSION="2:4.24.5+dfsg-1~bpo13+1"
-ARG GOSS_VER="v0.4.9-patched"
+ARG GOSS_VER="0.4.10"
 ARG GOSS_DST="/goss"
 ARG BACKUPDIR="/backups"
 ARG DOCS="docs/Container.md"
@@ -28,8 +27,8 @@ ENV USER="timemachine" \
 # Setup Volume
 VOLUME ${BACKUPDIR}
 
-# Copy goss binary from pre-built image (no curl needed!)
-COPY --from=goss /goss ${GOSS_DST}/goss
+# Copy goss binary from the official image (no curl needed!)
+COPY --from=goss /usr/bin/goss ${GOSS_DST}/goss
 
 # Install Dependencies & Samba
 RUN echo 'deb http://deb.debian.org/debian trixie-backports main' > /etc/apt/sources.list.d/backports.list && \

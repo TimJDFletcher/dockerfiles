@@ -1,13 +1,13 @@
 #!/bin/bash
 # Goss Container Testing - Run Script Template (GitHub Download Pattern)
-# Use this when timjdfletcher/goss image is not available
+# Use this when the ghcr.io/goss-org/goss image can't be pulled (e.g. registry access is blocked)
 # Copy this to your project as ./run and customize IMAGE_NAME
 set -eu -o pipefail
 
 # === CUSTOMIZE THESE ===
 IMAGE_NAME="myorg/myimage"
 IMAGE_TAG="tmp"
-GOSS_VERSION="v0.4.9"
+GOSS_VERSION="v0.4.10"
 # === END CUSTOMIZE ===
 
 log() {
@@ -18,12 +18,12 @@ _get_goss_arch() {
   local arch
   arch=$(uname -m)
   case "${arch}" in
-    x86_64)  echo "amd64" ;;
+    x86_64)  echo "x86_64" ;;
     aarch64) echo "arm64" ;;
     arm64)   echo "arm64" ;;
-    armv7l)  echo "arm" ;;
-    armv6l)  echo "arm" ;;
-    *)       echo "amd64" ;;
+    armv7l)  echo "armv6" ;;
+    armv6l)  echo "armv6" ;;
+    *)       echo "x86_64" ;;
   esac
 }
 
@@ -41,17 +41,25 @@ _ensure_goss_volume() {
     docker run --rm -v goss-bin:/target alpine:latest chown 101:102 /target
   fi
 
-  # Download goss if missing or wrong version
+  # Download goss if missing or wrong version. Releases ship tarballs plus a
+  # SHA256SUMS file; the tarball is verified before extracting.
+  local ver="${GOSS_VERSION#v}"
+  local base="https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}"
+  local archive="goss_${ver}_linux_${goss_arch}.tar.gz"
   log "Ensuring goss ${GOSS_VERSION} in volume..."
   docker run --rm \
     -v goss-bin:/target \
     --entrypoint sh \
     curlimages/curl:latest -c "
-      if [ -f /target/goss ] && /target/goss --version 2>&1 | grep -q '${GOSS_VERSION}'; then
+      set -e
+      if [ -f /target/goss ] && /target/goss --version 2>&1 | grep -q 'version ${ver}\$'; then
         echo 'goss ${GOSS_VERSION} already installed'
       else
-        curl -fsSL \"https://github.com/goss-org/goss/releases/download/${GOSS_VERSION}/goss-linux-${goss_arch}\" \
-          -o /target/goss
+        cd /tmp
+        curl -fsSLO \"${base}/${archive}\"
+        curl -fsSLO \"${base}/goss_${ver}_SHA256SUMS\"
+        grep ' ${archive}\$' goss_${ver}_SHA256SUMS | sha256sum -c -
+        tar -xzf ${archive} -C /target goss
         chmod 755 /target/goss
         echo 'goss ${GOSS_VERSION} installed'
       fi

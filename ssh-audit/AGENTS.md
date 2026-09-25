@@ -27,7 +27,7 @@ Docker container for [ssh-audit](https://github.com/jtesta/ssh-audit), an SSH se
 
 ## Testing
 
-Tests run in two phases. Goss `v0.4.9` is downloaded from GitHub to a shared `goss-bin` Docker volume:
+Tests run in two phases. Before testing, the pinned official goss binary is extracted from `ghcr.io/goss-org/goss` into `.goss-bin/` and bind-mounted into the container:
 
 1. **Build-time tests** — Version check and goss validation of binary/help
 2. **Integration tests** — docker-compose spins up hardened + weak sshd containers
