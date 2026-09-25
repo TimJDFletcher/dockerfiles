@@ -25,7 +25,18 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 
 ## Known Issues & Tech Debt
 
-No outstanding issues.
+Open tickets live in the top-level `TODO/` directory (one Markdown file per ticket, with a `Status:` line). All current tickets are for `samba-timemachine`:
+
+- `01` Password visible via `docker inspect`
+- `02` Default password baked into image layers
+- `03` `.dockerignore` is empty
+- `04` External volume requires manual pre-creation
+- `05` `backup-check.sh` depends on `curl` but `curl` is purged from the image
+- `06` Rootless operation
+- `07` Configurable listen port
+- `08` Update to the latest goss release and drop the patched-build workaround
+
+Check `TODO/` for the current list rather than relying on this summary.
 
 ## Conventions (Quick Reference)
 

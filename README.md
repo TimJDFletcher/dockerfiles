@@ -15,6 +15,8 @@ A collection of Docker container projects for personal infrastructure.
 | [postfix](postfix/) | SMTP relay server | [timjdfletcher/postfix](https://hub.docker.com/r/timjdfletcher/postfix) |
 | [tcpdump](tcpdump/) | Network packet capture | [timjdfletcher/tcpdump](https://hub.docker.com/r/timjdfletcher/tcpdump) |
 | [ssh-audit](ssh-audit/) | SSH server security auditing | — |
+| [goss](goss/) | Goss test tool built from source with patched Go dependencies (used by other projects' tests) | [timjdfletcher/goss](https://hub.docker.com/r/timjdfletcher/goss) |
+| [spf-flattener](spf-flattener/) | SPF record flattening tool (built with Apple `container` CLI) | — |
 | [media](media/) | Media server stack (Compose-only) | — |
 
 ## Quick Start
