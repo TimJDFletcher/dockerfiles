@@ -1,4 +1,4 @@
-# Extracted goss binary (from timjdfletcher/goss image)
+# Extracted goss binary (from the pinned ghcr.io/goss-org/goss image)
 .goss-bin/
 
 # Editor and local IDE settings (keep team-shared Cursor skills under .cursor/skills/ tracked explicitly)

@@ -51,7 +51,7 @@ container run --rm timjdfletcher/spf-flattener --domain example.com \
 
 | ARG | Default | Description |
 |-----|---------|-------------|
-| `GO_VERSION` | `1.26` | Go version for compilation |
+| `GO_VERSION` | `1.27` | Go version for compilation |
 | `SPF_FLATTENER_VERSION` | `main` | Git branch/tag to build from |
 
 ## Developer Workflow

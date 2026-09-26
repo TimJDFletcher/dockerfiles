@@ -1,7 +1,7 @@
 # Build spf-flattener from source
 # Usage: docker run --rm timjdfletcher/spf-flattener --domain example.com
 
-ARG GO_VERSION="1.26"
+ARG GO_VERSION="1.27"
 ARG SPF_FLATTENER_VERSION="main"
 
 FROM golang:${GO_VERSION}-alpine AS builder
@@ -22,7 +22,7 @@ RUN apk add --no-cache git && \
 RUN /spf-flatten --help
 
 # Minimal final image with just the binary
-FROM alpine:3.23
+FROM alpine:3.24
 
 RUN apk add --no-cache ca-certificates
 

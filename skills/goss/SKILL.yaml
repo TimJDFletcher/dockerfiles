@@ -45,7 +45,7 @@ patterns:
     description: Download goss from GitHub releases (standalone)
     use_when:
       - Projects outside this monorepo
-      - CI without access to timjdfletcher/goss image
+      - Environments that can't pull from ghcr.io
       - Quick prototyping
     template: templates/run-github.sh
 
@@ -55,7 +55,7 @@ requirements:
 
 files:
   - README.md                                # Full documentation
-  - templates/run.sh                         # External pattern (uses goss image)
+  - templates/run.sh                         # External pattern (uses official goss image)
   - templates/run-github.sh                  # GitHub download pattern (standalone)
   - templates/goss-dockerfile-tests.yaml     # Build-time validation template
   - templates/goss-installer                 # Deprecated - use COPY --from pattern
@@ -64,10 +64,9 @@ files:
 
 usage: |
   External Pattern (CLI tools in monorepo):
-    1. Build goss image first: cd ../goss && ./run build
-    2. Copy templates/run.sh to your project as ./run
-    3. Create goss/tests/goss-dockerfile-tests.yaml
-    4. Run ./run test
+    1. Copy templates/run.sh to your project as ./run
+    2. Create goss/tests/goss-dockerfile-tests.yaml
+    3. Run ./run test (the pinned goss image is pulled automatically)
 
   GitHub Pattern (Standalone projects):
     1. Copy templates/run-github.sh to your project as ./run
@@ -75,10 +74,10 @@ usage: |
     3. Run ./run test
 
   Embedded Pattern (Services):
-    1. Add FROM timjdfletcher/goss:latest AS goss to Dockerfile
-    2. Add COPY --from=goss /goss /goss/goss
+    1. Add FROM ghcr.io/goss-org/goss:<tag>@sha256:<digest> AS goss to Dockerfile
+    2. Add COPY --from=goss /usr/bin/goss /goss/goss
     3. Add HEALTHCHECK using goss (see README.md Pattern 1)
     4. Create goss/tests/ with build-time, healthcheck, and live tests
 
-goss_version: "v0.4.9"
-goss_image: "timjdfletcher/goss:latest"
+goss_version: "v0.4.10"
+goss_image: "ghcr.io/goss-org/goss:v0.4.10@sha256:8d3924f722a04a660e9e6c2403be0399d737c0187fc065714d26b992286c3f0a"

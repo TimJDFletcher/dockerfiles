@@ -10,8 +10,8 @@ Provide a Docker container packaging [GAM](https://github.com/GAM-team/GAM) (Goo
 
 | Component | Value |
 |-----------|-------|
-| Base Image | `python:3.13.13-slim` |
-| Package | `gam7==7.41.0` |
+| Base Image | `python:3.13.15-slim` |
+| Package | `gam7==7.48.14` |
 | CLI Command | `gam` |
 | Docker Hub | `timjdfletcher/gam` |
 
@@ -19,8 +19,8 @@ Provide a Docker container packaging [GAM](https://github.com/GAM-team/GAM) (Goo
 
 | ARG | Default | Purpose |
 |-----|---------|---------|
-| `PYTHON_VERSION` | `3.13.13-slim` | Python base image tag |
-| `GAM_VERSION` | `7.41.0` | gam7 pip package version |
+| `PYTHON_VERSION` | `3.13.15-slim` | Python base image tag |
+| `GAM_VERSION` | `7.48.14` | gam7 pip package version |
 
 ## 4. File Structure
 
@@ -52,12 +52,12 @@ The default `CMD` is `--help`, so running the container with no arguments prints
 
 ## 7. Testing
 
-Uses the shared `goss-bin` Docker volume pattern. Tests validate:
+Uses goss extracted from the pinned `ghcr.io/goss-org/goss` image into `.goss-bin/`. Tests validate:
 
 | Test | Purpose | Duration |
 |------|---------|----------|
 | `/entrypoint` file | Exists with 0755 permissions | <1s |
-| `gam version` | Shows correct version (7.41.0) | ~1s |
+| `gam version` | Shows correct version (7.48.14) | ~1s |
 | `gam --help` | Help output works | ~1s |
 | `pip show gam7` | Exact package version installed | <1s |
 | `python --version` | Entrypoint exec path works | <1s |

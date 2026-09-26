@@ -15,6 +15,7 @@ A collection of Docker container projects for personal infrastructure.
 | [postfix](postfix/) | SMTP relay server | [timjdfletcher/postfix](https://hub.docker.com/r/timjdfletcher/postfix) |
 | [tcpdump](tcpdump/) | Network packet capture | [timjdfletcher/tcpdump](https://hub.docker.com/r/timjdfletcher/tcpdump) |
 | [ssh-audit](ssh-audit/) | SSH server security auditing | — |
+| [spf-flattener](spf-flattener/) | SPF record flattening tool (built with Apple `container` CLI) | — |
 | [media](media/) | Media server stack (Compose-only) | — |
 
 ## Quick Start

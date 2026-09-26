@@ -3,33 +3,27 @@ set -eu -o pipefail
 
 CONTAINER_NAME=offlineimap
 IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
-GOSS_IMAGE="timjdfletcher/goss"
+# Official goss release image, pinned by digest (multi-arch index)
+GOSS_IMAGE="${GOSS_IMAGE:-ghcr.io/goss-org/goss:v0.4.10@sha256:8d3924f722a04a660e9e6c2403be0399d737c0187fc065714d26b992286c3f0a}"
 IMAGE_TAG=tmp
 PLATFORMS="linux/amd64,linux/arm64"
-SUPERCRONIC_VERSION="v0.2.44"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SUPERCRONIC_VERSION="v0.2.49"
 
 log() {
   echo "==> $*"
 }
 
-_ensure_goss_image() {
-  if ! docker image inspect "${GOSS_IMAGE}:${IMAGE_TAG}" >/dev/null 2>&1; then
-    log "Goss image not found, building..."
-    (cd "${SCRIPT_DIR}/../goss" && ./run build)
-  fi
-}
-
 _ensure_goss() {
-  _ensure_goss_image
   local goss_dir="${PWD}/.goss-bin"
-  if [ ! -x "${goss_dir}/goss" ]; then
-    log "Extracting goss from ${GOSS_IMAGE}:${IMAGE_TAG}..."
+  # Re-extract when the pinned image changes so a stale cached binary isn't reused
+  if [ ! -x "${goss_dir}/goss" ] || [ "$(cat "${goss_dir}/.image" 2>/dev/null)" != "${GOSS_IMAGE}" ]; then
+    log "Extracting goss from ${GOSS_IMAGE}..."
     mkdir -p "${goss_dir}"
     docker rm goss-extract 2>/dev/null || true
-    docker create --name goss-extract "${GOSS_IMAGE}:${IMAGE_TAG}" >/dev/null
-    docker cp goss-extract:/goss "${goss_dir}/goss"
+    docker create --name goss-extract "${GOSS_IMAGE}" >/dev/null
+    docker cp goss-extract:/usr/bin/goss "${goss_dir}/goss"
     docker rm goss-extract >/dev/null
+    echo "${GOSS_IMAGE}" > "${goss_dir}/.image"
   fi
 }
 
