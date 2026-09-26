@@ -7,6 +7,6 @@ command:
   ssh-audit --help:
     exit-status: 0
     stdout:
-      - "v3.3.0"
+      - "v3.9.0"
       - "usage:"
     timeout: 5000

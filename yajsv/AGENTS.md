@@ -6,7 +6,7 @@ Minimal container for [yajsv](https://github.com/neilpa/yajsv), a JSON Schema va
 
 | Component | Value |
 |-----------|-------|
-| Build Image | `golang:1.26` |
+| Build Image | `golang:1.27` |
 | Final Image | `scratch` (no OS, just the binary) |
 | Binary | Statically linked via `-ldflags '-linkmode external -extldflags "-static"'` |
 
@@ -64,7 +64,7 @@ Run tests with `./run test`.
 
 | Arg | Default | Purpose |
 |-----|---------|---------|
-| `GO_VERSION` | `1.26` | Go builder image version |
+| `GO_VERSION` | `1.27` | Go builder image version |
 | `YAJSV_VERSION` | `v1.4.1` | yajsv release tag |
 
 Version is injected via ldflags (`-X main.version`) because the upstream source embeds a dev version string.

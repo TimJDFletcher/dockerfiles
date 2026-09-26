@@ -1,6 +1,6 @@
 # Handoff: dependency refresh (in progress)
 
-Branch: `claude/repo-overview-ag67db`. Delete this file once the work is merged.
+Branch: `claude/handoff-continuation-mw9zd6` (continues `claude/repo-overview-ag67db`). Delete this file once the work is merged.
 
 ## Already done on this branch (committed)
 
@@ -8,7 +8,16 @@ Branch: `claude/repo-overview-ag67db`. Delete this file once the work is merged.
 2. `9624bf2` goss: switched every project to the official `ghcr.io/goss-org/goss:v0.4.10@sha256:8d3924f722a04a660e9e6c2403be0399d737c0187fc065714d26b992286c3f0a`, removed the local `goss/` project and TODO 08. See root `AGENTS.md` → "Goss Distribution".
    - **Not fully tested.** The previous sandbox couldn't pull ghcr.io image data or run apt inside containers. Only the goss copy/extract logic was checked, against a stand-in image built from the checksum-verified v0.4.10 release binary. **Run `./run test` for every project that has one.** The list is in `.cursor/skills/dockerfiles-repo-upgrade/SKILL.md`.
 
-## Next task: bump pins (nothing edited yet)
+## Pin bumps: committed, mostly untested
+
+All pins in the table below were bumped to "Latest", and Samba backports went `2:4.24.5` → `2:4.24.7+dfsg-1~bpo13+1` (checked with `apt-cache policy` on `trixie-20260918-slim`).
+
+Test status (2026-09-26 sandbox):
+- `samba-timemachine`: `./run test` **passes** (build-time 22, healthcheck 43, live 27+3+3). This also validates the official goss image in the embedded pattern.
+- Every other project: **not tested**. Their `./run` scripts build with the docker-container buildx `builder`, which in the cloud sandbox can't verify the TLS-intercepting proxy's certificate, so registry pulls fail. pip, curl and Go downloads inside builds hit the same CA problem. These have to be run on a normal machine.
+- `trivy` isn't installed in the sandbox, so the `.trivyignore` check below is still open.
+
+### Original findings
 
 Latest versions found on 2026-09-26:
 

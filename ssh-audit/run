@@ -13,7 +13,7 @@ GOSS_IMAGE="${GOSS_IMAGE:-ghcr.io/goss-org/goss:v0.4.10@sha256:8d3924f722a04a660
 IMAGE_TAG="${IMAGE_TAG:-tmp}"
 PLATFORMS="linux/amd64,linux/arm64"
 CONTAINER_NAME="ssh-audit"
-SSH_AUDIT_VERSION="3.3.0"
+SSH_AUDIT_VERSION="3.9.0"
 
 log() {
   echo "==> $1"

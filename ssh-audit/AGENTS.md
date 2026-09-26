@@ -6,15 +6,15 @@ Docker container for [ssh-audit](https://github.com/jtesta/ssh-audit), an SSH se
 
 | Component | Value |
 |-----------|-------|
-| Base Image | `python:3.13.13-slim` |
-| Package | `ssh-audit==3.3.0` via pip |
+| Base Image | `python:3.13.15-slim` |
+| Package | `ssh-audit==3.9.0` via pip |
 
 ## Build Args
 
 | Arg | Default | Description |
 |-----|---------|-------------|
-| `PYTHON_VERSION` | `3.13.13-slim` | Python base image tag |
-| `SSH_AUDIT_VERSION` | `3.3.0` | ssh-audit package version |
+| `PYTHON_VERSION` | `3.13.15-slim` | Python base image tag |
+| `SSH_AUDIT_VERSION` | `3.9.0` | ssh-audit package version |
 
 ## Developer Workflow (`./run`)
 

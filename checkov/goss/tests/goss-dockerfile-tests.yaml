@@ -12,7 +12,7 @@ command:
   checkov --version:
     exit-status: 0
     stdout:
-      - "3.2.523"
+      - "3.3.19"
     timeout: 10000
 
   # Help output works

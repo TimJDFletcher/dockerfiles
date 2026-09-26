@@ -7,7 +7,7 @@ IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
 GOSS_IMAGE="${GOSS_IMAGE:-ghcr.io/goss-org/goss:v0.4.10@sha256:8d3924f722a04a660e9e6c2403be0399d737c0187fc065714d26b992286c3f0a}"
 IMAGE_TAG=tmp
 PLATFORMS="linux/amd64,linux/arm64"
-SUPERCRONIC_VERSION="v0.2.44"
+SUPERCRONIC_VERSION="v0.2.49"
 
 log() {
   echo "==> $*"

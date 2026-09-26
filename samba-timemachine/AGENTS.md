@@ -123,7 +123,7 @@ Tested with macOS 26.3 and the `container` CLI (via Homebrew). The native contai
 ```bash
 # Build (must pass DEBIAN_VERSION explicitly)
 container build -t timjdfletcher/samba-timemachine:test \
-  --build-arg DEBIAN_VERSION=trixie-20260824-slim .
+  --build-arg DEBIAN_VERSION=trixie-20260918-slim .
 
 # Run
 container run -d --name samba-tm \

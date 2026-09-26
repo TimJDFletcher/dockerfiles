@@ -1,13 +1,13 @@
 # Official goss release image, pinned by digest (multi-arch index)
 ARG GOSS_IMAGE="ghcr.io/goss-org/goss:v0.4.10@sha256:8d3924f722a04a660e9e6c2403be0399d737c0187fc065714d26b992286c3f0a"
-ARG DEBIAN_VERSION="trixie-20260824-slim"
+ARG DEBIAN_VERSION="trixie-20260918-slim"
 
 FROM ${GOSS_IMAGE} AS goss
 
 FROM debian:${DEBIAN_VERSION}
 
 # Arguments
-ARG SAMBA_VERSION="2:4.24.5+dfsg-1~bpo13+1"
+ARG SAMBA_VERSION="2:4.24.7+dfsg-1~bpo13+1"
 ARG GOSS_VER="0.4.10"
 ARG GOSS_DST="/goss"
 ARG BACKUPDIR="/backups"
