@@ -16,6 +16,7 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 | `checkov` | Bridgecrew Checkov security scanner | Active | Pinned versions; has goss tests |
 | `toolbox` | Generic Debian toolbox container | Maintained | Debian trixie; build-arg driven tools |
 | `yajsv` | JSON schema validator (Go) | Active | Multi-stage scratch build (~5MB); has tests |
+| `fritz-exporter` | FRITZ! Prometheus exporter, our fork | Active | Builds `TimJDFletcher/fritz_exporter` at a pinned SHA; optical-levels patch; uid 65534; has tests |
 | `offlineimap` | Email sync with supercronic | Active | Debian trixie; has goss tests |
 | `postfix` | SMTP relay | Active | Debian trixie; has goss tests |
 | `tcpdump` | Network debugging | Active | Debian trixie; has goss + integration tests |
@@ -64,7 +65,7 @@ REPEAT: Next behavior
 - [ ] Test would survive internal refactor
 - [ ] Code is minimal for this test
 
-Eight projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `checkov`, `offlineimap`, `postfix`, `tcpdump`, and `gam`.
+Nine projects have test suites: `samba-timemachine`, `ssh-audit`, `yajsv`, `fritz-exporter`, `checkov`, `offlineimap`, `postfix`, `tcpdump`, and `gam`.
 
 **samba-timemachine** tests three phases:
 1. **Build-time tests**: Validate image structure

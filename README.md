@@ -11,6 +11,7 @@ A collection of Docker container projects for personal infrastructure.
 | [checkov](checkov/) | Infrastructure-as-code security scanner | [timjdfletcher/checkov](https://hub.docker.com/r/timjdfletcher/checkov) |
 | [toolbox](toolbox/) | Generic Debian toolbox with configurable packages | [timjdfletcher/toolbox](https://hub.docker.com/r/timjdfletcher/toolbox) |
 | [yajsv](yajsv/) | JSON Schema validator (minimal scratch image) | [timjdfletcher/yajsv](https://hub.docker.com/r/timjdfletcher/yajsv) |
+| [fritz-exporter](fritz-exporter/) | FRITZ! Prometheus exporter, our fork with the fibre optical-levels patch | [timjdfletcher/fritz-exporter](https://hub.docker.com/r/timjdfletcher/fritz-exporter) |
 | [offlineimap](offlineimap/) | Email synchronization with cron scheduling | [timjdfletcher/offlineimap](https://hub.docker.com/r/timjdfletcher/offlineimap) |
 | [postfix](postfix/) | SMTP relay server | [timjdfletcher/postfix](https://hub.docker.com/r/timjdfletcher/postfix) |
 | [tcpdump](tcpdump/) | Network packet capture | [timjdfletcher/tcpdump](https://hub.docker.com/r/timjdfletcher/tcpdump) |
@@ -69,6 +70,10 @@ A minimal JSON Schema validator built as a scratch image (no OS, just the Go bin
 ```bash
 docker run --rm -v $(pwd):/data timjdfletcher/yajsv -s /data/schema.json /data/file.json
 ```
+
+### fritz-exporter
+
+The FRITZ! Prometheus exporter built from a fork that reads the fibre optical levels from the web UI when TR-064 reports zero. See [fritz-exporter/README.md](fritz-exporter/README.md).
 
 ## License
 
