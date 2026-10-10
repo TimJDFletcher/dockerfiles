@@ -1,0 +1,102 @@
+#!/bin/bash
+set -eu -o pipefail
+CONTAINER_NAME=fritz-exporter
+IMAGE_NAME=timjdfletcher/${CONTAINER_NAME}
+IMAGE_TAG=tmp
+PLATFORMS="linux/amd64,linux/arm64"
+# Version the fork's pyproject.toml declares at FRITZ_EXPORTER_COMMIT
+EXPECTED_VERSION="3.5.1"
+
+log() {
+  echo "==> $*"
+}
+
+build() {
+  _buildx_setup
+  docker buildx build --load --tag "${IMAGE_NAME}:${IMAGE_TAG}" --file Dockerfile .
+  docker tag "${IMAGE_NAME}:${IMAGE_TAG}" "${IMAGE_NAME}:latest"
+}
+
+clean() {
+  docker image rm "${IMAGE_NAME}:${IMAGE_TAG}" || true
+  docker image rm "${IMAGE_NAME}:latest" || true
+  docker buildx prune --force
+  docker buildx rm builder || true
+}
+
+usage() {
+  echo "./run build   - Build a local image called ${IMAGE_NAME}:${IMAGE_TAG}"
+  echo "./run test    - Build and run image tests"
+  echo "./run clean   - Remove images and prune builder"
+  echo "./run release - Test and release multi-arch to Docker Hub"
+}
+
+test() {
+  build
+
+  log "Testing container image directly..."
+
+  log "Test: version is ${EXPECTED_VERSION}"
+  local actual_version
+  actual_version=$(docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" --version)
+  if [ "${actual_version}" != "${EXPECTED_VERSION}" ]; then
+    echo "  FAIL: expected ${EXPECTED_VERSION}, got ${actual_version}"
+    exit 1
+  fi
+  echo "  PASS"
+
+  log "Test: runs as uid 65534 by default"
+  local actual_uid
+  actual_uid=$(docker run --rm --entrypoint id "${IMAGE_NAME}:${IMAGE_TAG}" -u)
+  if [ "${actual_uid}" != "65534" ]; then
+    echo "  FAIL: expected uid 65534, got ${actual_uid}"
+    exit 1
+  fi
+  echo "  PASS"
+
+  log "Test: fibre fallback patch is in the image"
+  docker run --rm --entrypoint python "${IMAGE_NAME}:${IMAGE_TAG}" \
+    -c "from fritzexporter.fritz_fiber import FIBER_STATS_PAGE; print(FIBER_STATS_PAGE)" \
+    | grep -qx "fiberStats"
+  echo "  PASS"
+
+  log "Test: no credentials exits 1 with upstream's message"
+  local output status=0
+  output=$(docker run --rm --user 65534:65534 "${IMAGE_NAME}:${IMAGE_TAG}" 2>&1) || status=$?
+  if [ "${status}" -ne 1 ] || ! echo "${output}" | grep -q "Required env variables missing"; then
+    echo "  FAIL: expected exit 1 and 'Required env variables missing', got exit ${status}: ${output}"
+    exit 1
+  fi
+  echo "  PASS"
+
+  log "All tests passed!"
+}
+
+find_release(){
+  TAG="$(git tag | grep ^${CONTAINER_NAME} | sort -n | tail -n 1)"
+  git checkout "${TAG}"
+  export IMAGE_TAG=$TAG
+}
+
+_buildx_setup () {
+  docker buildx use builder || docker buildx create --name builder
+  docker buildx inspect --bootstrap
+}
+
+release() {
+  find_release
+  _buildx_setup
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:${IMAGE_TAG}" --push --file Dockerfile .
+  docker buildx build --platform "${PLATFORMS}" --tag "${IMAGE_NAME}:latest"       --push --file Dockerfile .
+}
+
+CMD=${1:-}
+
+shift || true
+case ${CMD} in
+    build) build ;;
+    test) test ;;
+    clean) clean ;;
+    release) test && find_release && clean && release ;;
+    *) usage ;;
+esac
