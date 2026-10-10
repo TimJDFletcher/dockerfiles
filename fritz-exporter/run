@@ -36,13 +36,20 @@ test() {
 
   log "Testing container image directly..."
 
-  log "Test: version is ${EXPECTED_VERSION}"
+  # Upstream's --version prints "develop" (it looks up the wrong distribution
+  # name), so check the installed package's metadata instead.
+  log "Test: installed version is ${EXPECTED_VERSION}"
   local actual_version
-  actual_version=$(docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" --version)
+  actual_version=$(docker run --rm --entrypoint python "${IMAGE_NAME}:${IMAGE_TAG}" \
+    -c "from importlib.metadata import version; print(version('fritz-exporter'))")
   if [ "${actual_version}" != "${EXPECTED_VERSION}" ]; then
     echo "  FAIL: expected ${EXPECTED_VERSION}, got ${actual_version}"
     exit 1
   fi
+  echo "  PASS"
+
+  log "Test: --version exits 0"
+  docker run --rm "${IMAGE_NAME}:${IMAGE_TAG}" --version >/dev/null
   echo "  PASS"
 
   log "Test: runs as uid 65534 by default"
