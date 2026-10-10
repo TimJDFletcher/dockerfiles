@@ -16,6 +16,7 @@ A collection of Docker container projects for personal infrastructure.
 | [postfix](postfix/) | SMTP relay server | [timjdfletcher/postfix](https://hub.docker.com/r/timjdfletcher/postfix) |
 | [tcpdump](tcpdump/) | Network packet capture | [timjdfletcher/tcpdump](https://hub.docker.com/r/timjdfletcher/tcpdump) |
 | [ssh-audit](ssh-audit/) | SSH server security auditing | — |
+| [oldssh](oldssh/) | Older OpenSSH client for embedded systems | [timjdfletcher/oldssh](https://hub.docker.com/r/timjdfletcher/oldssh) |
 | [media](media/) | Media server stack (Compose-only) | — |
 
 ## Quick Start
