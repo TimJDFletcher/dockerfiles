@@ -1,7 +1,7 @@
 # Extracted goss binary (from timjdfletcher/goss image)
 .goss-bin/
 
-# Editor and local IDE settings (keep team-shared Cursor skills under .cursor/skills/ tracked explicitly)
+# Editor and local IDE settings (shared agent skills live under .agents/skills/, tracked)
 .vscode/
 .idea/
 

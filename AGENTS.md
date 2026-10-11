@@ -28,6 +28,12 @@ A monorepo of Docker container projects for personal infrastructure. Each subdir
 
 No outstanding issues.
 
+## Agent skills
+
+Skills for any coding agent live under `.agents/skills/<name>/SKILL.md`. Read the skill before starting the work it names:
+
+- **Upgrade** dependencies across the repo (base images, pip, GitHub releases, apt pins, Gem lockfiles) and test every image afterwards: `.agents/skills/dockerfiles-repo-upgrade/SKILL.md`.
+
 ## Conventions (Quick Reference)
 
 See `.cursorrules` for full details. Key points:

@@ -13,8 +13,8 @@ description: >-
 
 ## Preconditions (read first)
 
-1. **Read** repository [`.cursorrules`](../../../.cursorrules) and the relevant [`AGENTS.md`](../../../AGENTS.md) / `<project>/AGENTS.md` for conventions (pins, `./run`, security).
-2. **Docker on this machine uses Colima.** If `docker info`, `docker build`, or `docker buildx imagetools inspect` fails with *Cannot connect to the Docker daemon* (or Colima not running), run:
+1. **Read** the root [`AGENTS.md`](../../../AGENTS.md), the conventions file it names, and the relevant `<project>/AGENTS.md` (pins, `./run`, security).
+2. **On macOS, Docker runs under Colima.** If `docker info`, `docker build`, or `docker buildx imagetools inspect` fails with *Cannot connect to the Docker daemon* (or Colima not running), run:
 
    ```bash
    colima start
@@ -31,7 +31,7 @@ Touch every place versions are pinned or asserted:
 | Base images | Each `<project>/Dockerfile` — `ARG DEBIAN_VERSION`, `ARG PYTHON_VERSION`, `ARG GO_VERSION`, `FROM` lines |
 | Pip / GitHub releases | Same Dockerfiles; `<project>/run` when it duplicates a version for tests |
 | Goss / integration | `<project>/goss/tests/*.yaml`, `run` scripts that `grep` version strings |
-| Docs | `<project>/AGENTS.md` tables that mirror pins; root [`AGENTS.md`](../../../AGENTS.md) / [`.cursorrules`](../../../.cursorrules) only if they cite example tags |
+| Docs | `<project>/AGENTS.md` tables that mirror pins; root [`AGENTS.md`](../../../AGENTS.md) and the conventions file it names, only if they cite example tags |
 | Ruby tests | `postfix/Gemfile.lock`, `offlineimap/Gemfile.lock` — run `bundle update` from those directories |
 
 Projects with Dockerfiles (inventory may drift): `checkov`, `gam`, `goss`, `postfix`, `samba-timemachine`, `spf-flattener`, `ssh-audit`, `tcpdump`, `toolbox`, `offlineimap`, `yajsv`.
@@ -54,7 +54,7 @@ Projects with Dockerfiles (inventory may drift): `checkov`, `gam`, `goss`, `post
 
 ## Mandatory: test after every upgrade
 
-**Do not treat an upgrade as finished until tests have been run and pass** (or you have fixed failures and re-run). Guessing version strings or skipping Docker because the daemon was down is not acceptable: start Colima (`colima start`), then execute the suite below.
+**Do not treat an upgrade as finished until tests have been run and pass** (or you have fixed failures and re-run). Read version strings from real command output, and when the Docker daemon is down, start it (on macOS, `colima start`) before running the suite below.
 
 ### Full matrix (run in this order)
 
@@ -65,7 +65,7 @@ Projects with Dockerfiles (inventory may drift): `checkov`, `gam`, `goss`, `post
 
 ### Fan-out testing (parallel)
 
-To save wall-clock time, **fan out** independent test jobs after dependencies are satisfied—e.g. launch multiple terminal/agent tasks in parallel, or run several `(cd … && ./run test) &` then `wait`.
+To save wall-clock time, **fan out** independent test jobs after dependencies are satisfied—e.g. launch several terminals or subagents in parallel, or run several `(cd … && ./run test) &` then `wait`.
 
 **Dependency waves (do not parallelize across these boundaries):**
 
@@ -100,7 +100,6 @@ done
 
 - **`spf-flattener`**: Apple **`container`** + **`container system start`**; Colima DNS issues for Docker are documented in [`spf-flattener/AGENTS.md`](../../../spf-flattener/AGENTS.md). Keep builder/final image pins explicit (avoid bare `alpine:latest` for reproducibility).
 - **Pins over floating tags**: Prefer dated Debian tags and explicit Python slim tags over bare `trixie-slim` / `python:3-slim` in Dockerfiles unless the project intentionally documents otherwise.
-- **Cost / plan rules**: If the workspace requires a cost estimate in a *plan*, follow that rule separately; this skill does not replace workspace rules.
 
 ## After the upgrade
 
