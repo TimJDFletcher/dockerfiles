@@ -4,6 +4,8 @@ A docker container with an older version of SSH to allow ssh access to embedded 
 
 The current version of openssh no longer supports RSA server keys <1024 bit which many embedded systems don't support
 
+It is kept for the iLO 3 management controller of an HP ProLiant ML110 G7 (`iron-ilo`), whose SSH server offers only key exchange and host-key algorithms that current OpenSSH has dropped.
+
 ## Usage
 
 ```
