@@ -155,6 +155,10 @@ The file is written:
 
 There is no schedule inside the container.
 
+Each run is cheap however large the backups are. The bundle values are read from the small property lists the
+Mac keeps at the top of each sparsebundle and from a listing of its `bands` directory; the band files
+themselves are never opened or measured.
+
 | Metric | Labels | Meaning |
 |---|---|---|
 | `timemachine_bundle_last_backup_timestamp_seconds` | `bundle` | Completion time of the newest snapshot, from the bundle's `com.apple.TimeMachine.SnapshotHistory.plist` |
@@ -168,6 +172,10 @@ There is no schedule inside the container.
 `bundle` is the sparsebundle's name without `.sparsebundle`. Alert on free space with e.g.
 `timemachine_volume_available_bytes / timemachine_volume_size_bytes < 0.1`. A failed run writes only the last two metrics,
 keeping the previous last-success time, so a consumer can tell a failed run from an old one.
+
+A bundle value that can't be read is left out rather than reported as zero: a sparsebundle with no completed
+backup has no last-backup time, and one without a `bands` directory or a `band-size` has no size. It still counts
+towards `timemachine_bundles`.
 
 ## Mounting the output directory
 
@@ -228,9 +236,10 @@ The `instance` selector filters by the Prometheus `instance` label if you run mo
   as well (node-exporter's `node_filesystem_avail_bytes`).
 - **Bundle size is an estimate.** Bands are counted, not measured, so a partly filled band counts as a full
   one and the value is an upper bound on the disk space used.
-- **The last-backup time comes from a file the Mac writes.** Apple doesn't document its format. A bundle with
-  no completed backup has no last-backup value; if the history can't be parsed, the time it was last written
-  is reported instead.
+- **The last-backup time comes from a file the Mac writes.** Apple doesn't document its format. If the
+  history is there but can't be parsed, the time it was last written is reported instead.
+- **A failed or interrupted backup doesn't move the last-backup time.** Only completed snapshots count, so a Mac
+  that connects every hour but never finishes still shows as stale.
 
 # Known Bugs
 
