@@ -64,6 +64,30 @@ configureBackupDir() {
     chmod +x "${BACKUPDIR}/backup-check.sh"
 }
 
+configureMetrics() {
+    if [ -z "${METRICS_FILE:-}" ]; then
+        log "Backup metrics disabled (METRICS_FILE not set)."
+        export METRICS_POSTEXEC=""
+        return
+    fi
+
+    log "Backup metrics enabled: ${METRICS_FILE}"
+    # postexec runs as the connecting user and smbd waits for it before
+    # finishing the disconnect. Samba splits the command into arguments
+    # without a shell, so wrap it in sh -c to background it.
+    export METRICS_POSTEXEC="    postexec                = /bin/sh -c \"/scripts/backup-metrics.sh '${METRICS_FILE}' '${BACKUPDIR}' %I </dev/null >/dev/null 2>&1 &\""
+}
+
+writeInitialMetrics() {
+    [ -n "${METRICS_FILE:-}" ] || return 0
+
+    log "Writing initial backup metrics as ${USER}..."
+    if ! setpriv --reuid="${PUID}" --regid="${PGID}" --clear-groups \
+        /scripts/backup-metrics.sh "${METRICS_FILE}" "${BACKUPDIR}"; then
+        log "WARNING: Could not write backup metrics to ${METRICS_FILE}. Is its directory writable by ${PUID}:${PGID}?"
+    fi
+}
+
 configureSAMBA() {
     log "Generating smb.conf..."
     # Ensure the directory exists just in case
@@ -112,12 +136,14 @@ if [[ -z ${1} ]] || [[ ${1:0:1} == '-' ]] ; then
     cleanupLegacyFiles
     
     # ORDER FIX: Configure Samba FIRST so smb.conf exists
+    configureMetrics
     configureSAMBA
     
     # ORDER FIX: Create User SECOND so smbpasswd can read smb.conf
     createUser
     
     configureBackupDir
+    writeInitialMetrics
     startSMB "$@"
 else
     exec "$@"

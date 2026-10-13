@@ -17,6 +17,7 @@ services:
       PASS: "${PASS:-password}"
       LOG_LEVEL: "${LOG_LEVEL:-1}"
       FORCE_PERMISSIONS_RESET: "${FORCE_PERMISSIONS_RESET:-false}"
+      METRICS_FILE: "${METRICS_FILE:-}"
     healthcheck:
       test:
       - CMD-SHELL

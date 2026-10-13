@@ -16,6 +16,7 @@ The source code is in [github](https://github.com/TimJDFletcher/dockerfiles/tree
 | `PGID`      | Unix Group ID for Time Machine user |      `${PGID}` |
 | `PUID`      | Unix User ID for Time Machine user  |      `${PUID}` |
 | `USER`      |       Username to connect as        |      `${USER}` |
+| `METRICS_FILE` | Backup metrics file (empty = off) | `${METRICS_FILE}` |
 
 # Quota
 

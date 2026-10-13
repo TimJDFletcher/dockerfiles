@@ -1,0 +1,14 @@
+# Optional overlay: mounts a volume for METRICS_FILE.
+#   METRICS_FILE=/metrics/timemachine.prom \
+#     docker compose -f docker-compose.yml -f docker-compose.metrics.yml up -d
+# The volume (or host directory) must be writable by PUID:PGID.
+services:
+  samba-timemachine:
+    volumes:
+    - type: volume
+      source: metrics
+      target: /metrics
+volumes:
+  metrics:
+    name: samba-timemachine_metrics
+    external: true

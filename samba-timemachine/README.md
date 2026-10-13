@@ -71,6 +71,7 @@ For manual installation, see the [example unit file](./systemd-unit.service).
 | `PUID`      | Unix User ID for Time Machine user  |         `999` |
 | `PGID`      | Unix Group ID for Time Machine user |         `999` |
 | `LOG_LEVEL` |         SAMBA logging level         |           `1` |
+| `METRICS_FILE` | Path to write [backup metrics](#backup-metrics) to | unset (off) |
 
 The defaults are embedded in the Dockerfile
 
@@ -137,6 +138,74 @@ It works by scanning for `.sparsebundle` directories and checking the modificati
 - **Stale Backup Detection:** Identifies backups that haven't been updated recently.
 - **Webhook Integration:** Can trigger a webhook (e.g., to a service like Healthchecks.io or a custom notification system) by setting the `WEBHOOK_URL` environment variable. If the variable is not set, it performs a dry run.
 - **Cron Job Ready:** The script can be scheduled to run automatically. An example cron file, `scripts/backup-check.cron`, is provided to show how to execute it periodically.
+
+# Backup Metrics
+
+Set `METRICS_FILE` to a path inside the container and it writes the state of the backups to that file in
+[Prometheus text format](https://prometheus.io/docs/instrumenting/exposition_formats/), for a collector such as
+node-exporter's [textfile collector](https://github.com/prometheus/node_exporter#textfile-collector) to read.
+Leave it unset and the feature is off: no file is written and Samba's config has no `postexec` line.
+
+The file is written:
+
+- once at container start, so it exists before the first backup;
+- each time a client disconnects from the share (Samba's `postexec`). A Mac connects, backs up and disconnects,
+  so this is the end of each backup session. Connections from inside the container, such as the healthcheck,
+  are ignored.
+
+There is no schedule inside the container.
+
+| Metric | Labels | Meaning |
+|---|---|---|
+| `timemachine_bundle_last_modified_timestamp_seconds` | `bundle` | Modification time of the newest file in the sparsebundle |
+| `timemachine_bundle_size_bytes` | `bundle` | Disk space used by the sparsebundle |
+| `timemachine_bundles` | | Number of sparsebundles found |
+| `timemachine_metrics_success` | | `1` if the last run could read the backup directory, else `0` |
+| `timemachine_metrics_last_success_timestamp_seconds` | | Time of the last successful run |
+
+`bundle` is the sparsebundle's name without `.sparsebundle`. A failed run writes only the last two metrics,
+keeping the previous last-success time, so a consumer can tell a failed run from an old one.
+
+## Mounting the output directory
+
+The script runs as the Time Machine user (`PUID`/`PGID`), both at start and on disconnect, because Samba runs
+`postexec` as the connecting user. Mount a directory for the file and make it writable by that user, e.g. for a
+node-exporter textfile directory on the host:
+
+```bash
+sudo chown 999:999 /var/lib/node_exporter/textfile
+docker run -d -t \
+    -v /backups/timemachine:/backups \
+    -v /var/lib/node_exporter/textfile:/metrics \
+    -e METRICS_FILE=/metrics/timemachine.prom \
+    -p 10445:10445 \
+    --restart unless-stopped timjdfletcher/samba-timemachine:latest
+```
+
+With compose, [`docker-compose.metrics.yml`](./docker-compose.metrics.yml) adds a `samba-timemachine_metrics`
+volume at `/metrics`. Create it and hand it to the user first:
+
+```bash
+docker volume create samba-timemachine_metrics
+docker run --rm -v samba-timemachine_metrics:/metrics debian:stable-slim chown 999:999 /metrics
+METRICS_FILE=/metrics/timemachine.prom docker compose -f docker-compose.yml -f docker-compose.metrics.yml up -d
+```
+
+If the directory isn't writable the container logs a warning at start and runs without metrics. The path must not
+contain `'` or `%`.
+
+The file is written to a temporary file in the same directory and renamed into place, so readers never see a
+partial file and clients disconnecting together can't corrupt it. node-exporter's textfile collector only reads
+`*.prom` files, so it ignores the temporary files.
+
+## Caveats
+
+- **Don't alert on the file's age.** The file is only rewritten when a client disconnects, so between backups
+  it is as old as the last backup. Its values are timestamps and stay correct: alert on
+  `time() - timemachine_bundle_last_modified_timestamp_seconds`, and on `timemachine_metrics_success == 0`.
+- **A client that sleeps or drops off mid-backup** only triggers the rewrite when smbd notices the dead
+  connection, so the file can lag by that timeout.
+- **Walking a large sparsebundle takes time.** It runs in the background, so it doesn't hold up the disconnect.
 
 # Known Bugs
 
