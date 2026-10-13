@@ -77,7 +77,7 @@ The goss suites:
 * **`goss-live-tests.yaml`** (integration) — User/group created with correct UID/GID, `smb.conf` contains expected values, `smbclient` write test.
 * **`goss-permissions-tests.yaml`** (permissions) — Validates `FORCE_PERMISSIONS_RESET` feature by checking file ownership against `EXPECTED_OWNER`/`EXPECTED_GROUP` env vars.
 * **`goss-metrics-disabled-tests.yaml`** (phase 1) — No `postexec` in `smb.conf`; a connect/disconnect leaves `/metrics` empty.
-* **`goss-metrics-tests.yaml`** (phase 3) — `postexec` rendered and backgrounded; file written at start (mode `0644`, owned by `USER`, success `1`, zero bundles); unreadable backup dir writes success `0`, keeps last-success, no bundle values; loopback clients don't write.
+* **`goss-metrics-tests.yaml`** (phase 3) — `postexec` rendered and backgrounded; file written at start (mode `0644`, owned by `USER`, success `1`, zero bundles, volume available/size); volume available matches `df` within 1% of its size; unreadable backup dir writes success `0`, keeps last-success, no bundle or volume values; loopback clients don't write.
 
 ## Pitfalls & Gotchas
 

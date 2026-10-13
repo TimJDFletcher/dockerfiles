@@ -160,10 +160,13 @@ There is no schedule inside the container.
 | `timemachine_bundle_last_modified_timestamp_seconds` | `bundle` | Modification time of the newest file in the sparsebundle |
 | `timemachine_bundle_size_bytes` | `bundle` | Disk space used by the sparsebundle |
 | `timemachine_bundles` | | Number of sparsebundles found |
+| `timemachine_volume_available_bytes` | | Space available to the backups on the filesystem holding `/backups` (as `df` reports it) |
+| `timemachine_volume_size_bytes` | | Size of that filesystem |
 | `timemachine_metrics_success` | | `1` if the last run could read the backup directory, else `0` |
 | `timemachine_metrics_last_success_timestamp_seconds` | | Time of the last successful run |
 
-`bundle` is the sparsebundle's name without `.sparsebundle`. A failed run writes only the last two metrics,
+`bundle` is the sparsebundle's name without `.sparsebundle`. Alert on free space with e.g.
+`timemachine_volume_available_bytes / timemachine_volume_size_bytes < 0.1`. A failed run writes only the last two metrics,
 keeping the previous last-success time, so a consumer can tell a failed run from an old one.
 
 ## Mounting the output directory
@@ -205,6 +208,9 @@ partial file and clients disconnecting together can't corrupt it. node-exporter'
   `time() - timemachine_bundle_last_modified_timestamp_seconds`, and on `timemachine_metrics_success == 0`.
 - **A client that sleeps or drops off mid-backup** only triggers the rewrite when smbd notices the dead
   connection, so the file can lag by that timeout.
+- **Free space is sampled at the same moments**, at start and on disconnect. Backups are what fill the
+  volume, so that catches the growth that matters; if other things share the filesystem, watch it from the host
+  as well (node-exporter's `node_filesystem_avail_bytes`).
 - **Walking a large sparsebundle takes time.** It runs in the background, so it doesn't hold up the disconnect.
 
 # Known Bugs

@@ -203,7 +203,8 @@ _goss_test() {
     local expected
     for expected in 'timemachine_metrics_success 1' 'timemachine_bundles 1' \
       'timemachine_bundle_last_modified_timestamp_seconds{bundle="Test-Mac"} ' \
-      'timemachine_bundle_size_bytes{bundle="Test-Mac"} '; do
+      'timemachine_bundle_size_bytes{bundle="Test-Mac"} ' \
+      'timemachine_volume_available_bytes ' 'timemachine_volume_size_bytes '; do
       if ! docker compose exec -T "${CONTAINER_NAME}" cat "${METRICS_FILE}" | grep -qF "${expected}"; then
         log "FAIL: metrics file has no line starting '${expected}'"
         exit 1

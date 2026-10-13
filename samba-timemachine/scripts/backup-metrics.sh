@@ -11,7 +11,8 @@
 # The file is written to a unique temp file in the same directory and renamed
 # into place, so readers and concurrent runs never see a partial file. If the
 # backup directory can't be read, only the success gauge (0) and the previous
-# last-success time are written, and the script exits 1.
+# last-success time are written (no bundle or volume values), and the script
+# exits 1.
 
 set -u -o pipefail
 
@@ -67,20 +68,34 @@ collect_bundle_metrics() {
     echo "timemachine_bundles ${count}"
 }
 
+collect_volume_metrics() {
+    local available size
+
+    read -r available size < <(df -B1 --output=avail,size "${BACKUP_DIR}" | tail -n 1) || return 1
+    [[ "${available}" =~ ^[0-9]+$ && "${size}" =~ ^[0-9]+$ ]] || return 1
+
+    echo "# HELP timemachine_volume_available_bytes Space available to the backups on the filesystem holding the backup directory."
+    echo "# TYPE timemachine_volume_available_bytes gauge"
+    echo "timemachine_volume_available_bytes ${available}"
+    echo "# HELP timemachine_volume_size_bytes Size of the filesystem holding the backup directory."
+    echo "# TYPE timemachine_volume_size_bytes gauge"
+    echo "timemachine_volume_size_bytes ${size}"
+}
+
 now=$(date +%s)
 
-if bundle_metrics=$(collect_bundle_metrics 2>/dev/null); then
+if metrics=$(collect_bundle_metrics 2>/dev/null && collect_volume_metrics 2>/dev/null); then
     success=1
     last_success="${now}"
 else
     success=0
-    bundle_metrics=""
+    metrics=""
     last_success=$(awk '$1 == "timemachine_metrics_last_success_timestamp_seconds" { print $2 }' "${OUTPUT_FILE}" 2>/dev/null)
     last_success="${last_success:-0}"
 fi
 
 {
-    [ -z "${bundle_metrics}" ] || printf '%s\n' "${bundle_metrics}"
+    [ -z "${metrics}" ] || printf '%s\n' "${metrics}"
     echo "# HELP timemachine_metrics_success Whether the last metrics run could read the backup directory."
     echo "# TYPE timemachine_metrics_success gauge"
     echo "timemachine_metrics_success ${success}"

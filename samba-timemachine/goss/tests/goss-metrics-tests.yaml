@@ -17,6 +17,8 @@ file:
     - "/^timemachine_metrics_success 1$/"
     - "/^timemachine_metrics_last_success_timestamp_seconds [1-9][0-9]+$/"
     - "/^timemachine_bundles 0$/"
+    - "/^timemachine_volume_available_bytes [0-9]+$/"
+    - "/^timemachine_volume_size_bytes [1-9][0-9]*$/"
 
 command:
   # A run that cannot read the backup directory reports failure, keeps the
@@ -33,6 +35,20 @@ command:
     - "/^timemachine_metrics_success 0$/"
     - "/^timemachine_metrics_last_success_timestamp_seconds [1-9][0-9]+$/"
     - "!timemachine_bundle"
+    - "!timemachine_volume"
+    timeout: 10000
+
+  # Free space reported for the backups volume agrees with df (within 1% of its size)
+  metrics_volume_available_matches_df:
+    exec: >-
+      df -B1 --output=avail,size {{.Env.BACKUPDIR}} | tail -1 |
+      awk -v f={{.Env.METRICS_FILE}} '{ df_avail = $1; size = $2;
+      while ((getline line < f) > 0) { split(line, m, " "); if (m[1] == "timemachine_volume_available_bytes") avail = m[2] }
+      diff = avail - df_avail; if (diff < 0) diff = -diff;
+      print (avail != "" && diff <= size / 100) ? "match" : "mismatch: " avail " vs df " df_avail }'
+    exit-status: 0
+    stdout:
+    - "/^match$/"
     timeout: 10000
 
   # The container's own healthcheck connects over loopback; it must not trigger a rewrite
