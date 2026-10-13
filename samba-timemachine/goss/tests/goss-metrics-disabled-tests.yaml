@@ -1,0 +1,15 @@
+# Runs with METRICS_FILE unset and a volume mounted at /metrics (./run test, phase 1).
+file:
+  /etc/samba/smb.conf:
+    exists: true
+    contents:
+    - "!postexec"
+
+command:
+  # A client (not loopback) connects and disconnects; nothing may appear in /metrics
+  no_metrics_written_on_disconnect:
+    exec: "smbclient //$(hostname -i)/Data -A /run/samba/credentials -I $(hostname -i) -p 10445 -c ls >/dev/null && sleep 2 && find /metrics -mindepth 1 | wc -l"
+    exit-status: 0
+    stdout:
+    - "/^0$/"
+    timeout: 10000

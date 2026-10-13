@@ -33,6 +33,8 @@ The samba-timemachine Dockerfile uses `COPY --from=timjdfletcher/goss:tmp` to ge
 | `LOG_LEVEL` | `1` | `smb.conf.tmpl` |
 | `BACKUPDIR` | `/backups` | `entrypoint`, `smb.conf.tmpl` |
 | `FORCE_PERMISSIONS_RESET` | `false` | `entrypoint` (recursive `chown`) |
+| `METRICS_FILE` | unset (off) | `entrypoint` (renders `postexec`, writes initial metrics) |
+| `METRICS_POSTEXEC` | set by `entrypoint` | `smb.conf.tmpl` (the `postexec` line, or empty) |
 
 ## Entrypoint Initialization Order
 
@@ -40,10 +42,12 @@ Order is critical — `configureSAMBA` must run before `createUser` (see Pitfall
 
 1. **`checkBackupDir`** — Verifies `${BACKUPDIR}` exists and warns if not a mountpoint.
 2. **`cleanupLegacyFiles`** — Removes obsolete `.com.apple.TimeMachine.quota.plist`.
-3. **`configureSAMBA`** — Generates `/etc/samba/smb.conf` from template via `envsubst`.
-4. **`createUser`** — Creates group/user with `PGID`/`PUID`, sets Samba password via `smbpasswd`, generates `/run/samba/credentials` for smbclient.
-5. **`configureBackupDir`** — Sets ownership, creates Apple metadata files, copies `backup-check.sh`.
-6. **`startSMB`** — Runs `smbd` in the foreground as PID 1.
+3. **`configureMetrics`** — Sets `METRICS_POSTEXEC` to the `postexec` line when `METRICS_FILE` is set, else empty.
+4. **`configureSAMBA`** — Generates `/etc/samba/smb.conf` from template via `envsubst`.
+5. **`createUser`** — Creates group/user with `PGID`/`PUID`, sets Samba password via `smbpasswd`, generates `/run/samba/credentials` for smbclient.
+6. **`configureBackupDir`** — Sets ownership, creates Apple metadata files, copies `backup-check.sh`.
+7. **`writeInitialMetrics`** — If `METRICS_FILE` is set, runs `backup-metrics.sh` once as `PUID`:`PGID` (via `setpriv`); warns and carries on if it can't write.
+8. **`startSMB`** — Runs `smbd` in the foreground as PID 1.
 
 ## Developer Workflow (`./run`)
 
@@ -64,12 +68,16 @@ Release tags follow SemVer: `timemachine-v<VERSION>` (e.g., `timemachine-v1.2.3`
 
 ## Testing (`goss`)
 
-Three test suites, each validating a different phase:
+`./run test` runs three phases: default permissions, `FORCE_PERMISSIONS_RESET=true`, and backup metrics (`METRICS_FILE` set). Every phase mounts the `samba-timemachine_metrics` volume via `docker-compose.metrics.yml`. Phase 3 also connects over SMB from the container's own (non-loopback) address to create a sparsebundle, waits for the rewrite, and parses the file with `promtool` (`PROMTOOL_IMAGE` in `run`, pinned by tag and digest) for an empty share and for one bundle.
+
+The goss suites:
 
 * **`goss-dockerfile-tests.yaml`** (build-time) — Templates and entrypoint exist with correct permissions; `smb.conf` does *not* exist yet; required packages installed, build deps purged.
 * **`goss-healthcheck-tests.yaml`** (runtime) — `smbd` running, port `10445` listening, `testparm` passes, `smbclient` loopback integration test (mkdir/ls/rmdir), disk usage < 95%.
 * **`goss-live-tests.yaml`** (integration) — User/group created with correct UID/GID, `smb.conf` contains expected values, `smbclient` write test.
 * **`goss-permissions-tests.yaml`** (permissions) — Validates `FORCE_PERMISSIONS_RESET` feature by checking file ownership against `EXPECTED_OWNER`/`EXPECTED_GROUP` env vars.
+* **`goss-metrics-disabled-tests.yaml`** (phase 1) — No `postexec` in `smb.conf`; a connect/disconnect leaves `/metrics` empty.
+* **`goss-metrics-tests.yaml`** (phase 3) — `postexec` rendered and backgrounded; file written at start (mode `0644`, owned by `USER`, success `1`, zero bundles, volume available/size); volume available matches `df` within 1% of its size; unreadable backup dir writes success `0`, keeps last-success, no bundle or volume values; loopback clients don't write.
 
 ## Pitfalls & Gotchas
 
@@ -80,6 +88,16 @@ Three test suites, each validating a different phase:
 **Goss is built from source.** The `goss` project builds goss with patched Go dependencies to fix CVEs. The samba-timemachine Dockerfile uses `COPY --from=timjdfletcher/goss:tmp` to get the binary. Build the goss project first before building samba-timemachine.
 
 **`backup-check.sh` is for the host, not the container.** It requires `curl` (not installed in the image). The entrypoint copies it into `${BACKUPDIR}/` so it can be run from the host or a host cron job.
+
+**Backup metrics (`scripts/backup-metrics.sh`).** Usage: `backup-metrics.sh <output-file> <backup-dir> [client-address]`. Metrics and caveats are documented in `README.md` → "Backup Metrics". Things that bit during implementation:
+
+* `postexec` runs as the connecting user, so the output directory must be writable by `PUID`:`PGID`.
+* smbd waits for `postexec` to finish before completing the disconnect, **and runs it without a shell**: it splits the line into arguments itself, so `>/dev/null &` on the bare command becomes literal arguments and the script runs in the foreground. The rendered line is `/bin/sh -c "… &"`. Check with a deliberately slow script and time `smbclient`; a plain `sleep 3 … &` looks fast only because `sleep` errors on the extra arguments.
+* The healthcheck (and goss tests) connect over `127.0.0.1` every minute. `%I` is passed to the script, which exits for loopback addresses so it doesn't rewrite the file each minute. Tests that need a rewrite connect via `$(hostname -i)`.
+* Writes go to `mktemp "<file>.XXXXXX"` in the same directory, then `chmod 0644` and `mv`, so concurrent runs are safe.
+* Bundle values come from the plists at the top of each sparsebundle, never from walking the bands: last backup is the newest `<date>` in `com.apple.TimeMachine.SnapshotHistory.plist`, size is the band count times `band-size` in `Info.plist`. The plists are XML and parsed with `grep`/`sed`. A bundle's newest file mtime is not a backup time: failed and in-progress backups move it too.
+
+**Grafana dashboard (`grafana/timemachine-dashboard.json`).** Queries only the `timemachine_*` metrics above, via a `datasource` variable (no hard-coded UID) and an `instance` variable. `./run test` phase 3 fails if the dashboard queries a `timemachine_*` metric the metrics file doesn't contain, so rename metrics in both places. `grafana/dashboard.png` is a screenshot for the README; it was taken from a stack of this container → node-exporter textfile collector → Prometheus → Grafana 12.2. Headless Chromium needs an explicit locale (e.g. `en-GB`) or Grafana fails to bootstrap with `Invalid language tag: en-US@posix`.
 
 **`systemd-unit.service`** is a production deployment example for running via systemd.
 

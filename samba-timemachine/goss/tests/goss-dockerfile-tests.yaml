@@ -15,6 +15,12 @@ file:
     exists: true
     mode: "0444"
     filetype: file
+  /scripts/backup-metrics.sh:
+    exists: true
+    mode: "0755"
+    owner: root
+    group: root
+    filetype: file
 
   # Verify these are CLEAN (not present before entrypoint runs)
   /etc/samba/smb.conf:

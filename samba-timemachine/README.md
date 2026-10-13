@@ -71,6 +71,7 @@ For manual installation, see the [example unit file](./systemd-unit.service).
 | `PUID`      | Unix User ID for Time Machine user  |         `999` |
 | `PGID`      | Unix Group ID for Time Machine user |         `999` |
 | `LOG_LEVEL` |         SAMBA logging level         |           `1` |
+| `METRICS_FILE` | Path to write [backup metrics](#backup-metrics) to | unset (off) |
 
 The defaults are embedded in the Dockerfile
 
@@ -137,6 +138,108 @@ It works by scanning for `.sparsebundle` directories and checking the modificati
 - **Stale Backup Detection:** Identifies backups that haven't been updated recently.
 - **Webhook Integration:** Can trigger a webhook (e.g., to a service like Healthchecks.io or a custom notification system) by setting the `WEBHOOK_URL` environment variable. If the variable is not set, it performs a dry run.
 - **Cron Job Ready:** The script can be scheduled to run automatically. An example cron file, `scripts/backup-check.cron`, is provided to show how to execute it periodically.
+
+# Backup Metrics
+
+Set `METRICS_FILE` to a path inside the container and it writes the state of the backups to that file in
+[Prometheus text format](https://prometheus.io/docs/instrumenting/exposition_formats/), for a collector such as
+node-exporter's [textfile collector](https://github.com/prometheus/node_exporter#textfile-collector) to read.
+Leave it unset and the feature is off: no file is written and Samba's config has no `postexec` line.
+
+The file is written:
+
+- once at container start, so it exists before the first backup;
+- each time a client disconnects from the share (Samba's `postexec`). A Mac connects, backs up and disconnects,
+  so this is the end of each backup session. Connections from inside the container, such as the healthcheck,
+  are ignored.
+
+There is no schedule inside the container.
+
+Each run is cheap however large the backups are. The bundle values are read from the small property lists the
+Mac keeps at the top of each sparsebundle and from a listing of its `bands` directory; the band files
+themselves are never opened or measured.
+
+| Metric | Labels | Meaning |
+|---|---|---|
+| `timemachine_bundle_last_backup_timestamp_seconds` | `bundle` | Completion time of the newest snapshot, from the bundle's `com.apple.TimeMachine.SnapshotHistory.plist` |
+| `timemachine_bundle_size_bytes` | `bundle` | Size of the sparsebundle, estimated as its band count times the `band-size` in its `Info.plist` |
+| `timemachine_bundles` | | Number of sparsebundles found |
+| `timemachine_volume_available_bytes` | | Space available to the backups on the filesystem holding `/backups` (as `df` reports it) |
+| `timemachine_volume_size_bytes` | | Size of that filesystem |
+| `timemachine_metrics_success` | | `1` if the last run could read the backup directory, else `0` |
+| `timemachine_metrics_last_success_timestamp_seconds` | | Time of the last successful run |
+
+`bundle` is the sparsebundle's name without `.sparsebundle`. Alert on free space with e.g.
+`timemachine_volume_available_bytes / timemachine_volume_size_bytes < 0.1`. A failed run writes only the last two metrics,
+keeping the previous last-success time, so a consumer can tell a failed run from an old one.
+
+A bundle value that can't be read is left out rather than reported as zero: a sparsebundle with no completed
+backup has no last-backup time, and one without a `bands` directory or a `band-size` has no size. It still counts
+towards `timemachine_bundles`.
+
+## Mounting the output directory
+
+The script runs as the Time Machine user (`PUID`/`PGID`), both at start and on disconnect, because Samba runs
+`postexec` as the connecting user. Mount a directory for the file and make it writable by that user, e.g. for a
+node-exporter textfile directory on the host:
+
+```bash
+sudo chown 999:999 /var/lib/node_exporter/textfile
+docker run -d -t \
+    -v /backups/timemachine:/backups \
+    -v /var/lib/node_exporter/textfile:/metrics \
+    -e METRICS_FILE=/metrics/timemachine.prom \
+    -p 10445:10445 \
+    --restart unless-stopped timjdfletcher/samba-timemachine:latest
+```
+
+With compose, [`docker-compose.metrics.yml`](./docker-compose.metrics.yml) adds a `samba-timemachine_metrics`
+volume at `/metrics`. Create it and hand it to the user first:
+
+```bash
+docker volume create samba-timemachine_metrics
+docker run --rm -v samba-timemachine_metrics:/metrics debian:stable-slim chown 999:999 /metrics
+METRICS_FILE=/metrics/timemachine.prom docker compose -f docker-compose.yml -f docker-compose.metrics.yml up -d
+```
+
+If the directory isn't writable the container logs a warning at start and runs without metrics. The path must not
+contain `'` or `%`.
+
+The file is written to a temporary file in the same directory and renamed into place, so readers never see a
+partial file and clients disconnecting together can't corrupt it. node-exporter's textfile collector only reads
+`*.prom` files, so it ignores the temporary files.
+
+## Grafana dashboard
+
+[`grafana/timemachine-dashboard.json`](./grafana/timemachine-dashboard.json) is a simple dashboard for these
+metrics. Import it in Grafana (Dashboards → New → Import) or provision it from a file, and pick your Prometheus
+data source. It shows:
+
+- the oldest backup, free space (bytes and %), the number of backups, and whether the metrics run is working;
+- time since the last backup and backup size for each Mac;
+- free space and backup size over time.
+
+Time since backup turns amber after 3 days and red after 14; free space turns amber below 20% and red below 10%.
+The `instance` selector filters by the Prometheus `instance` label if you run more than one server.
+
+![Time Machine backups dashboard](./grafana/dashboard.png)
+
+## Caveats
+
+- **Don't alert on the file's age.** The file is only rewritten when a client disconnects, so between backups
+  it is as old as the last backup. Its values are timestamps and stay correct: alert on
+  `time() - timemachine_bundle_last_backup_timestamp_seconds`, and on `timemachine_metrics_success == 0`.
+- **A client that sleeps or drops off mid-backup** only triggers the rewrite when smbd notices the dead
+  connection, so the file can lag by that timeout.
+- **Free space is sampled at the same moments**, at start and on disconnect. Backups are what fill the
+  volume, so that catches the growth that matters; if other things share the filesystem, watch it from the host
+  as well (node-exporter's `node_filesystem_avail_bytes`).
+- **Bundle size is an estimate.** Bands are counted, not measured, so a partly filled band counts as a full
+  one and the value is an upper bound on the disk space used.
+- **The last-backup time comes from a file the Mac writes.** Apple doesn't document its format. If the
+  history is there but can't be parsed, the time it was last written is reported instead.
+- **A failed or interrupted backup doesn't move the last-backup time.** Only completed snapshots count, so a Mac
+  that connects every hour but never finishes still shows as stale.
 
 # Known Bugs
 

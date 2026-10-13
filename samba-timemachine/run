@@ -9,6 +9,8 @@ PLATFORMS="linux/amd64,linux/arm64"
 TESTHOST="carbon"
 GOSS_DST="/goss"
 CONTAINER_NAME="samba-timemachine"
+# promtool, used by the tests to parse the metrics file; pinned by tag and index digest
+PROMTOOL_IMAGE="quay.io/prometheus/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # --- Helper Functions ---
@@ -85,6 +87,38 @@ _exec() {
   docker compose exec "${CONTAINER_NAME}" /bin/bash
 }
 
+# Print the value of a metric from the container's METRICS_FILE (empty if absent)
+_metric_value() {
+  docker compose exec -T "${CONTAINER_NAME}" cat "${METRICS_FILE}" |
+    awk -v name="$1" '$1 == name { print $2 }'
+}
+
+# Fail unless the container's METRICS_FILE parses as Prometheus text format
+_check_metrics_format() {
+  log "Checking metrics format with promtool ($1)..."
+  docker compose exec -T "${CONTAINER_NAME}" cat "${METRICS_FILE}" |
+    docker run --rm -i --entrypoint promtool "${PROMTOOL_IMAGE}" check metrics
+}
+
+# Fail unless every timemachine_* metric the Grafana dashboard queries is in the container's METRICS_FILE
+_check_dashboard_metrics() {
+  local dashboard="${SCRIPT_DIR}/grafana/timemachine-dashboard.json" queried metrics metric missing=0
+  log "Checking the dashboard only queries metrics the container writes..."
+  queried=$(grep -o 'timemachine_[a-z_]*' "${dashboard}" | sort -u)
+  if [ -z "${queried}" ]; then
+    log "FAIL: no timemachine_* metrics found in ${dashboard}"
+    return 1
+  fi
+  metrics=$(docker compose exec -T "${CONTAINER_NAME}" cat "${METRICS_FILE}")
+  for metric in ${queried}; do
+    if ! grep -q "^${metric}[{ ]" <<< "${metrics}"; then
+      log "FAIL: dashboard queries ${metric}, which the metrics file doesn't contain"
+      missing=1
+    fi
+  done
+  return "${missing}"
+}
+
 # Run tests in a subshell to isolate ENV variables
 _goss_test() {
   (
@@ -93,14 +127,24 @@ _goss_test() {
     export PUID=1234 PGID=4321 USER=testuser PASS=Password123 LOG_LEVEL=4
     local volume_name="samba-timemachine_backups"
     local test_file="/backups/permission-test-file"
+    local metrics_volume="samba-timemachine_metrics"
+    # Every phase mounts a metrics volume; only phase 3 sets METRICS_FILE
+    export COMPOSE_FILE="docker-compose.yml:docker-compose.metrics.yml"
+    unset METRICS_FILE
 
     log "Cleaning up previous test runs..."
     docker compose down --volumes --remove-orphans 2>/dev/null || true
+    # Both volumes are external, so a failed earlier run can leave them behind
+    docker volume rm "${volume_name}" "${metrics_volume}" >/dev/null 2>&1 || true
     docker volume create "${volume_name}" >/dev/null
+    docker volume create "${metrics_volume}" >/dev/null
 
     log "Creating test file with root ownership..."
     docker run --rm -v "${volume_name}:/backups" debian:stable-slim bash -c \
       "touch ${test_file} && chown root:root ${test_file}"
+
+    log "Giving the metrics volume to ${PUID}:${PGID}..."
+    docker run --rm -v "${metrics_volume}:/metrics" debian:stable-slim chown "${PUID}:${PGID}" /metrics
 
     # --- Phase 1: Test with FORCE_PERMISSIONS_RESET=false ---
     log "--- Running Test Phase 1: Default Permissions (No Reset) ---"
@@ -120,6 +164,10 @@ _goss_test() {
     docker compose exec -e EXPECTED_OWNER=root -e EXPECTED_GROUP=root "${CONTAINER_NAME}" \
       "${GOSS_DST}/goss" --gossfile "${GOSS_DST}/tests/goss-permissions-tests.yaml" validate
 
+    log "Running Metrics Disabled Check..."
+    docker compose exec "${CONTAINER_NAME}" \
+      "${GOSS_DST}/goss" --gossfile "${GOSS_DST}/tests/goss-metrics-disabled-tests.yaml" validate
+
     log "Phase 1 Passed. Shutting down..."
     _down
 
@@ -133,12 +181,71 @@ _goss_test() {
     docker compose exec -e EXPECTED_OWNER=${USER} -e EXPECTED_GROUP=${USER} "${CONTAINER_NAME}" \
       "${GOSS_DST}/goss" --gossfile "${GOSS_DST}/tests/goss-permissions-tests.yaml" validate
 
-    log "Phase 2 Passed."
+    log "Phase 2 Passed. Shutting down..."
+    _down
+
+    # --- Phase 3: Backup metrics ---
+    log "--- Running Test Phase 3: Backup Metrics ---"
+    export FORCE_PERMISSIONS_RESET="false"
+    export METRICS_FILE="/metrics/timemachine.prom"
+    _up
+    wait_for_health
+
+    log "Running Metrics Validation..."
+    docker compose exec "${CONTAINER_NAME}" \
+      "${GOSS_DST}/goss" --gossfile "${GOSS_DST}/tests/goss-metrics-tests.yaml" validate
+    _check_metrics_format "empty share"
+
+    local before after
+    before=$(_metric_value timemachine_metrics_last_success_timestamp_seconds)
+    # Timestamps have one-second resolution
+    sleep 1
+
+    # What a Mac leaves in its sparsebundle: the band size, the completed
+    # snapshots and the bands themselves
+    log "Creating a sparsebundle over SMB from a non-loopback address..."
+    docker compose exec -T "${CONTAINER_NAME}" sh -c \
+      'dir=$(mktemp -d) &&
+      printf "<plist version=\"1.0\">\n<dict>\n\t<key>band-size</key>\n\t<integer>8388608</integer>\n</dict>\n</plist>\n" > "${dir}/Info.plist" &&
+      printf "<plist version=\"1.0\">\n<dict>\n\t<key>Snapshots</key>\n\t<array>\n\t\t<dict>\n\t\t\t<date>2026-08-27T18:35:47Z</date>\n\t\t</dict>\n\t\t<dict>\n\t\t\t<date>2026-10-12T10:42:01Z</date>\n\t\t</dict>\n\t</array>\n</dict>\n</plist>\n" > "${dir}/SnapshotHistory.plist" &&
+      smbclient //$(hostname -i)/Data -A /run/samba/credentials -I $(hostname -i) -p 10445 \
+        -c "mkdir Test-Mac.sparsebundle; mkdir Test-Mac.sparsebundle/bands;
+            put /etc/hostname Test-Mac.sparsebundle/bands/0; put /etc/hostname Test-Mac.sparsebundle/bands/1;
+            put ${dir}/Info.plist Test-Mac.sparsebundle/Info.plist;
+            put ${dir}/SnapshotHistory.plist Test-Mac.sparsebundle/com.apple.TimeMachine.SnapshotHistory.plist"'
+
+    log "Waiting for the disconnect to rewrite the metrics file..."
+    for _ in {1..10}; do
+      after=$(_metric_value timemachine_metrics_last_success_timestamp_seconds)
+      [ "${after:-0}" -gt "${before}" ] && break
+      sleep 1
+    done
+    if [ "${after:-0}" -le "${before}" ]; then
+      log "FAIL: last-success time did not move past ${before} after a disconnect"
+      exit 1
+    fi
+    log "Last-success time moved from ${before} to ${after}."
+
+    docker compose exec -T "${CONTAINER_NAME}" cat "${METRICS_FILE}"
+    local expected
+    for expected in 'timemachine_metrics_success 1' 'timemachine_bundles 1' \
+      'timemachine_bundle_last_backup_timestamp_seconds{bundle="Test-Mac"} 1791801721' \
+      'timemachine_bundle_size_bytes{bundle="Test-Mac"} 16777216' \
+      'timemachine_volume_available_bytes ' 'timemachine_volume_size_bytes '; do
+      if ! docker compose exec -T "${CONTAINER_NAME}" cat "${METRICS_FILE}" | grep -qF "${expected}"; then
+        log "FAIL: metrics file has no line starting '${expected}'"
+        exit 1
+      fi
+    done
+    _check_metrics_format "one bundle"
+    _check_dashboard_metrics
+
+    log "Phase 3 Passed."
     log "--- All Tests Passed ---"
   )
   # --- Cleanup ---
-  _down
-  docker volume rm "samba-timemachine_backups" >/dev/null
+  COMPOSE_FILE="docker-compose.yml:docker-compose.metrics.yml" _down
+  docker volume rm "samba-timemachine_backups" "samba-timemachine_metrics" >/dev/null
 }
 
 _trivy() {
