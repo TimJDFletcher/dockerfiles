@@ -8,7 +8,7 @@ FROM ${GOSS_IMAGE} AS goss
 FROM debian:${DEBIAN_VERSION}
 
 # Arguments
-ARG SAMBA_VERSION="2:4.24.5+dfsg-1~bpo13+1"
+ARG SAMBA_VERSION="2:4.24.7+dfsg-1~bpo13+1"
 ARG GOSS_VER="v0.4.9-patched"
 ARG GOSS_DST="/goss"
 ARG BACKUPDIR="/backups"
