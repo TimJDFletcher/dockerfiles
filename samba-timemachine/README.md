@@ -157,8 +157,8 @@ There is no schedule inside the container.
 
 | Metric | Labels | Meaning |
 |---|---|---|
-| `timemachine_bundle_last_modified_timestamp_seconds` | `bundle` | Modification time of the newest file in the sparsebundle |
-| `timemachine_bundle_size_bytes` | `bundle` | Disk space used by the sparsebundle |
+| `timemachine_bundle_last_backup_timestamp_seconds` | `bundle` | Completion time of the newest snapshot, from the bundle's `com.apple.TimeMachine.SnapshotHistory.plist` |
+| `timemachine_bundle_size_bytes` | `bundle` | Size of the sparsebundle, estimated as its band count times the `band-size` in its `Info.plist` |
 | `timemachine_bundles` | | Number of sparsebundles found |
 | `timemachine_volume_available_bytes` | | Space available to the backups on the filesystem holding `/backups` (as `df` reports it) |
 | `timemachine_volume_size_bytes` | | Size of that filesystem |
@@ -220,13 +220,17 @@ The `instance` selector filters by the Prometheus `instance` label if you run mo
 
 - **Don't alert on the file's age.** The file is only rewritten when a client disconnects, so between backups
   it is as old as the last backup. Its values are timestamps and stay correct: alert on
-  `time() - timemachine_bundle_last_modified_timestamp_seconds`, and on `timemachine_metrics_success == 0`.
+  `time() - timemachine_bundle_last_backup_timestamp_seconds`, and on `timemachine_metrics_success == 0`.
 - **A client that sleeps or drops off mid-backup** only triggers the rewrite when smbd notices the dead
   connection, so the file can lag by that timeout.
 - **Free space is sampled at the same moments**, at start and on disconnect. Backups are what fill the
   volume, so that catches the growth that matters; if other things share the filesystem, watch it from the host
   as well (node-exporter's `node_filesystem_avail_bytes`).
-- **Walking a large sparsebundle takes time.** It runs in the background, so it doesn't hold up the disconnect.
+- **Bundle size is an estimate.** Bands are counted, not measured, so a partly filled band counts as a full
+  one and the value is an upper bound on the disk space used.
+- **The last-backup time comes from a file the Mac writes.** Apple doesn't document its format. A bundle with
+  no completed backup has no last-backup value; if the history can't be parsed, the time it was last written
+  is reported instead.
 
 # Known Bugs
 

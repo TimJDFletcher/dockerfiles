@@ -5,8 +5,8 @@
 #
 # Run by the entrypoint at start and by Samba's postexec when a client
 # disconnects from the share. A loopback client-address (the container's own
-# healthcheck) exits without writing, so the healthcheck doesn't rewalk every
-# sparsebundle each minute.
+# healthcheck) exits without writing, so the healthcheck doesn't rewrite the
+# file each minute.
 #
 # The file is written to a unique temp file in the same directory and renamed
 # into place, so readers and concurrent runs never see a partial file. If the
@@ -34,33 +34,56 @@ escape_label() {
     printf '%s' "${value//$'\n'/\\n}"
 }
 
-# Print "<newest mtime> <bytes on disk>" for every bundle, one line each,
-# from a single walk of the bundle
-bundle_stats() {
-    find "$1" -type f -printf '%T@ %b\n' |
-        awk '{ if ($1 > newest) newest = $1; blocks += $2 }
-             END { printf "%d %d\n", newest, blocks * 512 }'
+# Each sparsebundle is read from the plists the Mac keeps at its top level
+# and a listing of its bands; the band files themselves are never opened or
+# stat'd, so a run costs the same however large the backups are.
+
+# Print the completion time (epoch seconds) of the bundle's newest snapshot,
+# or nothing if it has no completed backup. If the history can't be parsed,
+# fall back to when it was last written.
+last_backup() {
+    local history="$1/com.apple.TimeMachine.SnapshotHistory.plist" newest
+
+    [ -r "${history}" ] || return 0
+    newest=$(grep -o '<date>[^<]*' "${history}" | cut -c7- | sort | tail -n 1)
+    if [ -n "${newest}" ] && date -u -d "${newest}" +%s 2>/dev/null; then
+        return 0
+    fi
+    stat -c %Y "${history}" 2>/dev/null
+}
+
+# Print the bundle's size as its band count times the band size in
+# Info.plist, or nothing if either can't be read. Bands are sparse, so this
+# is an upper bound on the disk space used.
+bundle_size() {
+    local band_size bands
+
+    band_size=$(sed -n '/<key>band-size<\/key>/{n;s/.*<integer>\([0-9][0-9]*\)<\/integer>.*/\1/p;}' "$1/Info.plist" 2>/dev/null)
+    [[ "${band_size}" =~ ^[0-9]+$ && -d "$1/bands" ]] || return 0
+    bands=$(find "$1/bands" -ignore_readdir_race -type f 2>/dev/null | wc -l)
+    echo $((band_size * bands))
 }
 
 collect_bundle_metrics() {
-    local bundles bundle name stats count=0
-    local modified="" size=""
+    local bundles bundle name value count=0
+    local backup="" size=""
 
     bundles=$(find "${BACKUP_DIR}" -mindepth 1 -maxdepth 1 -type d -name '*.sparsebundle' -printf '%f\n' | sort) || return 1
 
     while IFS= read -r bundle; do
         [ -n "${bundle}" ] || continue
-        stats=$(bundle_stats "${BACKUP_DIR}/${bundle}") || return 1
         name=$(escape_label "${bundle%.sparsebundle}")
-        modified+="timemachine_bundle_last_modified_timestamp_seconds{bundle=\"${name}\"} ${stats% *}"$'\n'
-        size+="timemachine_bundle_size_bytes{bundle=\"${name}\"} ${stats#* }"$'\n'
+        value=$(last_backup "${BACKUP_DIR}/${bundle}")
+        [ -z "${value}" ] || backup+="timemachine_bundle_last_backup_timestamp_seconds{bundle=\"${name}\"} ${value}"$'\n'
+        value=$(bundle_size "${BACKUP_DIR}/${bundle}")
+        [ -z "${value}" ] || size+="timemachine_bundle_size_bytes{bundle=\"${name}\"} ${value}"$'\n'
         count=$((count + 1))
     done <<< "${bundles}"
 
-    echo "# HELP timemachine_bundle_last_modified_timestamp_seconds Modification time of the newest file in the sparsebundle."
-    echo "# TYPE timemachine_bundle_last_modified_timestamp_seconds gauge"
-    printf '%s' "${modified}"
-    echo "# HELP timemachine_bundle_size_bytes Disk space used by the sparsebundle."
+    echo "# HELP timemachine_bundle_last_backup_timestamp_seconds Completion time of the newest snapshot in the sparsebundle."
+    echo "# TYPE timemachine_bundle_last_backup_timestamp_seconds gauge"
+    printf '%s' "${backup}"
+    echo "# HELP timemachine_bundle_size_bytes Size of the sparsebundle, estimated as its band count times its band size."
     echo "# TYPE timemachine_bundle_size_bytes gauge"
     printf '%s' "${size}"
     echo "# HELP timemachine_bundles Number of sparsebundles in the backup directory."

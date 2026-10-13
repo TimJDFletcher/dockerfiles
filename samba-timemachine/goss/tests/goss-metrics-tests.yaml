@@ -4,7 +4,7 @@ file:
     exists: true
     contents:
     # smbd waits for postexec, and runs it without a shell: only a
-    # backgrounded sh -c lets the client disconnect without waiting for the walk
+    # backgrounded sh -c lets the client disconnect without waiting for the script
     - '/^ +postexec += /bin/sh -c "/scripts/backup-metrics.sh .* %I .*&"$/'
 
   # Written once at container start, before any client has connected

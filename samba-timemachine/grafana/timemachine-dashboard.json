@@ -58,7 +58,7 @@
       "id": 1,
       "type": "stat",
       "title": "Oldest backup",
-      "description": "Time since the newest file changed in the least recently updated sparsebundle. Amber after 3 days, red after 14.",
+      "description": "Time since the last completed backup of the least recently backed up sparsebundle. Amber after 3 days, red after 14.",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -75,7 +75,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "time() - min(timemachine_bundle_last_modified_timestamp_seconds{instance=~\"$instance\"})",
+          "expr": "time() - min(timemachine_bundle_last_backup_timestamp_seconds{instance=~\"$instance\"})",
           "refId": "A"
         }
       ],
@@ -455,7 +455,7 @@
       "id": 7,
       "type": "bargauge",
       "title": "Time since last backup, per Mac",
-      "description": "Time since the newest file changed in each sparsebundle. The bar is full at 14 days.",
+      "description": "Time since the last completed backup in each sparsebundle. The bar is full at 14 days.",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -472,7 +472,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "time() - timemachine_bundle_last_modified_timestamp_seconds{instance=~\"$instance\"}",
+          "expr": "time() - timemachine_bundle_last_backup_timestamp_seconds{instance=~\"$instance\"}",
           "refId": "A",
           "legendFormat": "{{bundle}}"
         }
@@ -534,7 +534,7 @@
       "id": 8,
       "type": "bargauge",
       "title": "Backup size, per Mac",
-      "description": "Disk space used by each sparsebundle.",
+      "description": "Size of each sparsebundle, estimated as its band count times its band size (an upper bound on the disk space used).",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -670,7 +670,7 @@
       "id": 10,
       "type": "timeseries",
       "title": "Backup size over time",
-      "description": "Disk space used by each sparsebundle.",
+      "description": "Size of each sparsebundle, estimated as its band count times its band size (an upper bound on the disk space used).",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"

@@ -201,10 +201,18 @@ _goss_test() {
     # Timestamps have one-second resolution
     sleep 1
 
+    # What a Mac leaves in its sparsebundle: the band size, the completed
+    # snapshots and the bands themselves
     log "Creating a sparsebundle over SMB from a non-loopback address..."
     docker compose exec -T "${CONTAINER_NAME}" sh -c \
-      'smbclient //$(hostname -i)/Data -A /run/samba/credentials -I $(hostname -i) -p 10445 \
-        -c "mkdir Test-Mac.sparsebundle; mkdir Test-Mac.sparsebundle/bands; put /etc/hostname Test-Mac.sparsebundle/bands/0"'
+      'dir=$(mktemp -d) &&
+      printf "<plist version=\"1.0\">\n<dict>\n\t<key>band-size</key>\n\t<integer>8388608</integer>\n</dict>\n</plist>\n" > "${dir}/Info.plist" &&
+      printf "<plist version=\"1.0\">\n<dict>\n\t<key>Snapshots</key>\n\t<array>\n\t\t<dict>\n\t\t\t<date>2026-08-27T18:35:47Z</date>\n\t\t</dict>\n\t\t<dict>\n\t\t\t<date>2026-10-12T10:42:01Z</date>\n\t\t</dict>\n\t</array>\n</dict>\n</plist>\n" > "${dir}/SnapshotHistory.plist" &&
+      smbclient //$(hostname -i)/Data -A /run/samba/credentials -I $(hostname -i) -p 10445 \
+        -c "mkdir Test-Mac.sparsebundle; mkdir Test-Mac.sparsebundle/bands;
+            put /etc/hostname Test-Mac.sparsebundle/bands/0; put /etc/hostname Test-Mac.sparsebundle/bands/1;
+            put ${dir}/Info.plist Test-Mac.sparsebundle/Info.plist;
+            put ${dir}/SnapshotHistory.plist Test-Mac.sparsebundle/com.apple.TimeMachine.SnapshotHistory.plist"'
 
     log "Waiting for the disconnect to rewrite the metrics file..."
     for _ in {1..10}; do
@@ -221,8 +229,8 @@ _goss_test() {
     docker compose exec -T "${CONTAINER_NAME}" cat "${METRICS_FILE}"
     local expected
     for expected in 'timemachine_metrics_success 1' 'timemachine_bundles 1' \
-      'timemachine_bundle_last_modified_timestamp_seconds{bundle="Test-Mac"} ' \
-      'timemachine_bundle_size_bytes{bundle="Test-Mac"} ' \
+      'timemachine_bundle_last_backup_timestamp_seconds{bundle="Test-Mac"} 1791801721' \
+      'timemachine_bundle_size_bytes{bundle="Test-Mac"} 16777216' \
       'timemachine_volume_available_bytes ' 'timemachine_volume_size_bytes '; do
       if ! docker compose exec -T "${CONTAINER_NAME}" cat "${METRICS_FILE}" | grep -qF "${expected}"; then
         log "FAIL: metrics file has no line starting '${expected}'"
