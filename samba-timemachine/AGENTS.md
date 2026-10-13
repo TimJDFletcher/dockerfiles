@@ -96,6 +96,8 @@ The goss suites:
 * The healthcheck (and goss tests) connect over `127.0.0.1` every minute. `%I` is passed to the script, which exits for loopback addresses so it doesn't rewalk every sparsebundle each minute. Tests that need a rewrite connect via `$(hostname -i)`.
 * Writes go to `mktemp "<file>.XXXXXX"` in the same directory, then `chmod 0644` and `mv`, so concurrent runs are safe.
 
+**Grafana dashboard (`grafana/timemachine-dashboard.json`).** Queries only the `timemachine_*` metrics above, via a `datasource` variable (no hard-coded UID) and an `instance` variable. `./run test` phase 3 fails if the dashboard queries a `timemachine_*` metric the metrics file doesn't contain, so rename metrics in both places. `grafana/dashboard.png` is a screenshot for the README; it was taken from a stack of this container → node-exporter textfile collector → Prometheus → Grafana 12.2. Headless Chromium needs an explicit locale (e.g. `en-GB`) or Grafana fails to bootstrap with `Invalid language tag: en-US@posix`.
+
 **`systemd-unit.service`** is a production deployment example for running via systemd.
 
 **`USER` env var collides with the standard shell variable.** The `./run test` command exports `USER=testuser` in a subshell to avoid clobbering the parent shell's login user.

@@ -201,6 +201,21 @@ The file is written to a temporary file in the same directory and renamed into p
 partial file and clients disconnecting together can't corrupt it. node-exporter's textfile collector only reads
 `*.prom` files, so it ignores the temporary files.
 
+## Grafana dashboard
+
+[`grafana/timemachine-dashboard.json`](./grafana/timemachine-dashboard.json) is a simple dashboard for these
+metrics. Import it in Grafana (Dashboards → New → Import) or provision it from a file, and pick your Prometheus
+data source. It shows:
+
+- the oldest backup, free space (bytes and %), the number of backups, and whether the metrics run is working;
+- time since the last backup and backup size for each Mac;
+- free space and backup size over time.
+
+Time since backup turns amber after 3 days and red after 14; free space turns amber below 20% and red below 10%.
+The `instance` selector filters by the Prometheus `instance` label if you run more than one server.
+
+![Time Machine backups dashboard](./grafana/dashboard.png)
+
 ## Caveats
 
 - **Don't alert on the file's age.** The file is only rewritten when a client disconnects, so between backups

@@ -100,6 +100,25 @@ _check_metrics_format() {
     docker run --rm -i --entrypoint promtool "${PROMTOOL_IMAGE}" check metrics
 }
 
+# Fail unless every timemachine_* metric the Grafana dashboard queries is in the container's METRICS_FILE
+_check_dashboard_metrics() {
+  local dashboard="${SCRIPT_DIR}/grafana/timemachine-dashboard.json" queried metrics metric missing=0
+  log "Checking the dashboard only queries metrics the container writes..."
+  queried=$(grep -o 'timemachine_[a-z_]*' "${dashboard}" | sort -u)
+  if [ -z "${queried}" ]; then
+    log "FAIL: no timemachine_* metrics found in ${dashboard}"
+    return 1
+  fi
+  metrics=$(docker compose exec -T "${CONTAINER_NAME}" cat "${METRICS_FILE}")
+  for metric in ${queried}; do
+    if ! grep -q "^${metric}[{ ]" <<< "${metrics}"; then
+      log "FAIL: dashboard queries ${metric}, which the metrics file doesn't contain"
+      missing=1
+    fi
+  done
+  return "${missing}"
+}
+
 # Run tests in a subshell to isolate ENV variables
 _goss_test() {
   (
@@ -211,6 +230,7 @@ _goss_test() {
       fi
     done
     _check_metrics_format "one bundle"
+    _check_dashboard_metrics
 
     log "Phase 3 Passed."
     log "--- All Tests Passed ---"
