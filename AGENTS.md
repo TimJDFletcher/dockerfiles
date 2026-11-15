@@ -35,6 +35,18 @@ Skills for any coding agent live under `.agents/skills/<name>/SKILL.md`. Read th
 
 - **Upgrade** dependencies across the repo (base images, pip, GitHub releases, apt pins, Gem lockfiles) and test every image afterwards: `.agents/skills/dockerfiles-repo-upgrade/SKILL.md`.
 
+### Issue tracker
+
+Issues live in GitHub Issues (`TimJDFletcher/dockerfiles`, via `gh`). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
 ## Conventions (Quick Reference)
 
 See `.cursorrules` for full details. Key points:
